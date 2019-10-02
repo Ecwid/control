@@ -44,7 +44,7 @@ func Print(level Level, v ...interface{}) {
 func print(message string) {
 	if hook != nil {
 		hook(message)
-		// return
+		return
 	}
 	log.Println(message)
 }

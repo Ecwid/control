@@ -67,8 +67,8 @@ type timeouts struct {
 }
 
 var dto = &timeouts{
-	Navigation: time.Second * 40,
-	Implicitly: time.Second * 30,
+	Navigation: time.Second * 60,
+	Implicitly: time.Second * 60,
 	Poll:       time.Millisecond * 500,
 	WSTimeout:  time.Minute * 1,
 }
