@@ -206,11 +206,6 @@ func (e *element) Call(functionDeclaration string, arg ...interface{}) (interfac
 	return v.Value, nil
 }
 
-func (e *element) dispatchEvent(name string) error {
-	_, err := e.call(atom.DispatchEvent, name)
-	return err
-}
-
 // Upload upload files
 func (e *element) Upload(files ...string) error {
 	_, err := e.session.blockingSend("DOM.setFileInputFiles", Map{
@@ -342,13 +337,17 @@ func (e *element) Type(text string, key ...rune) error {
 	if err = e.Clear(); err != nil {
 		return err
 	}
+	if _, err := e.call(atom.DispatchEvents, []string{"keydown"}); err != nil {
+		return err
+	}
 	// insert text, not typing
 	err = e.session.insertText(text)
 	if err != nil {
 		return err
 	}
-	e.dispatchEvent(`input`)
-	e.dispatchEvent(`change`)
+	if _, err := e.call(atom.DispatchEvents, []string{"keypress", "input", "keyup", "change"}); err != nil {
+		return err
+	}
 	// send keyboard key after some pause
 	if key != nil {
 		time.Sleep(time.Millisecond * 200)
@@ -451,8 +450,9 @@ func (e *element) Checkbox(check bool) error {
 		return err
 	}
 	time.Sleep(time.Millisecond * 250) // todo
-	e.dispatchEvent(`click`)
-	e.dispatchEvent(`change`)
+	if _, err := e.call(atom.DispatchEvents, []string{"click", "change"}); err != nil {
+		return err
+	}
 	return nil
 }
 

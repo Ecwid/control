@@ -8,7 +8,7 @@ const (
 	IsClickableAt    = `function(a,b){for(var c=this,d=this;d.parentNode;)d=d.parentNode;return function(){var e=d.elementFromPoint(a,b);if(!e)return!1;if(e==c)return!0;for(var f=e.parentNode;f;){if(f==c)return!0;f=f.parentNode}return!1}()}`
 	ClearInput       = `function(){"INPUT"===this.nodeName?this.value="":this.innerText=""}`
 	GetInnerText     = `function(){return this.value||this.innerText}`
-	DispatchEvent    = `function(name){this.dispatchEvent(new Event(name,{'bubbles':!0}))}`
+	DispatchEvents   = `function(l){for(const e of l)this.dispatchEvent(new Event(e,{'bubbles':!0}))}`
 	Select           = `function(a){const b=Array.from(this.options);this.value=void 0;for(const c of b)if(c.selected=a.includes(c.value),c.selected&&!this.multiple)break;this.dispatchEvent(new Event("input",{bubbles:!0})),this.dispatchEvent(new Event("change",{bubbles:!0}))}`
 	GetSelected      = `function(){return Array.from(this.options).filter(a=>a.selected).map(a=>a.value)}`
 	GetSelectedText  = `function(){return Array.from(this.options).filter(a=>a.selected).map(a=>a.innerText)}`
