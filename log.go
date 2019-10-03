@@ -23,7 +23,7 @@ const (
 )
 
 // SetHook set logging output hook
-func (w wlog) SetHook(hookf func(string)) {
+func (w *wlog) SetHook(hookf func(string)) {
 	w.hook = hookf
 }
 
