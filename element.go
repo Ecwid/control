@@ -292,8 +292,10 @@ func (e *element) SwitchToFrame() error {
 
 // IsVisible is element visible
 func (e *element) IsVisible() (bool, error) {
-	_, _, err := e.clickablePoint()
-	if err != nil {
+	if _, _, err := e.clickablePoint(); err != nil {
+		if err == ErrElementInvisible || err == ErrElementOverlapped {
+			return false, nil
+		}
 		return false, err
 	}
 	return true, nil
