@@ -6,7 +6,6 @@ import (
 
 	"github.com/ecwid/witness/internal/atom"
 	"github.com/ecwid/witness/pkg/devtool"
-	"github.com/ecwid/witness/pkg/log"
 )
 
 // Element ...
@@ -91,7 +90,7 @@ func (e *element) renew() error {
 		e.ID = new.ObjectID
 		return nil
 	}
-	log.Printf(log.LevelFatal, "renew element is not implemented yet")
+	e.session.client.Logging.Printf(LevelFatal, "todo: renew element is not implemented yet")
 	return nil
 }
 

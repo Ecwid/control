@@ -12,22 +12,21 @@ import (
 	"time"
 
 	"github.com/ecwid/witness"
-	"github.com/ecwid/witness/pkg/log"
 )
 
-// Chrome браузер
+// Chrome chrome browser
 type Chrome struct {
 	CDP    *witness.CDP
 	cancel func()
 }
 
-// Close закрывает хром
+// Close close browser
 func (c *Chrome) Close() {
 	c.CDP.Close()
 	c.cancel()
 }
 
-// Connect ...
+// Connect connect to chrome that already started
 func Connect(webSocketURL string) (*Chrome, error) {
 	var err error
 	chrome := &Chrome{}
@@ -39,7 +38,7 @@ func Connect(webSocketURL string) (*Chrome, error) {
 	return chrome, nil
 }
 
-// New запускает новый хром
+// New launch a new chrome process
 func New(userFlags ...string) (*Chrome, error) {
 
 	chrome := &Chrome{}
@@ -109,7 +108,7 @@ func New(userFlags ...string) (*Chrome, error) {
 			return
 		case <-time.After(time.Millisecond * 2000):
 			if err := cmd.Process.Kill(); err != nil {
-				log.Print(log.LevelFatal, err)
+				panic(err)
 			}
 			return
 		}

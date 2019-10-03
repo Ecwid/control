@@ -1,15 +1,14 @@
 package main
 
 import (
+	"log"
 	"time"
 
+	"github.com/ecwid/witness"
 	"github.com/ecwid/witness/pkg/chrome"
-	"github.com/ecwid/witness/pkg/log"
 )
 
 func main() {
-	log.Logging = log.LevelFatal
-
 	chrome, _ := chrome.New()
 	defer chrome.Close()
 	p, err := chrome.CDP.DefaultPage()
@@ -19,6 +18,11 @@ func main() {
 
 	// Implicitly affected only `Expect` function
 	chrome.CDP.Timeouts.Implicitly = time.Second * 5
+	// set logging level and hook
+	chrome.CDP.Logging.Level = witness.LevelProtocolErrors
+	chrome.CDP.Logging.SetHook(func(line string) {
+		log.Printf(line)
+	})
 
 	p.Navigate("https://mdemo.ecwid.com/")
 	doc := p.Doc()
@@ -45,7 +49,7 @@ func main() {
 		if err != nil {
 			panic("can't read price")
 		}
-		log.Printf(log.LevelFatal, "title = %s, price = %s", title, price)
+		log.Printf("title = %s, price = %s", title, price)
 	}
 
 }

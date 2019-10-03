@@ -14,14 +14,12 @@ package main
 import (
 	"time"
 
+	"github.com/ecwid/witness"
 	"github.com/ecwid/witness/pkg/chrome"
-	"github.com/ecwid/witness/pkg/log"
 )
 
 func main() {
-	log.Logging = log.LevelFatal | log.LevelProtocolMessage
-
-	chrome, _ := chrome.New()
+	chrome, _ := chrome.New("--headless")
 	defer chrome.Close()
 	page, err := chrome.CDP.DefaultPage()
 	if err != nil {
@@ -29,6 +27,7 @@ func main() {
 	}
 
 	// Implicitly affected only Expect function
+	chrome.CDP.Logging.Level = witness.LevelProtocolMessage
 	chrome.CDP.Timeouts.Implicitly = time.Second * 5
 
 	page.Navigate("https://my.ecwid.com")
@@ -83,7 +82,7 @@ type Page interface {
 	Close() error
 	IsClosed() bool
 	MainFrame() error
-	Listen(string, int64) (chan []byte, func())
+	Listen(string) (chan []byte, func())
 	ID() string
 
 	AddScriptToEvaluateOnNewDocument(string) (string, error)

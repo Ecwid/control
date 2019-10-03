@@ -19,7 +19,7 @@ type Page interface {
 	Close() error
 	IsClosed() bool
 	MainFrame() error
-	Listen(string, int64) (chan []byte, func())
+	Listen(string) (chan []byte, func())
 	ID() string
 
 	AddScriptToEvaluateOnNewDocument(string) (string, error)
@@ -63,7 +63,7 @@ func (session *Session) Close() error {
 	return nil
 }
 
-// Navigate navigate to
+// Navigate navigate to url
 func (session *Session) Navigate(urlStr string) error {
 	eventFired := make(chan bool, 1)
 	unsubscribe := session.subscribe("Page.domContentEventFired", func([]byte) {
@@ -178,12 +178,12 @@ func (session *Session) NewPage(url string) (string, error) {
 	return msg.json().String("targetId"), nil
 }
 
-// SwitchToPage ...
+// SwitchToPage switch to another tab (new independent session will be created)
 func (session *Session) SwitchToPage(id string) (Page, error) {
 	return session.client.newSession(id)
 }
 
-// GetPages ...
+// GetPages list of opened tabs in browser (targetID)
 func (session *Session) GetPages() ([]string, error) {
 	ts, err := session.client.getTargets()
 	if err != nil {
@@ -198,7 +198,7 @@ func (session *Session) GetPages() ([]string, error) {
 	return handles, nil
 }
 
-// IsClosed is session closed?
+// IsClosed check is session (tab) closed
 func (session *Session) IsClosed() bool {
 	select {
 	case <-session.closed:
@@ -208,7 +208,7 @@ func (session *Session) IsClosed() bool {
 	}
 }
 
-// MainFrame switch context to main frame
+// MainFrame switch context to main frame of page
 func (session *Session) MainFrame() error {
 	return session.createIsolatedWorld(session.targetID)
 }
@@ -256,8 +256,9 @@ func (session *Session) SubscribeOnWindowOpen() chan string {
 }
 
 // Listen subscribe to listen cdp event with name
-func (session *Session) Listen(name string, cap int64) (chan []byte, func()) {
-	message := make(chan []byte, cap)
+// return channel with incomming events and func to unsubscribe
+func (session *Session) Listen(name string) (chan []byte, func()) {
+	message := make(chan []byte, 1)
 	unsubscribe := session.subscribe(name, func(msg []byte) {
 		message <- msg
 	})

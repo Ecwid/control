@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ecwid/witness/pkg/devtool"
-	"github.com/ecwid/witness/pkg/log"
 )
 
 // Session CDP session
@@ -31,7 +30,7 @@ type Session struct {
 type TickerFunc func() (interface{}, error)
 
 func (session *Session) panic(p interface{}) {
-	log.Print(log.LevelFatal, p)
+	session.client.Logging.Print(LevelFatal, p)
 	panic(p)
 }
 

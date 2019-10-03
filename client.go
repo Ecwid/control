@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ecwid/witness/pkg/devtool"
-	"github.com/ecwid/witness/pkg/log"
 	"github.com/gorilla/websocket"
 )
 
@@ -73,7 +72,7 @@ var dto = &timeouts{
 	WSTimeout:  time.Minute * 1,
 }
 
-// CDP ...
+// CDP chrome devtool protocol client
 type CDP struct {
 	mx          sync.Mutex
 	nextID      int64
@@ -85,6 +84,7 @@ type CDP struct {
 	context     context.Context
 	stats       *stats
 	Timeouts    *timeouts
+	Logging     *wlog
 }
 
 // New create new client to interact with browser by CDP
@@ -102,7 +102,9 @@ func New(cntx context.Context, webSocketURL string) (*CDP, error) {
 		context:     cntx,
 		stats:       new(stats),
 		Timeouts:    dto,
+		Logging:     new(wlog),
 	}
+	c.Logging.Level = LevelProtocolErrors
 	go c.transmitter()
 	go c.receiver()
 	if _, err := c.get(c.sendOverProtocol("", "Target.setDiscoverTargets", Map{"discover": true})); err != nil {
@@ -122,7 +124,7 @@ func (c *CDP) get(ch chan rpcResponse) (rpcResponse, error) {
 	}
 }
 
-// DefaultPage ...
+// DefaultPage attach to default welcome page that opened after chrome start
 func (c *CDP) DefaultPage() (*Session, error) {
 	tick := time.NewTicker(time.Millisecond * 250)
 	implicitly := time.NewTimer(time.Second * 10)
@@ -190,8 +192,8 @@ func (c *CDP) sendOverProtocol(sessionID string, method string, params interface
 func (c *CDP) Close() {
 	<-c.sendOverProtocol("", "Browser.close", Map{})
 	close(c.close)
-	log.Printf(log.LevelFatal, "messages sent: %d", c.stats.messages)
-	log.Printf(log.LevelFatal, "events received: %d", c.stats.events)
+	c.Logging.Printf(LevelFatal, "messages sent: %d", c.stats.messages)
+	c.Logging.Printf(LevelFatal, "events received: %d", c.stats.events)
 }
 
 func tostring(i interface{}) string {
@@ -203,13 +205,13 @@ func (c *CDP) transmitter() {
 	for {
 		select {
 		case req := <-c.chanSend:
-			log.Printf(log.LevelProtocolMessage, "\033[1;36msend -> %s\033[0m", tostring(req))
+			c.Logging.Printf(LevelProtocolMessage, "\033[1;36msend -> %s\033[0m", tostring(req))
 			if err := c.conn.WriteJSON(req); err != nil {
-				log.Print(log.LevelFatal, err)
+				c.Logging.Print(LevelFatal, err)
 				break
 			}
 		case <-c.context.Done():
-			log.Print(log.LevelFatal, c.context.Err())
+			c.Logging.Print(LevelFatal, c.context.Err())
 			close(c.close)
 		case <-c.close:
 			return
@@ -219,7 +221,7 @@ func (c *CDP) transmitter() {
 
 func (c *CDP) incoming(message rpcRecv) {
 	if message.isEvent() {
-		log.Printf(log.LevelProtocolEvents, "\033[1;30mevent <- %s\033[0m", tostring(message.rpcEvent))
+		c.Logging.Printf(LevelProtocolEvents, "\033[1;30mevent <- %s\033[0m", tostring(message.rpcEvent))
 		c.stats.events++
 		if message.SessionID != "" {
 			c.sessions[message.SessionID].incomingEvent <- message.rpcEvent
@@ -231,9 +233,9 @@ func (c *CDP) incoming(message rpcRecv) {
 	} else {
 		c.stats.messages++
 		if message.isError() {
-			log.Printf(log.LevelProtocolErrors, "\033[1;31mrecv <- %s\033[0m", tostring(message.rpcResponse.Error))
+			c.Logging.Printf(LevelProtocolErrors, "\033[1;31mrecv <- %s\033[0m", tostring(message.rpcResponse.Error))
 		} else {
-			log.Printf(log.LevelProtocolMessage, "\033[1;34mrecv <- %s\033[0m", tostring(message.rpcResponse))
+			c.Logging.Printf(LevelProtocolMessage, "\033[1;34mrecv <- %s\033[0m", tostring(message.rpcResponse))
 		}
 		if recv, ok := c.chanReceive[message.ID]; ok {
 			recv <- message.rpcResponse
@@ -255,7 +257,7 @@ func (c *CDP) receiver() {
 		default:
 			message = rpcRecv{}
 			if err = c.conn.ReadJSON(&message); err != nil {
-				log.Print(log.LevelFatal, err)
+				c.Logging.Print(LevelFatal, err)
 				return
 			}
 			c.incoming(message)
