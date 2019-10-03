@@ -54,8 +54,10 @@ func (r rpcResponse) isError() bool {
 }
 
 type stats struct {
-	messages int64
-	events   int64
+	Messages int
+	Events   int
+	Sent     int
+	Recv     int
 }
 
 type timeouts struct {
@@ -77,12 +79,12 @@ type CDP struct {
 	mx          sync.Mutex
 	nextID      int64
 	conn        *websocket.Conn
-	chanSend    chan rpcMessage
-	chanReceive map[int64]chan rpcResponse
+	chanSend    chan []byte
+	chanReceive map[int64]chan *rpcResponse
 	close       chan bool
 	sessions    map[string]*Session
 	context     context.Context
-	stats       *stats
+	Stats       *stats
 	Timeouts    *timeouts
 	Logging     *wlog
 }
@@ -95,12 +97,12 @@ func New(cntx context.Context, webSocketURL string) (*CDP, error) {
 	}
 	c := &CDP{
 		conn:        conn,
-		chanSend:    make(chan rpcMessage),            /* channel for message sending */
-		chanReceive: make(map[int64]chan rpcResponse), /* channel for receive message response */
+		chanSend:    make(chan []byte),                 /* channel for message sending */
+		chanReceive: make(map[int64]chan *rpcResponse), /* channel for receive message response */
 		sessions:    make(map[string]*Session),
 		close:       make(chan bool),
 		context:     cntx,
-		stats:       new(stats),
+		Stats:       new(stats),
 		Timeouts:    dto,
 		Logging:     new(wlog),
 	}
@@ -113,14 +115,14 @@ func New(cntx context.Context, webSocketURL string) (*CDP, error) {
 	return c, nil
 }
 
-func (c *CDP) get(ch chan rpcResponse) (rpcResponse, error) {
+func (c *CDP) get(ch chan *rpcResponse) (*rpcResponse, error) {
 	select {
 	case message := <-ch:
 		return message, nil
 	case <-c.context.Done():
-		return rpcResponse{}, c.context.Err()
+		return nil, c.context.Err()
 	case <-time.After(c.Timeouts.WSTimeout):
-		return rpcResponse{}, ErrDevtoolTimeout
+		return nil, ErrDevtoolTimeout
 	}
 }
 
@@ -174,17 +176,22 @@ func (c *CDP) addSession(session *Session) {
 }
 
 // SendOverProtocol send a message through cdp protocol
-func (c *CDP) sendOverProtocol(sessionID string, method string, params interface{}) chan rpcResponse {
+func (c *CDP) sendOverProtocol(sessionID string, method string, params interface{}) chan *rpcResponse {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 	c.nextID++
-	c.chanReceive[c.nextID] = make(chan rpcResponse, 1)
-	c.chanSend <- rpcMessage{
+	c.chanReceive[c.nextID] = make(chan *rpcResponse, 1)
+	message := &rpcMessage{
 		ID:        c.nextID,
 		SessionID: sessionID,
 		Method:    method,
 		Params:    params,
 	}
+	buf, err := json.Marshal(message)
+	if err != nil {
+		c.Logging.Print(LevelFatal, err)
+	}
+	c.chanSend <- buf
 	return c.chanReceive[c.nextID]
 }
 
@@ -192,21 +199,15 @@ func (c *CDP) sendOverProtocol(sessionID string, method string, params interface
 func (c *CDP) Close() {
 	<-c.sendOverProtocol("", "Browser.close", Map{})
 	close(c.close)
-	c.Logging.Printf(LevelFatal, "messages sent: %d", c.stats.messages)
-	c.Logging.Printf(LevelFatal, "events received: %d", c.stats.events)
-}
-
-func tostring(i interface{}) string {
-	b, _ := json.Marshal(i)
-	return string(b)
 }
 
 func (c *CDP) transmitter() {
 	for {
 		select {
 		case req := <-c.chanSend:
-			c.Logging.Printf(LevelProtocolMessage, "\033[1;36msend -> %s\033[0m", tostring(req))
-			if err := c.conn.WriteJSON(req); err != nil {
+			c.Stats.Sent += len(req)
+			c.Logging.Printf(LevelProtocolMessage, "\033[1;36msend -> %s\033[0m", string(req))
+			if err := c.conn.WriteMessage(websocket.TextMessage, req); err != nil {
 				c.Logging.Print(LevelFatal, err)
 				break
 			}
@@ -219,26 +220,31 @@ func (c *CDP) transmitter() {
 	}
 }
 
-func (c *CDP) incoming(message rpcRecv) {
+func (c *CDP) incoming(recv []byte) {
+	message := new(rpcRecv)
+	if err := json.Unmarshal(recv, message); err != nil {
+		c.Logging.Print(LevelFatal, err)
+		return
+	}
 	if message.isEvent() {
-		c.Logging.Printf(LevelProtocolEvents, "\033[1;30mevent <- %s\033[0m", tostring(message.rpcEvent))
-		c.stats.events++
+		c.Logging.Printf(LevelProtocolEvents, "\033[1;30mevent <- %s\033[0m", string(recv))
+		c.Stats.Events++
 		if message.SessionID != "" {
-			c.sessions[message.SessionID].incomingEvent <- message.rpcEvent
+			c.sessions[message.SessionID].incomingEvent <- &message.rpcEvent
 		} else {
 			for _, e := range c.sessions {
-				e.incomingEvent <- message.rpcEvent
+				e.incomingEvent <- &message.rpcEvent
 			}
 		}
 	} else {
-		c.stats.messages++
+		c.Stats.Messages++
 		if message.isError() {
-			c.Logging.Printf(LevelProtocolErrors, "\033[1;31mrecv <- %s\033[0m", tostring(message.rpcResponse.Error))
+			c.Logging.Printf(LevelProtocolErrors, "\033[1;31mrecv <- %s\033[0m", string(recv))
 		} else {
-			c.Logging.Printf(LevelProtocolMessage, "\033[1;34mrecv <- %s\033[0m", tostring(message.rpcResponse))
+			c.Logging.Printf(LevelProtocolMessage, "\033[1;34mrecv <- %s\033[0m", string(recv))
 		}
 		if recv, ok := c.chanReceive[message.ID]; ok {
-			recv <- message.rpcResponse
+			recv <- &message.rpcResponse
 			c.mx.Lock()
 			delete(c.chanReceive, message.ID)
 			c.mx.Unlock()
@@ -248,19 +254,20 @@ func (c *CDP) incoming(message rpcRecv) {
 
 func (c *CDP) receiver() {
 	defer c.conn.Close()
-	var message rpcRecv
 	var err error
+	var recv []byte
 	for {
 		select {
 		case <-c.close:
 			return
 		default:
-			message = rpcRecv{}
-			if err = c.conn.ReadJSON(&message); err != nil {
+			_, recv, err = c.conn.ReadMessage()
+			if err != nil {
 				c.Logging.Print(LevelFatal, err)
 				return
 			}
-			c.incoming(message)
+			c.Stats.Recv += len(recv)
+			c.incoming(recv)
 		}
 	}
 }

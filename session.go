@@ -19,7 +19,7 @@ type Session struct {
 	targetID      string
 	contextID     int64
 	frameID       string
-	incomingEvent chan rpcEvent
+	incomingEvent chan *rpcEvent
 	callbacks     map[string]*list.List
 	closed        chan bool
 	context       context.Context
@@ -38,7 +38,7 @@ func (session *Session) panic(p interface{}) {
 func (c *CDP) newSession(targetID string) (*Session, error) {
 	session := &Session{
 		client:        c,
-		incomingEvent: make(chan rpcEvent, 1),
+		incomingEvent: make(chan *rpcEvent, 1),
 		callbacks:     make(map[string]*list.List),
 		closed:        make(chan bool, 1),
 		targetID:      targetID,
