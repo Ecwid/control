@@ -324,10 +324,7 @@ func (e *element) Clear() error {
 	if err = e.Focus(); err != nil {
 		return err
 	}
-	if _, err = e.call(atom.ClearInput); err != nil {
-		return err
-	}
-	_, err = e.call(atom.DispatchEvents, []string{"keydown", "keypress", "input", "keyup", "change"})
+	_, err = e.call(atom.ClearInput)
 	return err
 }
 
