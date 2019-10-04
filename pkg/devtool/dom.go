@@ -40,6 +40,11 @@ type Node struct {
 	IsSVG            bool     `json:"isSVG"`
 }
 
+// EventListeners https://chromedevtools.github.io/devtools-protocol/tot/DOMDebugger#type-EventListener
+type EventListeners struct {
+	Listeners []*EventListener `json:"listeners"`
+}
+
 // EventListener https://chromedevtools.github.io/devtools-protocol/tot/DOMDebugger#type-EventListener
 type EventListener struct {
 	Type            string        `json:"type"`

@@ -477,12 +477,12 @@ func (e *element) GetEventListeners() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	events := []devtool.EventListener{}
-	if err = msg.Unmarshal(&events); err != nil {
+	events := new(devtool.EventListeners)
+	if err = msg.Unmarshal(events); err != nil {
 		return nil, err
 	}
-	types := make([]string, len(events))
-	for n, e := range events {
+	types := make([]string, len(events.Listeners))
+	for n, e := range events.Listeners {
 		types[n] = e.Type
 	}
 	return types, nil
