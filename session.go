@@ -245,6 +245,14 @@ func (session *Session) getContentQuads(backendNodeID int64, objectID string, vi
 		return nil, err
 	}
 	for _, quad := range calc {
+		/* correction is get sub-quad of element that in viewport
+		 _______________  <- Viewport top
+		|  1 _______ 2  |
+		|   |visible|   | visible part of element
+		|__4|visible|3__| <- Viewport bottom
+		|   |invisib|   | this invisible part of element omits if viewportCorrection
+		|...............|
+		*/
 		if viewportCorrection {
 			for _, point := range quad {
 				point.X = math.Min(math.Max(point.X, 0), float64(metric.LayoutViewport.ClientWidth))
@@ -255,7 +263,7 @@ func (session *Session) getContentQuads(backendNodeID int64, objectID string, vi
 			return quad, nil
 		}
 	}
-	return nil, ErrElementInvisible
+	return nil, ErrElementIsOutOfViewport
 }
 
 func (session *Session) getLayoutMetrics() (*devtool.LayoutMetrics, error) {

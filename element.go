@@ -284,7 +284,7 @@ func (e *element) SwitchToFrame() error {
 	return e.session.createIsolatedWorld(node.FrameID)
 }
 
-// IsVisible is element visible
+// IsVisible is element visible (element has area that clickable in viewport)
 func (e *element) IsVisible() (bool, error) {
 	if _, _, err := e.clickablePoint(); err != nil {
 		if err == ErrElementInvisible || err == ErrElementOverlapped {
@@ -300,8 +300,7 @@ func (e *element) Hover() error {
 	if _, err := e.call(atom.ScrollIntoView); err != nil {
 		return err
 	}
-	e.session.dispatchMouseEvent(0, 0, dispatchMouseEventMoved, "none")
-	q, err := e.session.getContentQuads(0, e.ID, true)
+	x, y, err := e.clickablePoint()
 	if err != nil {
 		return err
 	}
@@ -309,7 +308,7 @@ func (e *element) Hover() error {
 	if _, err = e.call(atom.AddEventFired, "mouseover"); err != nil {
 		return err
 	}
-	if err = e.session.MouseMove(q.Middle()); err != nil {
+	if err = e.session.MouseMove(x, y); err != nil {
 		return err
 	}
 	// check to mouseover happens
