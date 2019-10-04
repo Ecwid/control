@@ -18,7 +18,7 @@ const (
 	GetComputedStyle = `function(s){return getComputedStyle(this)[s]}`
 	SetAttr          = `function(a,v){this.setAttribute(a,v)}`
 	GetAttr          = `function(a){return this.getAttribute(a)}`
-	IsVisible        = `function(){const b=this.getBoundingClientRect(),c=window.getComputedStyle(this);return c&&"hidden"!==c.visibility&&!!(b.top||b.bottom||b.width||b.height)}`
+	IsFocusable      = `function(){const b=this.getBoundingClientRect(),c=window.getComputedStyle(this);return c&&"hidden"!==c.visibility&&!c.disabled&&!!(b.top||b.bottom||b.width||b.height)}`
 	Query            = `function(s){return this.querySelector(s)}`
 	QueryAll         = `function(s){return this.querySelectorAll(s)}`
 )

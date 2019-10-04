@@ -322,21 +322,26 @@ func (e *element) Hover() error {
 // Clear ...
 func (e *element) Clear() error {
 	var err error
-	// element needs focus to send keys
 	if err = e.Focus(); err != nil {
 		return err
 	}
-	// clear input before type text
-	_, err = e.call(atom.ClearInput)
+	if _, err = e.call(atom.ClearInput); err != nil {
+		return err
+	}
+	_, err = e.call(atom.DispatchEvents, []string{"keydown", "keypress", "input", "keyup", "change"})
 	return err
 }
 
 // Type ...
 func (e *element) Type(text string, key ...rune) error {
 	var err error
+	if enable, err := e.call(atom.IsFocusable); err != nil || !enable.Bool() {
+		return ErrElementNotFocusable
+	}
 	if err = e.Clear(); err != nil {
 		return err
 	}
+	time.Sleep(time.Millisecond * 200)
 	if _, err := e.call(atom.DispatchEvents, []string{"keydown"}); err != nil {
 		return err
 	}
