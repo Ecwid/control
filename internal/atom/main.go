@@ -19,5 +19,5 @@ const (
 	Query            = `function(s){return this.querySelector(s)}`
 	QueryAll         = `function(s){return this.querySelectorAll(s)}`
 	IsClickHit       = `function(){return this._cc}`
-	PreventMissClick = `function(){this._cc=!1,tt=this,z=function(b){for(var c=b;c;c=c.parentNode)if(c==tt)return!0;return!1},i=function(b){if (z(b.target)) {tt._cc=!0;} else {b.stopPropagation();e.preventDefault()}},document.addEventListener("click",i,{capture:!0,once:!0})}`
+	PreventMissClick = `function(){this._cc=!1,tt=this,z=function(b){for(var c=b;c;c=c.parentNode)if(c==tt)return!0;return!1},i=function(b){if (z(b.target)) {tt._cc=!0;} else {b.stopPropagation();b.preventDefault()}},document.addEventListener("click",i,{capture:!0,once:!0})}`
 )
