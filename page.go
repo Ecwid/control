@@ -263,7 +263,7 @@ func (session *Session) Listen(name string) (chan []byte, func()) {
 		message <- msg
 	})
 	return message, func() {
-		close(message)
 		unsubscribe()
+		close(message)
 	}
 }
