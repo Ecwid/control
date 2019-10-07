@@ -14,7 +14,6 @@ var (
 	ErrElementIsOutOfViewport = errors.New("element is out of viewport")
 	ErrElementNotFocusable    = errors.New("element is not focusable")
 	ErrElementMissClick       = errors.New("miss click - element is overlapping or changing its coordinates")
-	ErrHoverNotTriggered      = errors.New("mouseover not confirmed")
 	ErrInvalidString          = errors.New("object type is not string")
 	ErrInvalidElementFrame    = errors.New("specified element is not a IFRAME")
 	ErrInvalidElementSelect   = errors.New("specified element is not a SELECT")

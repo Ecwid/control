@@ -281,18 +281,10 @@ func (e *element) Hover() error {
 	if err != nil {
 		return err
 	}
-	// add onmouseover event listener on element
-	if _, err = e.call(atom.AddEventFired, "mouseover"); err != nil {
-		return err
-	}
 	if err = e.session.MouseMove(x, y); err != nil {
 		return err
 	}
-	// check to mouseover happens
-	if triggered, err := e.call(atom.IsEventFired); err == nil && triggered.Bool() {
-		return nil
-	}
-	return ErrHoverNotTriggered
+	return nil
 }
 
 // Clear ...

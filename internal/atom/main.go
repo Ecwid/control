@@ -2,8 +2,6 @@ package atom
 
 // Atom JS functions
 const (
-	AddEventFired    = `function(e){this._g_e=!1,this.addEventListener(e,function(){this._g_e=!0},{capture:!0,once:!0,passive:!0})}`
-	IsEventFired     = `function(){return this._g_e}`
 	ScrollIntoView   = `async function(){return await async function(a){const b=await new Promise(b=>{const c=new IntersectionObserver(a=>{b(a[0].intersectionRatio),c.disconnect()});c.observe(a)});1!==b&&a.scrollIntoView({block:"center",inline:"center",behavior:"instant"})}(this)}`
 	ClearInput       = `function(){"INPUT"===this.nodeName?this.value="":this.innerText=""}`
 	GetInnerText     = `function(){return this.value||this.innerText}`
