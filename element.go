@@ -221,31 +221,6 @@ func (e *element) clickablePoint() (x float64, y float64, err error) {
 		return -1, -1, err
 	}
 	x, y = r.Middle()
-	/*
-		При определении элемента, по которому произойдет клик по координатам x, y, необходимо учесть случай,
-		когда клик происходит во фрейме. Во фрейме метод elementFromPoint(x, y) работает относительно координат самого фрейма,
-		а не абсолютных координат viewport браузера. Здесь мы вычисляем координаты фрейма и вычитаем их
-		из значений x, y для теста клика.
-	*/
-	cX, cY := x, y
-	if e.session.frameID != e.session.targetID {
-		frameElement, err := e.session.getFrameOwner(e.session.frameID)
-		if err != nil {
-			return x, y, err
-		}
-		size, err := e.session.getContentQuads(frameElement, "", false)
-		if err != nil {
-			return x, y, err
-		}
-		cX -= size[0].X
-		cY -= size[0].Y
-	}
-	// Выполняет тест клика по координатам cX, cY (координаты относительно текущего фрейма)
-	// Если клик принимает другой элемент, либо элемент не родитель ожидаемого, то выбросим ошибк
-	clickable, err := e.call(atom.IsClickableAt, cX, cY)
-	if err != nil || !clickable.Bool() {
-		return x, y, ErrElementOverlapped
-	}
 	return x, y, nil
 }
 
@@ -254,22 +229,21 @@ func (e *element) Click() error {
 	if _, err := e.call(atom.ScrollIntoView); err != nil {
 		return err
 	}
-	if _, err := e.call(atom.AddEventFired, "click"); err != nil {
-		return err
-	}
-	// calculate click point
 	x, y, err := e.clickablePoint()
 	if err != nil {
+		return err
+	}
+	if _, err := e.call(atom.PreventMissClick); err != nil {
 		return err
 	}
 	e.session.dispatchMouseEvent(x, y, dispatchMouseEventMoved, "none")
 	e.session.dispatchMouseEvent(x, y, dispatchMouseEventPressed, "left")
 	e.session.dispatchMouseEvent(x, y, dispatchMouseEventReleased, "left")
-	triggered, err := e.call(atom.IsEventFired)
-	if (err == nil && triggered.Bool()) || (err == ErrCannotFindContext) {
+	hit, err := e.call(atom.IsClickHit)
+	if (err == nil && hit.Bool()) || (err == ErrCannotFindContext) {
 		return nil
 	}
-	return ErrClickNotTriggered
+	return ErrElementMissClick
 }
 
 // SwitchToFrame switch context to frame
@@ -287,10 +261,13 @@ func (e *element) SwitchToFrame() error {
 // IsVisible is element visible (element has area that clickable in viewport)
 func (e *element) IsVisible() (bool, error) {
 	if _, _, err := e.clickablePoint(); err != nil {
-		if err == ErrElementInvisible || err == ErrElementOverlapped {
+		if err == ErrElementInvisible {
 			return false, nil
 		}
 		return false, err
+	}
+	if vis, err := e.call(atom.IsVisible); err != nil || !vis.Bool() {
+		return false, nil
 	}
 	return true, nil
 }
@@ -331,7 +308,7 @@ func (e *element) Clear() error {
 // Type ...
 func (e *element) Type(text string, key ...rune) error {
 	var err error
-	if enable, err := e.call(atom.IsFocusable); err != nil || !enable.Bool() {
+	if enable, err := e.call(atom.IsVisible); err != nil || !enable.Bool() {
 		return ErrElementNotFocusable
 	}
 	if err = e.Clear(); err != nil {
