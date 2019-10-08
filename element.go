@@ -240,7 +240,9 @@ func (e *element) Click() error {
 	e.session.dispatchMouseEvent(x, y, dispatchMouseEventPressed, "left")
 	e.session.dispatchMouseEvent(x, y, dispatchMouseEventReleased, "left")
 	hit, err := e.call(atom.IsClickHit)
-	if (err == nil && hit.Bool()) || (err == ErrCannotFindContext) {
+	// in case when click is initiate navigation which destroyed context of element (ErrCannotFindContext)
+	// or click may closes a popup (ErrSessionClosed)
+	if (err == nil && hit.Bool()) || err == ErrCannotFindContext || err == ErrSessionClosed {
 		return nil
 	}
 	return ErrElementMissClick
