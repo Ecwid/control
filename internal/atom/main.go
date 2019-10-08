@@ -6,7 +6,7 @@ const (
 	ClearInput       = `function(){"INPUT"===this.nodeName?this.value="":this.innerText=""}`
 	GetInnerText     = `function(){return this.value||this.innerText}`
 	DispatchEvents   = `function(l){for(const e of l)this.dispatchEvent(new Event(e,{'bubbles':!0}))}`
-	Select           = `function(a){const b=Array.from(this.options);this.value=void 0;for(const c of b)if(c.selected=a.includes(c.value),c.selected&&!this.multiple)break;this.dispatchEvent(new Event("input",{bubbles:!0})),this.dispatchEvent(new Event("change",{bubbles:!0}))}`
+	Select           = `function(a){const b=Array.from(this.options);this.value=void 0;for(const c of b)if(c.selected=a.includes(c.value),c.selected&&!this.multiple)break}`
 	GetSelected      = `function(){return Array.from(this.options).filter(a=>a.selected).map(a=>a.value)}`
 	GetSelectedText  = `function(){return Array.from(this.options).filter(a=>a.selected).map(a=>a.innerText)}`
 	SelectHasOptions = `function(c){const a=Array.from(this.options);return c.length==a.filter(a=>c.includes(a.value)).length}`

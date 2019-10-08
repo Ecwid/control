@@ -312,7 +312,7 @@ func (e *element) Type(text string, key ...rune) error {
 	if err = e.Clear(); err != nil {
 		return err
 	}
-	time.Sleep(time.Millisecond * 200)
+	time.Sleep(time.Millisecond * 250)
 	if _, err := e.call(atom.DispatchEvents, []string{"keydown"}); err != nil {
 		return err
 	}
@@ -326,7 +326,7 @@ func (e *element) Type(text string, key ...rune) error {
 	}
 	// send keyboard key after some pause
 	if key != nil {
-		time.Sleep(time.Millisecond * 200)
+		time.Sleep(time.Millisecond * 250)
 		return e.session.SendKeys(key...)
 	}
 	return nil
@@ -416,8 +416,14 @@ func (e *element) Select(values ...string) error {
 	if !has.Bool() {
 		return ErrInvalidElementOption
 	}
-	_, err = e.call(atom.Select, values)
-	return err
+	if _, err = e.call(atom.Select, values); err != nil {
+		return err
+	}
+	time.Sleep(time.Millisecond * 250)
+	if _, err := e.call(atom.DispatchEvents, []string{"input", "change"}); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Checkbox Checkbox
@@ -425,7 +431,7 @@ func (e *element) Checkbox(check bool) error {
 	if _, err := e.call(atom.CheckBox, check); err != nil {
 		return err
 	}
-	time.Sleep(time.Millisecond * 250) // todo
+	time.Sleep(time.Millisecond * 250)
 	if _, err := e.call(atom.DispatchEvents, []string{"click", "change"}); err != nil {
 		return err
 	}
