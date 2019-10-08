@@ -2,6 +2,7 @@ package witness
 
 import (
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/ecwid/witness/internal/atom"
@@ -43,10 +44,6 @@ func (e *element) Release() error {
 	return e.session.releaseObject(e.ID)
 }
 
-func (e *element) detached() bool {
-	return e.ID == ""
-}
-
 // Element ...
 type element struct {
 	session     *Session
@@ -54,6 +51,7 @@ type element struct {
 	description string
 	parent      *element
 	childs      []*element
+	detached    int64
 }
 
 func newElement(s *Session, parent *element, ID string, description string) *element {
@@ -63,6 +61,7 @@ func newElement(s *Session, parent *element, ID string, description string) *ele
 		description: description,
 		parent:      parent,
 		childs:      make([]*element, 0),
+		detached:    0,
 	}
 	if parent != nil {
 		parent.childs = append(parent.childs, e)
@@ -71,23 +70,28 @@ func newElement(s *Session, parent *element, ID string, description string) *ele
 }
 
 func (e *element) detach() {
-	e.ID = ""
+	atomic.StoreInt64(&e.detached, 1)
 	for _, c := range e.childs {
 		c.detach()
 	}
 }
 
+func (e *element) isDetached() bool {
+	return atomic.LoadInt64(&e.detached) == 1
+}
+
 func (e *element) renew() error {
-	if !e.detached() {
+	if !e.isDetached() {
 		return nil
 	}
 	if e.parent == nil {
 		// request a new document
-		new, err := e.session.evaluate("document", e.session.contextID, false)
+		new, err := e.session.evaluate("document", e.session.getContextID(), false)
 		if err != nil {
 			return ErrStaleElementReference
 		}
 		e.ID = new.ObjectID
+		atomic.StoreInt64(&e.detached, 0)
 		return nil
 	}
 	e.session.client.Logging.Printf(LevelFatal, "todo: renew element is not implemented yet")

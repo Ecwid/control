@@ -73,41 +73,58 @@ func (session *Session) switchTarget() error {
 	return session.createIsolatedWorld(session.targetID)
 }
 
+func (session *Session) lock(fn func()) {
+	session.rw.Lock()
+	defer session.rw.Unlock()
+	fn()
+}
+
+func (session *Session) getContextID() int64 {
+	session.rw.RLock()
+	defer session.rw.RUnlock()
+	return session.contextID
+}
+
 func (session *Session) listener() {
 	for e := range session.incomingEvent {
-		session.rw.RLock()
-		lst, has := session.callbacks[e.Method]
-		session.rw.RUnlock()
-		if has {
-			for p := lst.Front(); p != nil; p = p.Next() {
-				go p.Value.(func([]byte))(e.Params)
+		session.lock(func() {
+			lst, has := session.callbacks[e.Method]
+			if has {
+				for p := lst.Front(); p != nil; p = p.Next() {
+					go p.Value.(func([]byte))(e.Params)
+				}
 			}
-		}
+		})
 
 		switch e.Method {
 		case "Runtime.executionContextsCleared":
-			session.contextID = 0
-			session.document.detach()
+			session.lock(func() {
+				session.contextID = 0
+				session.document.detach()
+			})
 
 		case "Runtime.executionContextCreated":
 			ecc := new(devtool.ExecutionContextCreated)
 			if err := e.Params.Unmarshal(ecc); err != nil {
 				session.panic(err)
 			}
-			if session.frameID == ecc.Context.AuxData["frameId"].(string) {
-				session.contextID = ecc.Context.ID
-				// session.document.renew()
-			}
+			session.lock(func() {
+				if session.frameID == ecc.Context.AuxData["frameId"].(string) {
+					session.contextID = ecc.Context.ID
+				}
+			})
 
 		case "Runtime.executionContextDestroyed":
 			ecd := new(devtool.ExecutionContextDestroyed)
 			if err := e.Params.Unmarshal(ecd); err != nil {
 				session.panic(err)
 			}
-			if session.contextID == ecd.ExecutionContextID {
-				session.contextID = 0
-				session.document.detach()
-			}
+			session.lock(func() {
+				if session.contextID == ecd.ExecutionContextID {
+					session.contextID = 0
+					session.document.detach()
+				}
+			})
 
 		case "Target.targetCrashed":
 			targetCrashed := new(devtool.TargetCrashed)
@@ -146,7 +163,6 @@ func (session *Session) blockingSend(method string, send interface{}) (bytes, er
 }
 
 func (session *Session) createIsolatedWorld(frameID string) error {
-	session.frameID = frameID
 	var err error
 	msg, err := session.blockingSend("Page.createIsolatedWorld", Map{
 		"frameId":             frameID,
@@ -156,8 +172,11 @@ func (session *Session) createIsolatedWorld(frameID string) error {
 	if err != nil {
 		return err
 	}
-	session.contextID = msg.json().Int("executionContextId")
-	session.document.detach()
+	session.lock(func() {
+		session.frameID = frameID
+		session.contextID = msg.json().Int("executionContextId")
+		session.document.detach()
+	})
 	return nil
 }
 
@@ -200,16 +219,15 @@ func (session *Session) getNavigationHistory() (*devtool.NavigationHistory, erro
 // Subscribe subscribe to CDP event
 func (session *Session) subscribe(method string, callback func(params []byte)) (unsubscribe func()) {
 	session.rw.Lock()
+	defer session.rw.Unlock()
 	if _, has := session.callbacks[method]; !has {
 		session.callbacks[method] = list.New()
 	}
 	p := session.callbacks[method].PushBack(callback)
-	session.rw.Unlock()
-
 	return func() {
-		session.rw.Lock()
-		session.callbacks[method].Remove(p)
-		session.rw.Unlock()
+		session.lock(func() {
+			session.callbacks[method].Remove(p)
+		})
 	}
 }
 

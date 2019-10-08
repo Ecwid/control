@@ -259,11 +259,16 @@ func (session *Session) SubscribeOnWindowOpen() chan string {
 // return channel with incomming events and func to unsubscribe
 func (session *Session) Listen(name string) (chan []byte, func()) {
 	message := make(chan []byte, 1)
+	exit := make(chan struct{})
 	unsubscribe := session.subscribe(name, func(msg []byte) {
-		message <- msg
+		select {
+		case message <- msg:
+		case <-exit:
+			close(message)
+		}
 	})
 	return message, func() {
 		unsubscribe()
-		close(message)
+		close(exit)
 	}
 }
