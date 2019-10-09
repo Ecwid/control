@@ -36,6 +36,7 @@ type Element interface {
 	IsChecked() (bool, error)
 	GetEventListeners() ([]string, error)
 
+	ObserveMutation(attributes, childList, subtree bool) (chan string, chan error)
 	Release() error
 }
 
@@ -403,6 +404,24 @@ func (e *element) GetSelected(selectedText bool) ([]string, error) {
 	return options, nil
 }
 
+// ObserveMutation create MutationObserver Promise for element, returns type of first mutation
+func (e *element) ObserveMutation(attributes, childList, subtree bool) (chan string, chan error) {
+	chanerr := make(chan error, 1)
+	mutation := make(chan string, 1)
+	go func() {
+		val, err := e.call(atom.MutationObserver, attributes, childList, subtree)
+		if err != nil {
+			chanerr <- err
+			return
+		}
+		if val.Type != "string" {
+			chanerr <- ErrInvalidString
+		}
+		mutation <- val.Value.(string)
+	}()
+	return mutation, chanerr
+}
+
 // Select ...
 func (e *element) Select(values ...string) error {
 	node, err := e.getNode()
@@ -415,6 +434,9 @@ func (e *element) Select(values ...string) error {
 	has, err := e.call(atom.SelectHasOptions, values)
 	if !has.Bool() {
 		return ErrInvalidElementOption
+	}
+	if _, err := e.call(atom.ScrollIntoView); err != nil {
+		return err
 	}
 	if _, err = e.call(atom.Select, values); err != nil {
 		return err
