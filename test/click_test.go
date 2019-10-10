@@ -1,9 +1,6 @@
 package test
 
 import (
-	"fmt"
-	"path/filepath"
-	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -12,27 +9,27 @@ import (
 	"github.com/ecwid/witness/pkg/chrome"
 )
 
-func htmlPath(name string) string {
-	_, b, _, _ := runtime.Caller(0)
-	dir := filepath.Dir(b)
-	return fmt.Sprintf("file://%s/testdata/%s", dir, name)
-}
-
 func TestClickHit(t *testing.T) {
+	t.Parallel()
+
 	var expectedRate int64 = 60 // 60% click hit
 
 	chrome, err := chrome.New()
-	if err != nil {
-		t.Fatal(err)
-	}
+	check(t, err)
 	defer chrome.Close()
 	page, err := chrome.CDP.DefaultPage()
-	if err != nil {
-		t.Fatal(err)
-	}
-	page.Navigate(htmlPath("click_playground.html"))
 
-	target := page.Doc().Expect("#target", false)
+	get := func(sel string) witness.Element {
+		t.Helper()
+		el, err := page.Doc().Seek(sel)
+		check(t, err)
+		return el
+	}
+
+	check(t, err)
+	check(t, page.Navigate(getFilepath("click_playground.html")))
+
+	target := get("#target")
 
 	var pass int64
 	var miss int64
@@ -50,13 +47,11 @@ func TestClickHit(t *testing.T) {
 	}
 
 	clickedText, err := target.GetText()
-	if err != nil {
-		t.Fatal(err)
-	}
+	check(t, err)
+
 	clicked, err := strconv.ParseInt(clickedText, 10, 64)
-	if err != nil {
-		t.Fatal(err)
-	}
+	check(t, err)
+
 	rate := (100 * pass) / (miss + pass)
 	t.Logf("pass = %d, miss = %d, rate = %d", pass, miss, rate)
 	if rate <= expectedRate {

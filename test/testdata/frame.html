@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+</head>
+
+<body>
+    <div id="content"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                document.getElementById("content").innerHTML = "<div>In Frame Content Displayed in 3 Seconds</div>"
+            }, 3000);
+        })
+    </script>
+    <input id="frameInput1" />
+    <button id="frameButton1">Hello</button>
+    <button id="refresh" onclick='document.location.reload();'>
+        Refresh frame
+    </button>
+</body>
+
+</html>
