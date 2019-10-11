@@ -56,7 +56,6 @@ type Element interface {
 	SetAttr(string, string) error
 	Call(string, ...interface{}) (interface{}, error)
 	Focus() error
-	SwitchToFrame() error
 
 	IsVisible() (bool, error)
 	GetText() (string, error)
@@ -66,6 +65,7 @@ type Element interface {
 	GetSelected(bool) ([]string, error)
 	IsChecked() (bool, error)
 	GetEventListeners() ([]string, error)
+	GetFrameID() (string, error)
 
 	Release() error
 }
@@ -82,6 +82,7 @@ type Page interface {
 	Close() error
 	IsClosed() bool
 	MainFrame() error
+	SwitchToFrame(string) error
 	Listen(string) (chan []byte, func())
 	ID() string
 

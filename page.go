@@ -19,6 +19,7 @@ type Page interface {
 	Close() error
 	IsClosed() bool
 	MainFrame() error
+	SwitchToFrame(string) error
 	Listen(string) (chan []byte, func())
 	ID() string
 
@@ -211,6 +212,11 @@ func (session *Session) IsClosed() bool {
 // MainFrame switch context to main frame of page
 func (session *Session) MainFrame() error {
 	return session.createIsolatedWorld(session.targetID)
+}
+
+// SwitchToFrame switch context to frame
+func (session *Session) SwitchToFrame(frameID string) error {
+	return session.createIsolatedWorld(frameID)
 }
 
 // AddScriptToEvaluateOnNewDocument https://chromedevtools.github.io/devtools-protocol/tot/Page#method-addScriptToEvaluateOnNewDocument

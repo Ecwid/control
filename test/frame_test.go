@@ -25,7 +25,9 @@ func TestInFrameRefresh(t *testing.T) {
 	}
 
 	check(t, page.Navigate(getFilepath("frame_playground.html")))
-	check(t, get("#my_frame").SwitchToFrame())
+	fid, err := get("#my_frame").GetFrameID()
+	check(t, err)
+	check(t, page.SwitchToFrame(fid))
 	check(t, get("#frameInput1").Type("123456"))
 	check(t, get("#refresh").Click())
 	time.Sleep(time.Second * 2)

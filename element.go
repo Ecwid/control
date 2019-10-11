@@ -25,7 +25,6 @@ type Element interface {
 	SetAttr(string, string) error
 	Call(string, ...interface{}) (interface{}, error)
 	Focus() error
-	SwitchToFrame() error
 
 	IsVisible() (bool, error)
 	GetText() (string, error)
@@ -35,6 +34,7 @@ type Element interface {
 	GetSelected(bool) ([]string, error)
 	IsChecked() (bool, error)
 	GetEventListeners() ([]string, error)
+	GetFrameID() (string, error)
 
 	ObserveMutation(attributes, childList, subtree bool) (chan string, chan error)
 	Release() error
@@ -253,16 +253,16 @@ func (e *element) Click() error {
 	return ErrElementMissClick
 }
 
-// SwitchToFrame switch context to frame
-func (e *element) SwitchToFrame() error {
+// GetFrameID get if for IFRAME element
+func (e *element) GetFrameID() (string, error) {
 	node, err := e.getNode()
 	if err != nil {
-		return err
+		return "", err
 	}
 	if "IFRAME" != node.NodeName {
-		return ErrInvalidElementFrame
+		return "", ErrInvalidElementFrame
 	}
-	return e.session.createIsolatedWorld(node.FrameID)
+	return node.FrameID, nil
 }
 
 // IsVisible is element visible (element has area that clickable in viewport)
