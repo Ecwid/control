@@ -1,5 +1,22 @@
 package devtool
 
+// LifecycleEventType type of LifecycleEvent
+type LifecycleEventType string
+
+// LifecycleEventType
+const (
+	DOMContentLoaded              LifecycleEventType = "DOMContentLoaded"
+	FirstContentfulPaint          LifecycleEventType = "firstContentfulPaint"
+	FirstMeaningfulPaint          LifecycleEventType = "firstMeaningfulPaint"
+	FirstMeaningfulPaintCandidate LifecycleEventType = "firstMeaningfulPaintCandidate"
+	FirstPaint                    LifecycleEventType = "firstPaint"
+	FirstTextPaint                LifecycleEventType = "firstTextPaint"
+	Init                          LifecycleEventType = "init"
+	Load                          LifecycleEventType = "load"
+	NetworkAlmostIdle             LifecycleEventType = "networkAlmostIdle"
+	NetworkIdle                   LifecycleEventType = "networkIdle"
+)
+
 // NavigationResult https://chromedevtools.github.io/devtools-protocol/tot/Page#method-navigate
 type NavigationResult struct {
 	FrameID   string `json:"frameId"`
@@ -56,4 +73,12 @@ type LayoutMetrics struct {
 type NavigationHistory struct {
 	CurrentIndex int64              `json:"currentIndex"`
 	Entries      []*NavigationEntry `json:"entries"`
+}
+
+// LifecycleEvent https://chromedevtools.github.io/devtools-protocol/tot/Page#event-lifecycleEvent
+type LifecycleEvent struct {
+	FrameID   string  `json:"frameId"`
+	LoaderID  string  `json:"loaderId"`
+	Name      string  `json:"name"`
+	Timestamp float64 `json:"timestamp"`
 }
