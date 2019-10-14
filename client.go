@@ -165,8 +165,8 @@ func (c *CDP) getTargets() ([]*devtool.TargetInfo, error) {
 
 func (c *CDP) deleteSession(sessionID string) {
 	c.mx.Lock()
+	defer c.mx.Unlock()
 	delete(c.sessions, sessionID)
-	c.mx.Unlock()
 }
 
 func (c *CDP) addSession(session *Session) {
@@ -229,6 +229,7 @@ func (c *CDP) incoming(recv []byte) {
 	if message.isEvent() {
 		c.Logging.Printf(LevelProtocolEvents, "\033[1;30mevent <- %s\033[0m", string(recv))
 		c.Stats.Events++
+		c.mx.Lock()
 		if message.SessionID != "" {
 			c.sessions[message.SessionID].incomingEvent <- &message.rpcEvent
 		} else {
@@ -236,6 +237,7 @@ func (c *CDP) incoming(recv []byte) {
 				e.incomingEvent <- &message.rpcEvent
 			}
 		}
+		c.mx.Unlock()
 	} else {
 		c.Stats.Messages++
 		if message.isError() {
