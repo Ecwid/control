@@ -67,7 +67,7 @@ func (session *Session) Close() error {
 // Navigate navigate to url
 func (session *Session) Navigate(urlStr string) error {
 	eventFired := make(chan bool, 1)
-	unsubscribe := session.subscribe("Page.domContentEventFired", func([]byte) {
+	unsubscribe := session.subscribe("Page.loadEventFired", func([]byte) {
 		eventFired <- true
 	})
 	defer unsubscribe()
@@ -100,7 +100,7 @@ func (session *Session) Navigate(urlStr string) error {
 // Reload refresh current page ignores cache
 func (session *Session) Reload() error {
 	eventFired := make(chan bool, 1)
-	unsubscribe := session.subscribe("Page.domContentEventFired", func([]byte) {
+	unsubscribe := session.subscribe("Page.loadEventFired", func([]byte) {
 		eventFired <- true
 	})
 	defer unsubscribe()
