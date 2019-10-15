@@ -18,7 +18,6 @@ var (
 	ErrInvalidElementFrame    = errors.New("specified element is not a IFRAME")
 	ErrInvalidElementSelect   = errors.New("specified element is not a SELECT")
 	ErrInvalidElementOption   = errors.New("specified element has no options")
-	ErrCannotFindContext      = errors.New("cannot find context with specified id")
 )
 
 // v8 inspector devtool errors
@@ -34,7 +33,7 @@ const (
 func (e rpcError) known() error {
 	switch e.Message {
 	case "Cannot find context with specified id":
-		return ErrCannotFindContext
+		return ErrStaleElementReference
 	case "Could not compute content quads.":
 		return ErrElementInvisible
 	case "Element is not focusable":

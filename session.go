@@ -13,7 +13,6 @@ import (
 
 // Session CDP session
 type Session struct {
-	rw            sync.RWMutex
 	client        *CDP
 	id            string
 	targetID      string
@@ -24,6 +23,8 @@ type Session struct {
 	closed        chan bool
 	context       context.Context
 	document      *element
+	mxContext     sync.Mutex
+	mxCall        sync.Mutex
 }
 
 // TickerFunc ...
@@ -44,11 +45,7 @@ func (c *CDP) newSession(targetID string) (*Session, error) {
 		targetID:      targetID,
 		frameID:       targetID,
 	}
-	session.document = &element{
-		ID:          "",
-		session:     session,
-		description: "document",
-	}
+	session.document = newElement(session, nil, "", "document")
 	go session.listener()
 	return session, session.switchTarget()
 }
@@ -73,34 +70,34 @@ func (session *Session) switchTarget() error {
 	return session.createIsolatedWorld(session.targetID)
 }
 
-func (session *Session) lock(fn func()) {
-	session.rw.Lock()
-	defer session.rw.Unlock()
+func (session *Session) lockContext(fn func()) {
+	session.mxContext.Lock()
+	defer session.mxContext.Unlock()
 	fn()
 }
 
 func (session *Session) getContextID() int64 {
-	session.rw.RLock()
-	defer session.rw.RUnlock()
+	session.mxContext.Lock()
+	defer session.mxContext.Unlock()
 	return session.contextID
 }
 
 func (session *Session) listener() {
 	for e := range session.incomingEvent {
-		session.lock(func() {
-			lst, has := session.callbacks[e.Method]
-			if has {
-				for p := lst.Front(); p != nil; p = p.Next() {
-					go p.Value.(func([]byte))(e.Params)
-				}
+
+		session.mxCall.Lock()
+		lst, has := session.callbacks[e.Method]
+		if has {
+			for p := lst.Front(); p != nil; p = p.Next() {
+				go p.Value.(func([]byte))(e.Params)
 			}
-		})
+		}
+		session.mxCall.Unlock()
 
 		switch e.Method {
 		case "Runtime.executionContextsCleared":
-			session.lock(func() {
+			session.lockContext(func() {
 				session.contextID = 0
-				session.document.detach()
 			})
 
 		case "Runtime.executionContextCreated":
@@ -108,8 +105,9 @@ func (session *Session) listener() {
 			if err := e.Params.Unmarshal(ecc); err != nil {
 				session.panic(err)
 			}
-			session.lock(func() {
-				if session.frameID == ecc.Context.AuxData["frameId"].(string) {
+			session.lockContext(func() {
+				frameID := ecc.Context.AuxData["frameId"].(string)
+				if session.frameID == frameID {
 					session.contextID = ecc.Context.ID
 				}
 			})
@@ -119,10 +117,9 @@ func (session *Session) listener() {
 			if err := e.Params.Unmarshal(ecd); err != nil {
 				session.panic(err)
 			}
-			session.lock(func() {
+			session.lockContext(func() {
 				if session.contextID == ecd.ExecutionContextID {
 					session.contextID = 0
-					session.document.detach()
 				}
 			})
 
@@ -172,10 +169,9 @@ func (session *Session) createIsolatedWorld(frameID string) error {
 	if err != nil {
 		return err
 	}
-	session.lock(func() {
+	session.lockContext(func() {
 		session.frameID = frameID
 		session.contextID = msg.json().Int("executionContextId")
-		session.document.detach()
 	})
 	return nil
 }
@@ -218,16 +214,16 @@ func (session *Session) getNavigationHistory() (*devtool.NavigationHistory, erro
 
 // Subscribe subscribe to CDP event
 func (session *Session) subscribe(method string, callback func(params []byte)) (unsubscribe func()) {
-	session.rw.Lock()
-	defer session.rw.Unlock()
+	session.mxCall.Lock()
+	defer session.mxCall.Unlock()
 	if _, has := session.callbacks[method]; !has {
 		session.callbacks[method] = list.New()
 	}
 	p := session.callbacks[method].PushBack(callback)
 	return func() {
-		session.lock(func() {
-			session.callbacks[method].Remove(p)
-		})
+		session.mxCall.Lock()
+		defer session.mxCall.Unlock()
+		session.callbacks[method].Remove(p)
 	}
 }
 

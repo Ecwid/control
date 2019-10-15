@@ -28,8 +28,9 @@ func TestInFrameRefresh(t *testing.T) {
 	fid, err := get("#my_frame").GetFrameID()
 	check(t, err)
 	check(t, page.SwitchToFrame(fid))
-	check(t, get("#frameInput1").Type("123456"))
+	finp := get("#frameInput1")
+	check(t, finp.Type("123456"))
 	check(t, get("#refresh").Click())
 	time.Sleep(time.Second * 2)
-	check(t, get("#frameInput1").Type("654321"))
+	check(t, finp.Type("654321"))
 }

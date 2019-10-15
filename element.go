@@ -2,7 +2,6 @@ package witness
 
 import (
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/ecwid/witness/internal/atom"
@@ -41,7 +40,6 @@ type Element interface {
 }
 
 func (e *element) Release() error {
-	defer e.detach()
 	return e.session.releaseObject(e.ID)
 }
 
@@ -52,7 +50,7 @@ type element struct {
 	description string
 	parent      *element
 	childs      []*element
-	detached    int64
+	context     int64
 }
 
 func newElement(s *Session, parent *element, ID string, description string) *element {
@@ -62,7 +60,7 @@ func newElement(s *Session, parent *element, ID string, description string) *ele
 		description: description,
 		parent:      parent,
 		childs:      make([]*element, 0),
-		detached:    0,
+		context:     s.getContextID(),
 	}
 	if parent != nil {
 		parent.childs = append(parent.childs, e)
@@ -70,37 +68,42 @@ func newElement(s *Session, parent *element, ID string, description string) *ele
 	return e
 }
 
-func (e *element) detach() {
-	atomic.StoreInt64(&e.detached, 1)
-	for _, c := range e.childs {
-		c.detach()
-	}
-}
-
 func (e *element) isDetached() bool {
-	return atomic.LoadInt64(&e.detached) == 1
+	return e.context != e.session.getContextID()
 }
 
 func (e *element) renew() error {
 	if !e.isDetached() {
 		return nil
 	}
+	sessContext := e.session.getContextID() // session's context actual at this moment
 	if e.parent == nil {
 		// request a new document
-		new, err := e.session.evaluate("document", e.session.getContextID(), false)
+		new, err := e.session.evaluate("document", sessContext, false)
 		if err != nil {
 			return ErrStaleElementReference
 		}
 		e.ID = new.ObjectID
-		atomic.StoreInt64(&e.detached, 0)
+		e.context = sessContext
 		return nil
 	}
-	e.session.client.Logging.Printf(LevelFatal, "todo: renew element is not implemented yet")
+	// request new element in parent's context by description
+	new, err := e.parent.findElement(e.description)
+	if err != nil {
+		return err
+	}
+	e.ID = new.ObjectID
+	e.description = new.Description
+	e.context = sessContext
 	return nil
 }
 
 func (e *element) Seek(selector string) (Element, error) {
-	return e.findElement(selector)
+	object, err := e.findElement(selector)
+	if err != nil {
+		return nil, err
+	}
+	return newElement(e.session, e, object.ObjectID, object.Description), nil
 }
 
 // Expect searching selector (visible) with implicity wait timeout
@@ -136,9 +139,6 @@ func (e *element) SeekAll(selector string) []Element {
 }
 
 func (e *element) findElements(selector string) ([]Element, error) {
-	if err := e.renew(); err != nil {
-		return nil, err
-	}
 	selector = strings.ReplaceAll(selector, `"`, `\"`)
 	ro, err := e.call(atom.QueryAll, selector)
 	if err != nil {
@@ -159,10 +159,7 @@ func (e *element) findElements(selector string) ([]Element, error) {
 	return els, nil
 }
 
-func (e *element) findElement(selector string) (Element, error) {
-	if err := e.renew(); err != nil {
-		return nil, err
-	}
+func (e *element) findElement(selector string) (*devtool.RemoteObject, error) {
 	selector = strings.ReplaceAll(selector, `"`, `\"`)
 	element, err := e.call(atom.Query, selector)
 	if err != nil {
@@ -171,7 +168,7 @@ func (e *element) findElement(selector string) (Element, error) {
 	if element.Subtype == "null" {
 		return nil, ErrNoSuchElement
 	}
-	return newElement(e.session, e, element.ObjectID, element.Description), nil
+	return element, nil
 }
 
 func (e *element) getNode() (*devtool.Node, error) {
@@ -245,9 +242,9 @@ func (e *element) Click() error {
 	e.session.dispatchMouseEvent(x, y, dispatchMouseEventPressed, "left")
 	e.session.dispatchMouseEvent(x, y, dispatchMouseEventReleased, "left")
 	hit, err := e.call(atom.IsClickHit)
-	// in case when click is initiate navigation which destroyed context of element (ErrCannotFindContext)
+	// in case when click is initiate navigation which destroyed context of element (ErrStaleElementReference)
 	// or click may closes a popup (ErrSessionClosed)
-	if (err == nil && hit.Bool()) || err == ErrCannotFindContext || err == ErrSessionClosed {
+	if (err == nil && hit.Bool()) || err == ErrStaleElementReference || err == ErrSessionClosed {
 		return nil
 	}
 	return ErrElementMissClick
@@ -308,7 +305,7 @@ func (e *element) Clear() error {
 func (e *element) Type(text string, key ...rune) error {
 	var err error
 	if enable, err := e.call(atom.IsVisible); err != nil || !enable.Bool() {
-		return ErrElementNotFocusable
+		return err
 	}
 	if err = e.Clear(); err != nil {
 		return err
