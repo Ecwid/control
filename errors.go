@@ -6,6 +6,7 @@ import "errors"
 var (
 	ErrStaleElementReference  = errors.New("referenced element is no longer attached to the DOM")
 	ErrNoSuchElement          = errors.New("no such element")
+	ErrNoSuchFrame            = errors.New("no such frame")
 	ErrNoPageTarget           = errors.New("no one page target")
 	ErrDevtoolTimeout         = errors.New("devtool response reached timeout")
 	ErrNavigateTimeout        = errors.New("navigation reached timeout")

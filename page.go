@@ -94,7 +94,8 @@ func (session *Session) Navigate(urlStr string) error {
 	case <-time.After(session.client.Timeouts.Navigation):
 		return ErrNavigateTimeout
 	}
-	return session.createIsolatedWorld(nav.FrameID)
+	session.setFrame(nav.FrameID)
+	return nil
 }
 
 // Reload refresh current page ignores cache
@@ -211,12 +212,12 @@ func (session *Session) IsClosed() bool {
 
 // MainFrame switch context to main frame of page
 func (session *Session) MainFrame() error {
-	return session.createIsolatedWorld(session.targetID)
+	return session.setFrame(session.targetID)
 }
 
 // SwitchToFrame switch context to frame
 func (session *Session) SwitchToFrame(frameID string) error {
-	return session.createIsolatedWorld(frameID)
+	return session.setFrame(frameID)
 }
 
 // AddScriptToEvaluateOnNewDocument https://chromedevtools.github.io/devtools-protocol/tot/Page#method-addScriptToEvaluateOnNewDocument

@@ -2,7 +2,6 @@ package witness
 
 import (
 	"container/list"
-	"context"
 	"fmt"
 	"math"
 	"sync"
@@ -14,17 +13,15 @@ import (
 // Session CDP session
 type Session struct {
 	client        *CDP
+	rw            sync.Mutex
+	contexts      sync.Map
 	id            string
 	targetID      string
-	contextID     int64
 	frameID       string
 	incomingEvent chan *rpcEvent
 	callbacks     map[string]*list.List
 	closed        chan bool
-	context       context.Context
 	document      *element
-	mxContext     sync.Mutex
-	mxCall        sync.Mutex
 }
 
 // TickerFunc ...
@@ -67,60 +64,62 @@ func (session *Session) switchTarget() error {
 			return err
 		}
 	}
-	return session.createIsolatedWorld(session.targetID)
+	session.setFrame(session.targetID)
+	return nil
 }
 
-func (session *Session) lockContext(fn func()) {
-	session.mxContext.Lock()
-	defer session.mxContext.Unlock()
-	fn()
+func (session *Session) setFrame(frameID string) error {
+	if _, ok := session.contexts.Load(frameID); !ok {
+		return ErrNoSuchFrame
+	}
+	session.frameID = frameID
+	return nil
 }
 
 func (session *Session) getContextID() int64 {
-	session.mxContext.Lock()
-	defer session.mxContext.Unlock()
-	return session.contextID
+	if v, ok := session.contexts.Load(session.frameID); ok {
+		return v.(int64)
+	}
+	return 0
 }
 
 func (session *Session) listener() {
 	for e := range session.incomingEvent {
 
-		session.mxCall.Lock()
+		session.rw.Lock()
 		lst, has := session.callbacks[e.Method]
 		if has {
 			for p := lst.Front(); p != nil; p = p.Next() {
 				go p.Value.(func([]byte))(e.Params)
 			}
 		}
-		session.mxCall.Unlock()
+		session.rw.Unlock()
 
 		switch e.Method {
 		case "Runtime.executionContextsCleared":
-			session.lockContext(func() {
-				session.contextID = 0
+			session.contexts.Range(func(k interface{}, v interface{}) bool {
+				session.contexts.Delete(k)
+				return true
 			})
 
 		case "Runtime.executionContextCreated":
-			ecc := new(devtool.ExecutionContextCreated)
-			if err := e.Params.Unmarshal(ecc); err != nil {
+			c := new(devtool.ExecutionContextCreated)
+			if err := e.Params.Unmarshal(c); err != nil {
 				session.panic(err)
 			}
-			session.lockContext(func() {
-				frameID := ecc.Context.AuxData["frameId"].(string)
-				if session.frameID == frameID {
-					session.contextID = ecc.Context.ID
-				}
-			})
+			session.contexts.Store(c.Context.AuxData["frameId"].(string), c.Context.ID)
 
 		case "Runtime.executionContextDestroyed":
-			ecd := new(devtool.ExecutionContextDestroyed)
-			if err := e.Params.Unmarshal(ecd); err != nil {
+			c := new(devtool.ExecutionContextDestroyed)
+			if err := e.Params.Unmarshal(c); err != nil {
 				session.panic(err)
 			}
-			session.lockContext(func() {
-				if session.contextID == ecd.ExecutionContextID {
-					session.contextID = 0
+			session.contexts.Range(func(k interface{}, v interface{}) bool {
+				if v.(int64) == c.ExecutionContextID {
+					session.contexts.Delete(k)
+					return false
 				}
+				return true
 			})
 
 		case "Target.targetCrashed":
@@ -157,23 +156,6 @@ func (session *Session) blockingSend(method string, send interface{}) (bytes, er
 	case <-time.After(session.client.Timeouts.WSTimeout):
 		return nil, fmt.Errorf("websocket response reached timeout %s for %s -> %+v", session.client.Timeouts.WSTimeout.String(), method, send)
 	}
-}
-
-func (session *Session) createIsolatedWorld(frameID string) error {
-	var err error
-	msg, err := session.blockingSend("Page.createIsolatedWorld", Map{
-		"frameId":             frameID,
-		"name":                "__utilityWorld__",
-		"grantUniveralAccess": true,
-	})
-	if err != nil {
-		return err
-	}
-	session.lockContext(func() {
-		session.frameID = frameID
-		session.contextID = msg.json().Int("executionContextId")
-	})
-	return nil
 }
 
 // Ticker ...
@@ -214,15 +196,15 @@ func (session *Session) getNavigationHistory() (*devtool.NavigationHistory, erro
 
 // Subscribe subscribe to CDP event
 func (session *Session) subscribe(method string, callback func(params []byte)) (unsubscribe func()) {
-	session.mxCall.Lock()
-	defer session.mxCall.Unlock()
+	session.rw.Lock()
+	defer session.rw.Unlock()
 	if _, has := session.callbacks[method]; !has {
 		session.callbacks[method] = list.New()
 	}
 	p := session.callbacks[method].PushBack(callback)
 	return func() {
-		session.mxCall.Lock()
-		defer session.mxCall.Unlock()
+		session.rw.Lock()
+		defer session.rw.Unlock()
 		session.callbacks[method].Remove(p)
 	}
 }
