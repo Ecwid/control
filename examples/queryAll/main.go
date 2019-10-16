@@ -16,7 +16,7 @@ func main() {
 		panic(err)
 	}
 
-	// Implicitly affected only `Expect` function
+	// Implicitly affected only `C` function
 	chrome.CDP.Timeouts.Implicitly = time.Second * 5
 	// set logging level and hook
 	chrome.CDP.Logging.Level = witness.LevelProtocolErrors
@@ -25,15 +25,14 @@ func main() {
 	})
 
 	p.Navigate("https://mdemo.ecwid.com/")
-	doc := p.Doc()
 
 	// expected element with visibility = true must be found else panic
-	exp := doc.Expect(".ec-static-container .grid-product", true)
+	exp := p.C(".ec-static-container .grid-product", true)
 	// exp never nil
 	exp.Release()
 
-	for _, card := range doc.SeekAll(".ec-static-container .grid-product") {
-		titleElement, err := card.Seek(".grid-product__title-inner")
+	for _, card := range p.QueryAll(".ec-static-container .grid-product") {
+		titleElement, err := card.Query(".grid-product__title-inner")
 		if err != nil {
 			panic("title is not exist")
 		}
@@ -41,7 +40,7 @@ func main() {
 		if err != nil {
 			panic("can't read title")
 		}
-		priceElement, err := card.Seek(".grid-product__price-amount")
+		priceElement, err := card.Query(".grid-product__price-amount")
 		if err != nil {
 			panic("price is not exist")
 		}

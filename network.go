@@ -9,7 +9,7 @@ func (session *Session) ClearBrowserCookies() error {
 }
 
 // SetCookies ...
-func (session *Session) SetCookies(cookies ...devtool.Cookie) error {
+func (session *Session) SetCookies(cookies ...*devtool.Cookie) error {
 	_, err := session.blockingSend("Network.setCookies", Map{"cookies": cookies})
 	return err
 }

@@ -1,6 +1,6 @@
 # witness (PoC)
 witness is golang client driving Chrome browser using the Chrome DevTools Protocol.
-Witness has Selenium like interface.
+Witness has Selenium like interface. It is experimental project, backward compatibility is not guaranteed!
 
 ## Installation
 `go get -u github.com/ecwid/witness`
@@ -26,25 +26,24 @@ func main() {
 		panic(err)
 	}
 
-	// Implicitly affected only Expect function
 	chrome.CDP.Logging.Level = witness.LevelProtocolMessage
+	// Implicitly affected only C(selector, visible) function
 	chrome.CDP.Timeouts.Implicitly = time.Second * 5
 
 	page.Navigate("https://my.ecwid.com")
-	doc := page.Doc()
 
-	doc.Expect("[name='email']", true).Type("test@example.com")
-	doc.Expect("[name='password']", true).Type("xxxxxx")
-	doc.Expect("button.btn-primary", true).Click()
+	page.C("[name='email']", true).Type("test@example.com")
+	page.C("[name='password']", true).Type("xxxxxx")
+	page.C("button.btn-primary", true).Click()
 }
 ```
 
 Implemented element methods:
 ```go
 type Element interface {
-	Seek(string) (Element, error)
-	SeekAll(string) []Element
-	Expect(string, bool) Element
+	C(string, bool) Element // Select by CSS selector
+	Query(string) (Element, error)
+	QueryAll(string) []Element
 
 	Click() error
 	Hover() error
@@ -74,7 +73,9 @@ type Element interface {
 Page's methods:
 ```go
 type Page interface {
-	Doc() Element
+	C(string, bool) Element // Select by CSS selector
+	Query(string) (Element, error)
+	QueryAll(string) []Element
 
 	Navigate(string) error
 	Reload() error
@@ -97,7 +98,7 @@ type Page interface {
 
 	Evaluate(string, bool) (interface{}, error)
 
-	SetCookies(...devtool.Cookie) error
+	SetCookies(...*devtool.Cookie) error
 	ClearBrowserCookies() error
 	Fetch([]*devtool.RequestPattern, func(*devtool.RequestPaused, *Proceed)) func()
 

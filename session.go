@@ -4,9 +4,11 @@ import (
 	"container/list"
 	"fmt"
 	"math"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/ecwid/witness/internal/atom"
 	"github.com/ecwid/witness/pkg/devtool"
 )
 
@@ -21,7 +23,6 @@ type Session struct {
 	incomingEvent chan *rpcEvent
 	callbacks     map[string]*list.List
 	closed        chan bool
-	document      *element
 }
 
 // TickerFunc ...
@@ -42,7 +43,6 @@ func (c *CDP) newSession(targetID string) (*Session, error) {
 		targetID:      targetID,
 		frameID:       targetID,
 	}
-	session.document = newElement(session, nil, "", "document")
 	go session.listener()
 	return session, session.switchTarget()
 }
@@ -69,7 +69,8 @@ func (session *Session) switchTarget() error {
 }
 
 func (session *Session) setFrame(frameID string) error {
-	if _, ok := session.contexts.Load(frameID); !ok {
+	_, ok := session.contexts.Load(frameID)
+	if !ok {
 		return ErrNoSuchFrame
 	}
 	session.frameID = frameID
@@ -272,4 +273,49 @@ func (session *Session) getLayoutMetrics() (*devtool.LayoutMetrics, error) {
 		return nil, err
 	}
 	return l, nil
+}
+
+func (session *Session) queryAll(parent *element, selector string) ([]Element, error) {
+	selector = strings.ReplaceAll(selector, `"`, `\"`)
+	var array *devtool.RemoteObject
+	var err error
+	if parent == nil {
+		array, err = session.evaluate(`document.querySelectorAll("`+selector+`")`, session.getContextID(), false)
+	} else {
+		array, err = parent.call(atom.QueryAll, selector)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if array == nil || array.Description == "NodeList(0)" {
+		session.releaseObject(array.ObjectID)
+		return nil, ErrNoSuchElement
+	}
+	els := make([]Element, 0)
+	descriptor, err := session.getProperties(array.ObjectID)
+	for _, d := range descriptor {
+		if !d.Enumerable {
+			continue
+		}
+		els = append(els, newElement(session, parent, d.Value.ObjectID, d.Value.Description))
+	}
+	return els, nil
+}
+
+func (session *Session) query(parent *element, selector string) (*devtool.RemoteObject, error) {
+	selector = strings.ReplaceAll(selector, `"`, `\"`)
+	var element *devtool.RemoteObject
+	var err error
+	if parent == nil {
+		element, err = session.evaluate(`document.querySelector("`+selector+`")`, session.getContextID(), false)
+	} else {
+		element, err = parent.call(atom.Query, selector)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if element.Subtype == "null" {
+		return nil, ErrNoSuchElement
+	}
+	return element, nil
 }

@@ -19,7 +19,7 @@ func TestInFrameRefresh(t *testing.T) {
 
 	get := func(sel string) witness.Element {
 		t.Helper()
-		el, err := page.Doc().Seek(sel)
+		el, err := page.Query(sel)
 		check(t, err)
 		return el
 	}

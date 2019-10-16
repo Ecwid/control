@@ -1,18 +1,22 @@
 package witness
 
 import (
-	"strings"
 	"time"
 
 	"github.com/ecwid/witness/internal/atom"
 	"github.com/ecwid/witness/pkg/devtool"
 )
 
+// Select interface to find element
+type Select interface {
+	C(string, bool) Element // Select by CSS selector
+	Query(string) (Element, error)
+	QueryAll(string) []Element
+}
+
 // Element ...
 type Element interface {
-	Seek(string) (Element, error)
-	SeekAll(string) []Element
-	Expect(string, bool) Element
+	Select
 
 	Click() error
 	Hover() error
@@ -77,18 +81,8 @@ func (e *element) renew() error {
 		return nil
 	}
 	sessContext := e.session.getContextID() // session's context actual at this moment
-	if e.parent == nil {
-		// request a new document
-		new, err := e.session.evaluate("document", sessContext, false)
-		if err != nil {
-			return ErrStaleElementReference
-		}
-		e.ID = new.ObjectID
-		e.context = sessContext
-		return nil
-	}
 	// request new element in parent's context by description
-	new, err := e.parent.findElement(e.description)
+	new, err := e.session.query(e.parent, e.description)
 	if err != nil {
 		return err
 	}
@@ -98,18 +92,26 @@ func (e *element) renew() error {
 	return nil
 }
 
-func (e *element) Seek(selector string) (Element, error) {
-	object, err := e.findElement(selector)
+func (e *element) Query(selector string) (Element, error) {
+	element, err := e.session.query(e, selector)
 	if err != nil {
 		return nil, err
 	}
-	return newElement(e.session, e, object.ObjectID, object.Description), nil
+	return newElement(e.session, e, element.ObjectID, element.Description), nil
+}
+
+func (e *element) QueryAll(selector string) []Element {
+	v, err := e.session.queryAll(e, selector)
+	if err != nil {
+		return []Element{}
+	}
+	return v
 }
 
 // Expect searching selector (visible) with implicity wait timeout
-func (e *element) Expect(selector string, visible bool) Element {
+func (e *element) C(selector string, visible bool) Element {
 	el, err := e.session.Ticker(func() (interface{}, error) {
-		new, err := e.Seek(selector)
+		new, err := e.Query(selector)
 		if err != nil {
 			return nil, err
 		}
@@ -128,47 +130,6 @@ func (e *element) Expect(selector string, visible bool) Element {
 		panic(err)
 	}
 	return el.(Element)
-}
-
-func (e *element) SeekAll(selector string) []Element {
-	v, err := e.findElements(selector)
-	if err != nil {
-		return []Element{}
-	}
-	return v
-}
-
-func (e *element) findElements(selector string) ([]Element, error) {
-	selector = strings.ReplaceAll(selector, `"`, `\"`)
-	ro, err := e.call(atom.QueryAll, selector)
-	if err != nil {
-		return nil, err
-	}
-	if ro == nil || ro.Description == "NodeList(0)" {
-		e.session.releaseObject(ro.ObjectID)
-		return nil, ErrNoSuchElement
-	}
-	els := make([]Element, 0)
-	descriptor, err := e.session.getProperties(ro.ObjectID)
-	for _, d := range descriptor {
-		if !d.Enumerable {
-			continue
-		}
-		els = append(els, newElement(e.session, e, d.Value.ObjectID, d.Value.Description))
-	}
-	return els, nil
-}
-
-func (e *element) findElement(selector string) (*devtool.RemoteObject, error) {
-	selector = strings.ReplaceAll(selector, `"`, `\"`)
-	element, err := e.call(atom.Query, selector)
-	if err != nil {
-		return nil, err
-	}
-	if element.Subtype == "null" {
-		return nil, ErrNoSuchElement
-	}
-	return element, nil
 }
 
 func (e *element) getNode() (*devtool.Node, error) {

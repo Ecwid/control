@@ -11,7 +11,7 @@ import (
 
 // Page ...
 type Page interface {
-	Doc() Element
+	Select
 
 	Navigate(string) error
 	Reload() error
@@ -34,7 +34,7 @@ type Page interface {
 
 	Evaluate(string, bool) (interface{}, error)
 
-	SetCookies(...devtool.Cookie) error
+	SetCookies(...*devtool.Cookie) error
 	ClearBrowserCookies() error
 	Fetch([]*devtool.RequestPattern, func(*devtool.RequestPaused, *Proceed)) func()
 
@@ -49,9 +49,46 @@ func (session *Session) ID() string {
 	return session.id
 }
 
-// Doc ...
-func (session *Session) Doc() Element {
-	return session.document
+// Query query element on page by css selector
+func (session *Session) Query(selector string) (Element, error) {
+	element, err := session.query(nil, selector)
+	if err != nil {
+		return nil, err
+	}
+	return newElement(session, nil, element.ObjectID, element.Description), nil
+}
+
+// QueryAll queryAll elements on page by css selector
+func (session *Session) QueryAll(selector string) []Element {
+	v, err := session.queryAll(nil, selector)
+	if err != nil {
+		return []Element{}
+	}
+	return v
+}
+
+// C searching selector (visible) with implicity wait timeout
+func (session *Session) C(selector string, visible bool) Element {
+	el, err := session.Ticker(func() (interface{}, error) {
+		new, err := session.Query(selector)
+		if err != nil {
+			return nil, err
+		}
+		if visible {
+			v, err := new.IsVisible()
+			if err != nil {
+				return nil, err
+			}
+			if !v {
+				return nil, ErrElementInvisible
+			}
+		}
+		return new, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	return el.(Element)
 }
 
 // Close close this sessions

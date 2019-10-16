@@ -15,14 +15,13 @@ func main() {
 		panic(err)
 	}
 
-	// Implicitly affected only Expect function
 	chrome.CDP.Logging.Level = witness.LevelProtocolMessage
+	// Implicitly affected only C() function
 	chrome.CDP.Timeouts.Implicitly = time.Second * 5
 
 	page.Navigate("https://my.ecwid.com")
-	doc := page.Doc()
 
-	doc.Expect("[name='email']", true).Type("test@example.com")
-	doc.Expect("[name='password']", true).Type("xxxxxx")
-	doc.Expect("button.btn-primary", true).Click()
+	page.C("[name='email']", true).Type("test@example.com")
+	page.C("[name='password']", true).Type("xxxxxx")
+	page.C("button.btn-primary", true).Click()
 }
