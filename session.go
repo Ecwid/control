@@ -64,15 +64,17 @@ func (session *Session) switchTarget() error {
 			return err
 		}
 	}
-	session.setFrame(session.targetID)
+	// context is may not be created yet
+	_ = session.setFrame(session.targetID)
 	return nil
 }
 
 func (session *Session) setFrame(frameID string) error {
-	_, ok := session.contexts.Load(frameID)
+	v, ok := session.contexts.Load(frameID)
 	if !ok {
 		return ErrNoSuchFrame
 	}
+	session.client.Logging.Printf(LevelFatal, "session switch -> %s-%d", frameID, v.(int64))
 	session.frameID = frameID
 	return nil
 }
@@ -81,6 +83,7 @@ func (session *Session) getContextID() int64 {
 	if v, ok := session.contexts.Load(session.frameID); ok {
 		return v.(int64)
 	}
+	session.client.Logging.Printf(LevelProtocolErrors, "context not created for frame '%s' yet, uses default '0' context", session.frameID)
 	return 0
 }
 

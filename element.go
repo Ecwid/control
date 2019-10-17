@@ -81,6 +81,7 @@ func (e *element) renew() error {
 		return nil
 	}
 	sessContext := e.session.getContextID() // session's context actual at this moment
+	// this ErrStaleElementReference but we can renew element
 	// request new element in parent's context by description
 	new, err := e.session.query(e.parent, e.description)
 	if err != nil {
@@ -203,9 +204,9 @@ func (e *element) Click() error {
 	e.session.dispatchMouseEvent(x, y, dispatchMouseEventPressed, "left")
 	e.session.dispatchMouseEvent(x, y, dispatchMouseEventReleased, "left")
 	hit, err := e.call(atom.IsClickHit)
-	// in case when click is initiate navigation which destroyed context of element (ErrStaleElementReference)
+	// in case when click is initiate navigation which destroyed context of element (ErrNoSuchContext)
 	// or click may closes a popup (ErrSessionClosed)
-	if (err == nil && hit.Bool()) || err == ErrStaleElementReference || err == ErrSessionClosed {
+	if (err == nil && hit.Bool()) || err == ErrNoSuchContext || err == ErrSessionClosed {
 		return nil
 	}
 	return ErrElementMissClick

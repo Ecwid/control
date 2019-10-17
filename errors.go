@@ -5,6 +5,7 @@ import "errors"
 // cdp errors
 var (
 	ErrStaleElementReference  = errors.New("referenced element is no longer attached to the DOM")
+	ErrNoSuchContext          = errors.New("cannot find context with specified id")
 	ErrNoSuchElement          = errors.New("no such element")
 	ErrNoSuchFrame            = errors.New("no such frame")
 	ErrNoPageTarget           = errors.New("no one page target")
@@ -34,7 +35,7 @@ const (
 func (e rpcError) known() error {
 	switch e.Message {
 	case "Cannot find context with specified id":
-		return ErrStaleElementReference
+		return ErrNoSuchContext
 	case "Could not compute content quads.":
 		return ErrElementInvisible
 	case "Element is not focusable":

@@ -105,8 +105,12 @@ func (session *Session) Close() error {
 func (session *Session) Navigate(urlStr string) error {
 	eventFired := make(chan bool, 1)
 	unsubscribe := session.subscribe("Page.loadEventFired", func([]byte) {
-		eventFired <- true
+		select {
+		case eventFired <- true:
+		default:
+		}
 	})
+	defer close(eventFired)
 	defer unsubscribe()
 	msg, err := session.blockingSend("Page.navigate", Map{
 		"url":            urlStr,
@@ -124,35 +128,38 @@ func (session *Session) Navigate(urlStr string) error {
 		return fmt.Errorf(nav.ErrorText)
 	}
 	if nav.LoaderID == "" {
-		close(eventFired)
+		// no navigate need
+		return nil
 	}
 	select {
 	case <-eventFired:
+		return nil
 	case <-time.After(session.client.Timeouts.Navigation):
 		return ErrNavigateTimeout
 	}
-	session.setFrame(nav.FrameID)
-	return nil
 }
 
 // Reload refresh current page ignores cache
 func (session *Session) Reload() error {
 	eventFired := make(chan bool, 1)
 	unsubscribe := session.subscribe("Page.loadEventFired", func([]byte) {
-		eventFired <- true
+		select {
+		case eventFired <- true:
+		default:
+		}
 	})
+	defer close(eventFired)
 	defer unsubscribe()
-	_, err := session.blockingSend("Page.reload", Map{"ignoreCache": true})
-	if err != nil {
+	if _, err := session.blockingSend("Page.reload", Map{"ignoreCache": true}); err != nil {
 		return err
 	}
 	select {
 	case <-eventFired:
+		session.MainFrame()
+		return nil
 	case <-time.After(session.client.Timeouts.Navigation):
 		return ErrNavigateTimeout
 	}
-	session.MainFrame()
-	return nil
 }
 
 // Evaluate evaluate javascript code at context of web page
