@@ -22,6 +22,7 @@ const (
 	LevelProtocolMessage level = 0x04 | LevelProtocolErrors
 	LevelProtocolEvents  level = 0x08 | LevelProtocolErrors
 	LevelProtocolVerbose level = LevelProtocolErrors | LevelProtocolMessage | LevelProtocolEvents
+	LevelInfo            level = 0x10 | LevelProtocolErrors
 )
 
 // SetHook set logging output hook

@@ -74,7 +74,7 @@ func (session *Session) setFrame(frameID string) error {
 	if !ok {
 		return ErrNoSuchFrame
 	}
-	session.client.Logging.Printf(LevelFatal, "session switch -> %s-%d", frameID, v.(int64))
+	session.client.Logging.Printf(LevelInfo, "session switch -> %s-%d", frameID, v.(int64))
 	session.frameID = frameID
 	return nil
 }
@@ -87,10 +87,10 @@ func (session *Session) getContextID() (int64, error) {
 	// todo remove
 	// for main frame we can use default context with ID = 0
 	if id == session.targetID {
-		session.client.Logging.Printf(LevelProtocolErrors, "context for '%s' not found, trying to use default 0 context as it is main frame", id)
+		session.client.Logging.Printf(LevelInfo, "context for '%s' not found, trying to use default 0 context as it is main frame", id)
 		return 0, nil
 	}
-	session.client.Logging.Printf(LevelProtocolErrors, "context for '%s' not found, try again later", id)
+	session.client.Logging.Printf(LevelInfo, "context for '%s' not found, try again later", id)
 	return -1, ErrFrameDetached
 }
 
