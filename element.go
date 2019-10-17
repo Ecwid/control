@@ -58,13 +58,14 @@ type element struct {
 }
 
 func newElement(s *Session, parent *element, ID string, description string) *element {
+	c, _ := s.getContextID()
 	e := &element{
 		ID:          ID,
 		session:     s,
 		description: description,
 		parent:      parent,
 		childs:      make([]*element, 0),
-		context:     s.getContextID(),
+		context:     c,
 	}
 	if parent != nil {
 		parent.childs = append(parent.childs, e)
@@ -73,14 +74,21 @@ func newElement(s *Session, parent *element, ID string, description string) *ele
 }
 
 func (e *element) isDetached() bool {
-	return e.context != e.session.getContextID()
+	c, err := e.session.getContextID()
+	if err != nil {
+		return true
+	}
+	return e.context != c
 }
 
 func (e *element) renew() error {
 	if !e.isDetached() {
 		return nil
 	}
-	sessContext := e.session.getContextID() // session's context actual at this moment
+	sessContext, err := e.session.getContextID() // session's context actual at this moment
+	if err != nil {
+		return err
+	}
 	// this ErrStaleElementReference but we can renew element
 	// request new element in parent's context by description
 	new, err := e.session.query(e.parent, e.description)

@@ -79,12 +79,19 @@ func (session *Session) setFrame(frameID string) error {
 	return nil
 }
 
-func (session *Session) getContextID() int64 {
-	if v, ok := session.contexts.Load(session.frameID); ok {
-		return v.(int64)
+func (session *Session) getContextID() (int64, error) {
+	id := session.frameID
+	if v, ok := session.contexts.Load(id); ok {
+		return v.(int64), nil
 	}
-	session.client.Logging.Printf(LevelProtocolErrors, "context not created for frame '%s' yet, uses default '0' context", session.frameID)
-	return 0
+	// todo remove
+	// for main frame we can use default context with ID = 0
+	if id == session.targetID {
+		session.client.Logging.Printf(LevelProtocolErrors, "context for '%s' not found, trying to use default 0 context as it is main frame", id)
+		return 0, nil
+	}
+	session.client.Logging.Printf(LevelProtocolErrors, "context for '%s' not found, try again later", id)
+	return -1, ErrFrameDetached
 }
 
 func (session *Session) listener() {
@@ -278,12 +285,28 @@ func (session *Session) getLayoutMetrics() (*devtool.LayoutMetrics, error) {
 	return l, nil
 }
 
+func (session *Session) getFrameTree() (*devtool.FrameTree, error) {
+	msg, err := session.blockingSend("Page.getFrameTree", Map{})
+	if err != nil {
+		return nil, err
+	}
+	tree := new(devtool.FrameTreeResult)
+	if err = msg.Unmarshal(tree); err != nil {
+		return nil, err
+	}
+	return tree.FrameTree, nil
+}
+
 func (session *Session) queryAll(parent *element, selector string) ([]Element, error) {
 	selector = strings.ReplaceAll(selector, `"`, `\"`)
 	var array *devtool.RemoteObject
 	var err error
 	if parent == nil {
-		array, err = session.evaluate(`document.querySelectorAll("`+selector+`")`, session.getContextID(), false)
+		c, cerr := session.getContextID()
+		if cerr != nil {
+			return nil, cerr
+		}
+		array, err = session.evaluate(`document.querySelectorAll("`+selector+`")`, c, false)
 	} else {
 		array, err = parent.call(atom.QueryAll, selector)
 	}
@@ -310,7 +333,11 @@ func (session *Session) query(parent *element, selector string) (*devtool.Remote
 	var element *devtool.RemoteObject
 	var err error
 	if parent == nil {
-		element, err = session.evaluate(`document.querySelector("`+selector+`")`, session.getContextID(), false)
+		c, cerr := session.getContextID()
+		if cerr != nil {
+			return nil, cerr
+		}
+		element, err = session.evaluate(`document.querySelector("`+selector+`")`, c, false)
 	} else {
 		element, err = parent.call(atom.Query, selector)
 	}

@@ -82,3 +82,39 @@ type LifecycleEvent struct {
 	Name      string  `json:"name"`
 	Timestamp float64 `json:"timestamp"`
 }
+
+// Frame https://chromedevtools.github.io/devtools-protocol/tot/Page#type-Frame
+type Frame struct {
+	ID             string `json:"id"`
+	ParentID       string `json:"parentId"`
+	LoaderID       string `json:"loaderId"`
+	Name           string `json:"name"`
+	URL            string `json:"url"`
+	SecurityOrigin string `json:"securityOrigin"`
+	MimeType       string `json:"mimeTypeurl"`
+	UnreachableURL string `json:"unreachableUrl"`
+}
+
+// FrameTreeResult https://chromedevtools.github.io/devtools-protocol/tot/Page#method-getFrameTree
+type FrameTreeResult struct {
+	FrameTree *FrameTree `json:"frameTree"`
+}
+
+// FrameTree https://chromedevtools.github.io/devtools-protocol/tot/Page#type-FrameTree
+type FrameTree struct {
+	Frame       *Frame       `json:"frame"`
+	ChildFrames []*FrameTree `json:"childFrames"`
+}
+
+// Look look for frame with ID
+func (f FrameTree) Look(ID string) *Frame {
+	if f.Frame.ID == ID {
+		return f.Frame
+	}
+	for _, c := range f.ChildFrames {
+		if cf := c.Look(ID); cf != nil {
+			return cf
+		}
+	}
+	return nil
+}

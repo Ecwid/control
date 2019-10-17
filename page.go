@@ -112,10 +112,13 @@ func (session *Session) Navigate(urlStr string) error {
 	})
 	defer close(eventFired)
 	defer unsubscribe()
+	// do navigate strict for main frameID (same as targetID)
+	// in case of frame's navigate the 'Page.loadEventFired' will never fires
+	// to implement it you should probably wait for 'Page.frameNavigated'
 	msg, err := session.blockingSend("Page.navigate", Map{
 		"url":            urlStr,
 		"transitionType": "typed",
-		"frameId":        session.frameID,
+		"frameId":        session.targetID,
 	})
 	if err != nil {
 		return err
@@ -133,7 +136,7 @@ func (session *Session) Navigate(urlStr string) error {
 	}
 	select {
 	case <-eventFired:
-		return nil
+		return session.setFrame(nav.FrameID)
 	case <-time.After(session.client.Timeouts.Navigation):
 		return ErrNavigateTimeout
 	}
@@ -155,6 +158,7 @@ func (session *Session) Reload() error {
 	}
 	select {
 	case <-eventFired:
+		// reload destroys all frames so we should switch to main frame
 		session.MainFrame()
 		return nil
 	case <-time.After(session.client.Timeouts.Navigation):

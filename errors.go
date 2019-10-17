@@ -8,6 +8,7 @@ var (
 	ErrNoSuchContext          = errors.New("cannot find context with specified id")
 	ErrNoSuchElement          = errors.New("no such element")
 	ErrNoSuchFrame            = errors.New("no such frame")
+	ErrFrameDetached          = errors.New("frame you working on was detached")
 	ErrNoPageTarget           = errors.New("no one page target")
 	ErrDevtoolTimeout         = errors.New("devtool response reached timeout")
 	ErrNavigateTimeout        = errors.New("navigation reached timeout")
