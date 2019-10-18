@@ -65,6 +65,7 @@ type timeouts struct {
 	Implicitly time.Duration
 	Poll       time.Duration
 	WSTimeout  time.Duration
+	internal   time.Duration
 }
 
 var dto = &timeouts{
@@ -72,6 +73,7 @@ var dto = &timeouts{
 	Implicitly: time.Second * 60,
 	Poll:       time.Millisecond * 500,
 	WSTimeout:  time.Minute * 1,
+	internal:   time.Second * 10,
 }
 
 // CDP chrome devtool protocol client
@@ -129,7 +131,7 @@ func (c *CDP) get(ch chan *rpcResponse) (*rpcResponse, error) {
 // DefaultPage attach to default welcome page that opened after chrome start
 func (c *CDP) DefaultPage() (*Session, error) {
 	tick := time.NewTicker(time.Millisecond * 250)
-	implicitly := time.NewTimer(time.Second * 10)
+	implicitly := time.NewTimer(c.Timeouts.internal)
 	defer tick.Stop()
 	defer implicitly.Stop()
 	for {
@@ -197,7 +199,10 @@ func (c *CDP) sendOverProtocol(sessionID string, method string, params interface
 
 // Close close browser and websocket connection
 func (c *CDP) Close() {
-	<-c.sendOverProtocol("", "Browser.close", Map{})
+	select {
+	case <-c.sendOverProtocol("", "Browser.close", Map{}):
+	case <-time.After(c.Timeouts.internal):
+	}
 	close(c.close)
 }
 
