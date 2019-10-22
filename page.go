@@ -9,6 +9,8 @@ import (
 	"github.com/ecwid/witness/pkg/devtool"
 )
 
+var blankPage = "about:blank"
+
 // ID session's ID
 func (session *CDPSession) ID() string {
 	return session.id
@@ -147,7 +149,7 @@ func (session *CDPSession) GetNavigationEntry() (*devtool.NavigationEntry, error
 		return nil, err
 	}
 	if history.CurrentIndex == -1 {
-		return &devtool.NavigationEntry{URL: "about:blank"}, nil
+		return &devtool.NavigationEntry{URL: blankPage}, nil
 	}
 	return history.Entries[history.CurrentIndex], nil
 }
@@ -184,6 +186,9 @@ func (session *CDPSession) TakeScreenshot(format string, quality int8, clip *dev
 
 // NewTab ...
 func (session *CDPSession) NewTab(url string) (string, error) {
+	if url == "" {
+		url = blankPage // headless chrome crash when url is empty
+	}
 	msg, err := session.blockingSend("Target.createTarget", Map{
 		"url": url,
 	})
