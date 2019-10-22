@@ -8,7 +8,7 @@ type Session struct {
 	Input     Input
 	Runtime   Runtime
 	Page      Page
-	Core      Core
+	Message   Message
 	Tabs      Tab
 	Emulation Emulation
 }
@@ -39,8 +39,9 @@ type Runtime interface {
 	Evaluate(string, bool) (interface{}, error)
 }
 
-// Core internal CDP methods
-type Core interface {
+// Message internal CDP methods
+type Message interface {
+	BlockingSend(method string, send interface{}) ([]byte, error)
 	Listen(string) (chan []byte, func())
 }
 
@@ -51,7 +52,7 @@ type Emulation interface {
 
 // Page page domain
 type Page interface {
-	selectable
+	Findable
 
 	Navigate(string) error
 	Reload() error
@@ -70,8 +71,8 @@ type Page interface {
 	Ticker(call TickerFunc) (interface{}, error)
 }
 
-// selectable interface to find element
-type selectable interface {
+// Findable interface to find element
+type Findable interface {
 	C(string, bool) Element // Select by CSS selector
 	Query(string) (Element, error)
 	QueryAll(string) []Element
@@ -79,7 +80,7 @@ type selectable interface {
 
 // Element element interface
 type Element interface {
-	selectable
+	Findable
 
 	Click() error
 	Hover() error

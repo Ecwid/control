@@ -133,7 +133,7 @@ func (e *element) call(functionDeclaration string, arg ...interface{}) (*devtool
 	return e.session.callFunctionOn(e.ID, functionDeclaration, arg...)
 }
 
-// Call ...
+// Call evaluate javascript for element, for example `function() {return this.innerHTML}`
 func (e *element) Call(functionDeclaration string, arg ...interface{}) (interface{}, error) {
 	v, err := e.session.callFunctionOn(e.ID, functionDeclaration, arg...)
 	if err != nil {

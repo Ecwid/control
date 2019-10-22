@@ -49,7 +49,7 @@ func (c *CDP) newSession(targetID string) (*Session, error) {
 		Input:     session,
 		Runtime:   session,
 		Page:      session,
-		Core:      session,
+		Message:   session,
 		Tabs:      session,
 		Emulation: session,
 	}
@@ -161,6 +161,11 @@ func (session *CDPSession) listener() {
 			}
 		}
 	}
+}
+
+// BlockingSend send message over CDP protocol
+func (session *CDPSession) BlockingSend(method string, send interface{}) ([]byte, error) {
+	return session.blockingSend(method, send)
 }
 
 func (session *CDPSession) blockingSend(method string, send interface{}) (bytes, error) {
