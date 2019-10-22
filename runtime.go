@@ -2,7 +2,7 @@ package witness
 
 import "github.com/ecwid/witness/pkg/devtool"
 
-func (session *Session) releaseObject(objectID string) error {
+func (session *CDPSession) releaseObject(objectID string) error {
 	_, err := session.blockingSend("Runtime.releaseObject", Map{"objectId": objectID})
 	return err
 }
@@ -19,7 +19,7 @@ func evaluateResult(msg bytes) (*devtool.RemoteObject, error) {
 }
 
 // Evaluate Evaluates expression on global object.
-func (session *Session) evaluate(expression string, contextID int64, async bool) (*devtool.RemoteObject, error) {
+func (session *CDPSession) evaluate(expression string, contextID int64, async bool) (*devtool.RemoteObject, error) {
 	exp := &devtool.EvaluatesExpression{
 		Expression:    expression,
 		ContextID:     contextID,
@@ -33,7 +33,7 @@ func (session *Session) evaluate(expression string, contextID int64, async bool)
 	return evaluateResult(msg)
 }
 
-func (session *Session) getProperties(objectID string) ([]*devtool.PropertyDescriptor, error) {
+func (session *CDPSession) getProperties(objectID string) ([]*devtool.PropertyDescriptor, error) {
 	msg, err := session.blockingSend("Runtime.getProperties", Map{
 		"objectId":               objectID,
 		"ownProperties":          true,
@@ -52,7 +52,7 @@ func (session *Session) getProperties(objectID string) ([]*devtool.PropertyDescr
 	return result.Result, nil
 }
 
-func (session *Session) callFunctionOn(objectID string, functionDeclaration string, arg ...interface{}) (*devtool.RemoteObject, error) {
+func (session *CDPSession) callFunctionOn(objectID string, functionDeclaration string, arg ...interface{}) (*devtool.RemoteObject, error) {
 	args := make([]devtool.CallArgument, len(arg))
 	for i, a := range arg {
 		args[i] = devtool.CallArgument{Value: a}

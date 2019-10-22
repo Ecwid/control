@@ -3,25 +3,25 @@ package witness
 import "github.com/ecwid/witness/pkg/devtool"
 
 // ClearBrowserCookies ...
-func (session *Session) ClearBrowserCookies() error {
+func (session *CDPSession) ClearBrowserCookies() error {
 	_, err := session.blockingSend("Network.clearBrowserCookies", Map{})
 	return err
 }
 
 // SetCookies ...
-func (session *Session) SetCookies(cookies ...*devtool.Cookie) error {
+func (session *CDPSession) SetCookies(cookies ...*devtool.Cookie) error {
 	_, err := session.blockingSend("Network.setCookies", Map{"cookies": cookies})
 	return err
 }
 
 // SetExtraHTTPHeaders Specifies whether to always send extra HTTP headers with the requests from this page.
-func (session *Session) SetExtraHTTPHeaders(headers map[string]string) error {
+func (session *CDPSession) SetExtraHTTPHeaders(headers map[string]string) error {
 	_, err := session.blockingSend("Network.setExtraHTTPHeaders", Map{"headers": headers})
 	return err
 }
 
 // fetchEnable https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-enable
-func (session *Session) fetchEnable(patterns []*devtool.RequestPattern, handleAuthRequests bool) error {
+func (session *CDPSession) fetchEnable(patterns []*devtool.RequestPattern, handleAuthRequests bool) error {
 	_, err := session.blockingSend("Fetch.enable", Map{
 		"patterns":           patterns,
 		"handleAuthRequests": handleAuthRequests,
@@ -30,13 +30,13 @@ func (session *Session) fetchEnable(patterns []*devtool.RequestPattern, handleAu
 }
 
 // fetchDisable https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-disable
-func (session *Session) fetchDisable() error {
+func (session *CDPSession) fetchDisable() error {
 	_, err := session.blockingSend("Fetch.enable", Map{})
 	return err
 }
 
 // failRequest https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-failRequest
-func (session *Session) failRequest(requestID string, reason devtool.ErrorReason) error {
+func (session *CDPSession) failRequest(requestID string, reason devtool.ErrorReason) error {
 	_, err := session.blockingSend("Fetch.failRequest", Map{
 		"requestId":   requestID,
 		"errorReason": string(reason),
@@ -45,7 +45,7 @@ func (session *Session) failRequest(requestID string, reason devtool.ErrorReason
 }
 
 // fulfillRequest https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-fulfillRequest
-func (session *Session) fulfillRequest(
+func (session *CDPSession) fulfillRequest(
 	requestID string,
 	responseCode int,
 	responseHeaders []*devtool.HeaderEntry,
@@ -65,7 +65,7 @@ func (session *Session) fulfillRequest(
 }
 
 // continueRequest https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-continueRequest
-func (session *Session) continueRequest(requestID string, url *string, method *string, postData *string, headers []*devtool.HeaderEntry) error {
+func (session *CDPSession) continueRequest(requestID string, url *string, method *string, postData *string, headers []*devtool.HeaderEntry) error {
 	p := Map{
 		"requestId": requestID,
 		"url":       url,
@@ -78,24 +78,26 @@ func (session *Session) continueRequest(requestID string, url *string, method *s
 	return err
 }
 
-// Proceed continue paused request
-type Proceed struct {
+// Intercepted continue paused request
+type Intercepted struct {
 	Fail     func(requestID string, reason devtool.ErrorReason) error
 	Fulfill  func(requestID string, responseCode int, responseHeaders []*devtool.HeaderEntry, body *string, responsePhrase *string) error
 	Continue func(requestID string, url *string, method *string, postData *string, headers []*devtool.HeaderEntry) error
 }
 
-// Fetch ...
-func (session *Session) Fetch(patterns []*devtool.RequestPattern, fn func(*devtool.RequestPaused, *Proceed)) func() {
-	proceed := &Proceed{
+// Intercept ...
+func (session *CDPSession) Intercept(patterns []*devtool.RequestPattern, fn func(*devtool.RequestPaused, *Intercepted)) func() {
+	intercepted := &Intercepted{
 		Fail:     session.failRequest,
 		Fulfill:  session.fulfillRequest,
 		Continue: session.continueRequest,
 	}
 	unsubscribe := session.subscribe("Fetch.requestPaused", func(msg []byte) {
 		request := new(devtool.RequestPaused)
-		bytes(msg).Unmarshal(request)
-		fn(request, proceed)
+		if err := bytes(msg).Unmarshal(request); err != nil {
+			panic(err)
+		}
+		fn(request, intercepted)
 	})
 	if err := session.fetchEnable(patterns, false); err != nil {
 		panic(err)

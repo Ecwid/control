@@ -1,45 +1,8 @@
-# witness (PoC)
-witness is golang client driving Chrome browser using the Chrome DevTools Protocol.
-Witness has Selenium like interface. It is experimental project, backward compatibility is not guaranteed!
+package witness
 
-## Installation
-`go get -u github.com/ecwid/witness`
+import "github.com/ecwid/witness/pkg/devtool"
 
-## How to use
-
-Here is an example of using:
-```go
-package main
-
-import (
-	"time"
-
-	"github.com/ecwid/witness"
-	"github.com/ecwid/witness/pkg/chrome"
-)
-
-func main() {
-	chrome, _ := chrome.New("--headless")
-	defer chrome.Close()
-	session, err := chrome.CDP.DefaultSession()
-	if err != nil {
-		panic(err)
-	}
-
-	chrome.CDP.Logging.Level = witness.LevelProtocolMessage
-	// Implicitly affected only C() function
-	chrome.CDP.Timeouts.Implicitly = time.Second * 5
-
-	session.Page.Navigate("https://my.ecwid.com")
-
-	session.Page.C("[name='email']", true).Type("test@example.com")
-	session.Page.C("[name='password']", true).Type("xxxxxx")
-	session.Page.C("button.btn-primary", true).Click()
-}
-```
-
-Implemented methods:
-```go
+// Session entry point session
 type Session struct {
 	Network   Network
 	Input     Input
@@ -50,12 +13,14 @@ type Session struct {
 	Emulation Emulation
 }
 
+// Network network domain
 type Network interface {
 	SetCookies(...*devtool.Cookie) error
 	ClearBrowserCookies() error
 	Intercept([]*devtool.RequestPattern, func(*devtool.RequestPaused, *Intercepted)) func()
 }
 
+// Tab pages manage
 type Tab interface {
 	NewTab(string) (string, error)
 	SwitchToTab(string) (*Session, error)
@@ -63,23 +28,28 @@ type Tab interface {
 	OnNewTabOpen() chan string
 }
 
+// Input input domain
 type Input interface {
 	MouseMove(float64, float64) error
 	SendKeys(...rune) error
 }
 
+// Runtime runtime domain
 type Runtime interface {
 	Evaluate(string, bool) (interface{}, error)
 }
 
+// Core internal CDP methods
 type Core interface {
 	Listen(string) (chan []byte, func())
 }
 
+// Emulation Emulation domain
 type Emulation interface {
 	SetCPUThrottlingRate(rate int) error
 }
 
+// Page page domain
 type Page interface {
 	selectable
 
@@ -100,12 +70,14 @@ type Page interface {
 	Ticker(call TickerFunc) (interface{}, error)
 }
 
+// selectable interface to find element
 type selectable interface {
 	C(string, bool) Element // Select by CSS selector
 	Query(string) (Element, error)
 	QueryAll(string) []Element
 }
 
+// Element element interface
 type Element interface {
 	selectable
 
@@ -133,6 +105,3 @@ type Element interface {
 	ObserveMutation(attributes, childList, subtree bool) (chan string, chan error)
 	Release() error
 }
-```
-
-See https://github.com/Ecwid/witness/tree/master/examples for more examples

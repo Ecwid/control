@@ -11,7 +11,7 @@ import (
 func main() {
 	chrome, _ := chrome.New()
 	defer chrome.Close()
-	p, err := chrome.CDP.DefaultPage()
+	sess, err := chrome.CDP.DefaultSession()
 	if err != nil {
 		panic(err)
 	}
@@ -23,6 +23,8 @@ func main() {
 	chrome.CDP.Logging.SetHook(func(line string) {
 		log.Printf(line)
 	})
+
+	p := sess.Page
 
 	p.Navigate("https://mdemo.ecwid.com/")
 

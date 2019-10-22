@@ -13,11 +13,11 @@ const (
 )
 
 // MouseMove ...
-func (session *Session) MouseMove(x, y float64) error {
+func (session *CDPSession) MouseMove(x, y float64) error {
 	return session.dispatchMouseEvent(x, y, dispatchMouseEventMoved, "none")
 }
 
-func (session *Session) sendRune(c rune) error {
+func (session *CDPSession) sendRune(c rune) error {
 	_, err := session.blockingSend("Input.dispatchKeyEvent", Map{
 		"type":                  dispatchKeyEventKeyDown,
 		"windowsVirtualKeyCode": int(c),
@@ -38,7 +38,7 @@ func (session *Session) sendRune(c rune) error {
 	return err
 }
 
-func (session *Session) dispatchKeyEvent(text string) error {
+func (session *CDPSession) dispatchKeyEvent(text string) error {
 	for _, c := range text {
 		time.Sleep(time.Millisecond * 10)
 		if _, err := session.blockingSend("Input.dispatchKeyEvent", Map{
@@ -54,11 +54,11 @@ func (session *Session) dispatchKeyEvent(text string) error {
 	return nil
 }
 
-func (session *Session) insertText(text string) error {
+func (session *CDPSession) insertText(text string) error {
 	_, err := session.blockingSend("Input.insertText", Map{"text": text})
 	return err
 }
-func (session *Session) dispatchMouseEvent(x float64, y float64, eventType string, button string) error {
+func (session *CDPSession) dispatchMouseEvent(x float64, y float64, eventType string, button string) error {
 	_, err := session.blockingSend("Input.dispatchMouseEvent", Map{
 		"type":       eventType,
 		"button":     button,
@@ -70,7 +70,7 @@ func (session *Session) dispatchMouseEvent(x float64, y float64, eventType strin
 }
 
 // SendKeys send keyboard keys to focused element
-func (session *Session) SendKeys(key ...rune) error {
+func (session *CDPSession) SendKeys(key ...rune) error {
 	var err error
 	for _, k := range key {
 		err = session.sendRune(k)

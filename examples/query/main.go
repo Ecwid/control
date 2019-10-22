@@ -10,7 +10,7 @@ import (
 func main() {
 	chrome, _ := chrome.New("--headless")
 	defer chrome.Close()
-	page, err := chrome.CDP.DefaultPage()
+	session, err := chrome.CDP.DefaultSession()
 	if err != nil {
 		panic(err)
 	}
@@ -19,9 +19,9 @@ func main() {
 	// Implicitly affected only C() function
 	chrome.CDP.Timeouts.Implicitly = time.Second * 5
 
-	page.Navigate("https://my.ecwid.com")
+	session.Page.Navigate("https://my.ecwid.com")
 
-	page.C("[name='email']", true).Type("test@example.com")
-	page.C("[name='password']", true).Type("xxxxxx")
-	page.C("button.btn-primary", true).Click()
+	session.Page.C("[name='email']", true).Type("test@example.com")
+	session.Page.C("[name='password']", true).Type("xxxxxx")
+	session.Page.C("button.btn-primary", true).Click()
 }

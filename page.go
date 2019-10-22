@@ -9,48 +9,13 @@ import (
 	"github.com/ecwid/witness/pkg/devtool"
 )
 
-// Page ...
-type Page interface {
-	Select
-
-	Navigate(string) error
-	Reload() error
-	GetNavigationEntry() (*devtool.NavigationEntry, error)
-	Close() error
-	IsClosed() bool
-	MainFrame() error
-	SwitchToFrame(string) error
-	Listen(string) (chan []byte, func())
-	ID() string
-
-	AddScriptToEvaluateOnNewDocument(string) (string, error)
-	RemoveScriptToEvaluateOnNewDocument(string) error
-	TakeScreenshot(string, int8, *devtool.Viewport, bool) ([]byte, error)
-
-	NewPage(string) (string, error)
-	SwitchToPage(string) (Page, error)
-	GetPages() ([]string, error)
-	SubscribeOnWindowOpen() chan string
-
-	Evaluate(string, bool) (interface{}, error)
-
-	SetCookies(...*devtool.Cookie) error
-	ClearBrowserCookies() error
-	Fetch([]*devtool.RequestPattern, func(*devtool.RequestPaused, *Proceed)) func()
-
-	MouseMove(float64, float64) error
-	SendKeys(...rune) error
-
-	Ticker(call TickerFunc) (interface{}, error)
-}
-
 // ID session's ID
-func (session *Session) ID() string {
+func (session *CDPSession) ID() string {
 	return session.id
 }
 
 // Query query element on page by css selector
-func (session *Session) Query(selector string) (Element, error) {
+func (session *CDPSession) Query(selector string) (Element, error) {
 	element, err := session.query(nil, selector)
 	if err != nil {
 		return nil, err
@@ -59,7 +24,7 @@ func (session *Session) Query(selector string) (Element, error) {
 }
 
 // QueryAll queryAll elements on page by css selector
-func (session *Session) QueryAll(selector string) []Element {
+func (session *CDPSession) QueryAll(selector string) []Element {
 	v, err := session.queryAll(nil, selector)
 	if err != nil {
 		return []Element{}
@@ -68,7 +33,7 @@ func (session *Session) QueryAll(selector string) []Element {
 }
 
 // C searching selector (visible) with implicity wait timeout
-func (session *Session) C(selector string, visible bool) Element {
+func (session *CDPSession) C(selector string, visible bool) Element {
 	el, err := session.Ticker(func() (interface{}, error) {
 		new, err := session.Query(selector)
 		if err != nil {
@@ -92,7 +57,7 @@ func (session *Session) C(selector string, visible bool) Element {
 }
 
 // Close close this sessions
-func (session *Session) Close() error {
+func (session *CDPSession) Close() error {
 	_, err := session.blockingSend("Target.closeTarget", Map{"targetId": session.targetID})
 	// event 'Target.targetDestroyed' can be received early than message response
 	if err != nil && err != ErrSessionClosed {
@@ -102,7 +67,7 @@ func (session *Session) Close() error {
 }
 
 // Navigate navigate to url
-func (session *Session) Navigate(urlStr string) error {
+func (session *CDPSession) Navigate(urlStr string) error {
 	eventFired := make(chan bool, 1)
 	unsubscribe := session.subscribe("Page.loadEventFired", func([]byte) {
 		select {
@@ -143,7 +108,7 @@ func (session *Session) Navigate(urlStr string) error {
 }
 
 // Reload refresh current page ignores cache
-func (session *Session) Reload() error {
+func (session *CDPSession) Reload() error {
 	eventFired := make(chan bool, 1)
 	unsubscribe := session.subscribe("Page.loadEventFired", func([]byte) {
 		select {
@@ -167,7 +132,7 @@ func (session *Session) Reload() error {
 }
 
 // Evaluate evaluate javascript code at context of web page
-func (session *Session) Evaluate(code string, async bool) (interface{}, error) {
+func (session *CDPSession) Evaluate(code string, async bool) (interface{}, error) {
 	result, err := session.evaluate(code, 0, async)
 	if err != nil {
 		return "", err
@@ -176,7 +141,7 @@ func (session *Session) Evaluate(code string, async bool) (interface{}, error) {
 }
 
 // GetNavigationEntry get current tab info
-func (session *Session) GetNavigationEntry() (*devtool.NavigationEntry, error) {
+func (session *CDPSession) GetNavigationEntry() (*devtool.NavigationEntry, error) {
 	history, err := session.getNavigationHistory()
 	if err != nil {
 		return nil, err
@@ -188,7 +153,7 @@ func (session *Session) GetNavigationEntry() (*devtool.NavigationEntry, error) {
 }
 
 // TakeScreenshot get screen of current page
-func (session *Session) TakeScreenshot(format string, quality int8, clip *devtool.Viewport, fullPage bool) ([]byte, error) {
+func (session *CDPSession) TakeScreenshot(format string, quality int8, clip *devtool.Viewport, fullPage bool) ([]byte, error) {
 	_, err := session.blockingSend("Target.activateTarget", Map{"targetId": session.targetID})
 	if fullPage {
 		view, err := session.getLayoutMetrics()
@@ -217,8 +182,8 @@ func (session *Session) TakeScreenshot(format string, quality int8, clip *devtoo
 	return base64.StdEncoding.DecodeString(msg.json().String("data"))
 }
 
-// NewPage ...
-func (session *Session) NewPage(url string) (string, error) {
+// NewTab ...
+func (session *CDPSession) NewTab(url string) (string, error) {
 	msg, err := session.blockingSend("Target.createTarget", Map{
 		"url": url,
 	})
@@ -228,13 +193,13 @@ func (session *Session) NewPage(url string) (string, error) {
 	return msg.json().String("targetId"), nil
 }
 
-// SwitchToPage switch to another tab (new independent session will be created)
-func (session *Session) SwitchToPage(id string) (Page, error) {
+// SwitchToTab switch to another tab (new independent session will be created)
+func (session *CDPSession) SwitchToTab(id string) (*Session, error) {
 	return session.client.newSession(id)
 }
 
-// GetPages list of opened tabs in browser (targetID)
-func (session *Session) GetPages() ([]string, error) {
+// GetTabs list of opened tabs in browser (targetID)
+func (session *CDPSession) GetTabs() ([]string, error) {
 	ts, err := session.client.getTargets()
 	if err != nil {
 		return nil, err
@@ -249,7 +214,7 @@ func (session *Session) GetPages() ([]string, error) {
 }
 
 // IsClosed check is session (tab) closed
-func (session *Session) IsClosed() bool {
+func (session *CDPSession) IsClosed() bool {
 	select {
 	case <-session.closed:
 		return true
@@ -259,17 +224,17 @@ func (session *Session) IsClosed() bool {
 }
 
 // MainFrame switch context to main frame of page
-func (session *Session) MainFrame() error {
+func (session *CDPSession) MainFrame() error {
 	return session.setFrame(session.targetID)
 }
 
 // SwitchToFrame switch context to frame
-func (session *Session) SwitchToFrame(frameID string) error {
+func (session *CDPSession) SwitchToFrame(frameID string) error {
 	return session.setFrame(frameID)
 }
 
 // AddScriptToEvaluateOnNewDocument https://chromedevtools.github.io/devtools-protocol/tot/Page#method-addScriptToEvaluateOnNewDocument
-func (session *Session) AddScriptToEvaluateOnNewDocument(source string) (string, error) {
+func (session *CDPSession) AddScriptToEvaluateOnNewDocument(source string) (string, error) {
 	msg, err := session.blockingSend("Page.addScriptToEvaluateOnNewDocument", Map{"source": source})
 	if err != nil {
 		return "", err
@@ -278,19 +243,19 @@ func (session *Session) AddScriptToEvaluateOnNewDocument(source string) (string,
 }
 
 // RemoveScriptToEvaluateOnNewDocument https://chromedevtools.github.io/devtools-protocol/tot/Page#method-removeScriptToEvaluateOnNewDocument
-func (session *Session) RemoveScriptToEvaluateOnNewDocument(identifier string) error {
+func (session *CDPSession) RemoveScriptToEvaluateOnNewDocument(identifier string) error {
 	_, err := session.blockingSend("Page.removeScriptToEvaluateOnNewDocument", Map{"identifier": identifier})
 	return err
 }
 
 // SetCPUThrottlingRate https://chromedevtools.github.io/devtools-protocol/tot/Emulation#method-setCPUThrottlingRate
-func (session *Session) SetCPUThrottlingRate(rate int) error {
+func (session *CDPSession) SetCPUThrottlingRate(rate int) error {
 	_, err := session.blockingSend("Emulation.setCPUThrottlingRate", Map{"rate": rate})
 	return err
 }
 
-// SubscribeOnWindowOpen subscribe to Target.targetCreated event and return channel with targetID
-func (session *Session) SubscribeOnWindowOpen() chan string {
+// OnNewTabOpen subscribe to Target.targetCreated event and return channel with targetID
+func (session *CDPSession) OnNewTabOpen() chan string {
 	message := make(chan string, 1)
 	var unsubscribe func()
 	close := time.AfterFunc(session.client.Timeouts.Navigation, func() {
@@ -312,7 +277,7 @@ func (session *Session) SubscribeOnWindowOpen() chan string {
 
 // Listen subscribe to listen cdp event with name
 // return channel with incomming events and func to unsubscribe
-func (session *Session) Listen(name string) (chan []byte, func()) {
+func (session *CDPSession) Listen(name string) (chan []byte, func()) {
 	message := make(chan []byte, 1)
 	exit := make(chan struct{})
 	unsubscribe := session.subscribe(name, func(msg []byte) {

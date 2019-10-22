@@ -17,17 +17,17 @@ func TestClickHit(t *testing.T) {
 	chrome, err := chrome.New()
 	check(t, err)
 	defer chrome.Close()
-	page, err := chrome.CDP.DefaultPage()
+	s, err := chrome.CDP.DefaultSession()
 
 	get := func(sel string) witness.Element {
 		t.Helper()
-		el, err := page.Query(sel)
+		el, err := s.Page.Query(sel)
 		check(t, err)
 		return el
 	}
 
 	check(t, err)
-	check(t, page.Navigate(getFilepath("click_playground.html")))
+	check(t, s.Page.Navigate(getFilepath("click_playground.html")))
 
 	target := get("#target")
 

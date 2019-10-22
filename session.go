@@ -12,8 +12,8 @@ import (
 	"github.com/ecwid/witness/pkg/devtool"
 )
 
-// Session CDP session
-type Session struct {
+// CDPSession CDP session
+type CDPSession struct {
 	client        *CDP
 	rw            sync.Mutex
 	contexts      sync.Map
@@ -28,14 +28,14 @@ type Session struct {
 // TickerFunc ...
 type TickerFunc func() (interface{}, error)
 
-func (session *Session) panic(p interface{}) {
+func (session *CDPSession) panic(p interface{}) {
 	session.client.Logging.Print(LevelFatal, p)
 	panic(p)
 }
 
 // NewSession ...
 func (c *CDP) newSession(targetID string) (*Session, error) {
-	session := &Session{
+	session := &CDPSession{
 		client:        c,
 		incomingEvent: make(chan *rpcEvent, 1),
 		callbacks:     make(map[string]*list.List),
@@ -44,10 +44,19 @@ func (c *CDP) newSession(targetID string) (*Session, error) {
 		frameID:       targetID,
 	}
 	go session.listener()
-	return session, session.switchTarget()
+	sess := &Session{
+		Network:   session,
+		Input:     session,
+		Runtime:   session,
+		Page:      session,
+		Core:      session,
+		Tabs:      session,
+		Emulation: session,
+	}
+	return sess, session.switchTarget()
 }
 
-func (session *Session) switchTarget() error {
+func (session *CDPSession) switchTarget() error {
 	s, err := session.blockingSend("Target.attachToTarget", Map{"targetId": session.targetID, "flatten": true})
 	if err != nil {
 		return err
@@ -69,7 +78,7 @@ func (session *Session) switchTarget() error {
 	return nil
 }
 
-func (session *Session) setFrame(frameID string) error {
+func (session *CDPSession) setFrame(frameID string) error {
 	v, ok := session.contexts.Load(frameID)
 	if !ok {
 		return ErrNoSuchFrame
@@ -79,7 +88,7 @@ func (session *Session) setFrame(frameID string) error {
 	return nil
 }
 
-func (session *Session) getContextID() (int64, error) {
+func (session *CDPSession) getContextID() (int64, error) {
 	id := session.frameID
 	if v, ok := session.contexts.Load(id); ok {
 		return v.(int64), nil
@@ -94,7 +103,7 @@ func (session *Session) getContextID() (int64, error) {
 	return -1, ErrFrameDetached
 }
 
-func (session *Session) listener() {
+func (session *CDPSession) listener() {
 	for e := range session.incomingEvent {
 
 		session.rw.Lock()
@@ -154,7 +163,7 @@ func (session *Session) listener() {
 	}
 }
 
-func (session *Session) blockingSend(method string, send interface{}) (bytes, error) {
+func (session *CDPSession) blockingSend(method string, send interface{}) (bytes, error) {
 	recv := session.client.sendOverProtocol(session.id, method, send)
 	select {
 	case message := <-recv:
@@ -170,7 +179,7 @@ func (session *Session) blockingSend(method string, send interface{}) (bytes, er
 }
 
 // Ticker ...
-func (session *Session) Ticker(call TickerFunc) (interface{}, error) {
+func (session *CDPSession) Ticker(call TickerFunc) (interface{}, error) {
 	var err error
 	var v interface{}
 	// first time without ticker
@@ -193,7 +202,7 @@ func (session *Session) Ticker(call TickerFunc) (interface{}, error) {
 	}
 }
 
-func (session *Session) getNavigationHistory() (*devtool.NavigationHistory, error) {
+func (session *CDPSession) getNavigationHistory() (*devtool.NavigationHistory, error) {
 	msg, err := session.blockingSend("Page.getNavigationHistory", Map{})
 	if err != nil {
 		return nil, err
@@ -206,7 +215,7 @@ func (session *Session) getNavigationHistory() (*devtool.NavigationHistory, erro
 }
 
 // Subscribe subscribe to CDP event
-func (session *Session) subscribe(method string, callback func(params []byte)) (unsubscribe func()) {
+func (session *CDPSession) subscribe(method string, callback func(params []byte)) (unsubscribe func()) {
 	session.rw.Lock()
 	defer session.rw.Unlock()
 	if _, has := session.callbacks[method]; !has {
@@ -220,7 +229,7 @@ func (session *Session) subscribe(method string, callback func(params []byte)) (
 	}
 }
 
-func (session *Session) getFrameOwner(frameID string) (int64, error) {
+func (session *CDPSession) getFrameOwner(frameID string) (int64, error) {
 	msg, err := session.blockingSend("DOM.getFrameOwner", Map{"frameId": frameID})
 	if err != nil {
 		return 0, err
@@ -228,7 +237,7 @@ func (session *Session) getFrameOwner(frameID string) (int64, error) {
 	return msg.json().Int("backendNodeId"), nil
 }
 
-func (session *Session) getContentQuads(backendNodeID int64, objectID string, viewportCorrection bool) (devtool.Quad, error) {
+func (session *CDPSession) getContentQuads(backendNodeID int64, objectID string, viewportCorrection bool) (devtool.Quad, error) {
 	p := Map{
 		"backendNodeId": backendNodeID,
 		"objectId":      objectID,
@@ -273,7 +282,7 @@ func (session *Session) getContentQuads(backendNodeID int64, objectID string, vi
 	return nil, ErrElementIsOutOfViewport
 }
 
-func (session *Session) getLayoutMetrics() (*devtool.LayoutMetrics, error) {
+func (session *CDPSession) getLayoutMetrics() (*devtool.LayoutMetrics, error) {
 	msg, err := session.blockingSend("Page.getLayoutMetrics", Map{})
 	if err != nil {
 		return nil, err
@@ -285,7 +294,7 @@ func (session *Session) getLayoutMetrics() (*devtool.LayoutMetrics, error) {
 	return l, nil
 }
 
-func (session *Session) getFrameTree() (*devtool.FrameTree, error) {
+func (session *CDPSession) getFrameTree() (*devtool.FrameTree, error) {
 	msg, err := session.blockingSend("Page.getFrameTree", Map{})
 	if err != nil {
 		return nil, err
@@ -297,7 +306,7 @@ func (session *Session) getFrameTree() (*devtool.FrameTree, error) {
 	return tree.FrameTree, nil
 }
 
-func (session *Session) queryAll(parent *element, selector string) ([]Element, error) {
+func (session *CDPSession) queryAll(parent *element, selector string) ([]Element, error) {
 	selector = strings.ReplaceAll(selector, `"`, `\"`)
 	var array *devtool.RemoteObject
 	var err error
@@ -328,7 +337,7 @@ func (session *Session) queryAll(parent *element, selector string) ([]Element, e
 	return els, nil
 }
 
-func (session *Session) query(parent *element, selector string) (*devtool.RemoteObject, error) {
+func (session *CDPSession) query(parent *element, selector string) (*devtool.RemoteObject, error) {
 	selector = strings.ReplaceAll(selector, `"`, `\"`)
 	var element *devtool.RemoteObject
 	var err error

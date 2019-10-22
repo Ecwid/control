@@ -84,7 +84,7 @@ type CDP struct {
 	chanSend    chan []byte
 	chanReceive map[int64]chan *rpcResponse
 	close       chan bool
-	sessions    map[string]*Session
+	sessions    map[string]*CDPSession
 	context     context.Context
 	Stats       *stats
 	Timeouts    *timeouts
@@ -101,7 +101,7 @@ func New(cntx context.Context, webSocketURL string) (*CDP, error) {
 		conn:        conn,
 		chanSend:    make(chan []byte),                 /* channel for message sending */
 		chanReceive: make(map[int64]chan *rpcResponse), /* channel for receive message response */
-		sessions:    make(map[string]*Session),
+		sessions:    make(map[string]*CDPSession),
 		close:       make(chan bool),
 		context:     cntx,
 		Stats:       new(stats),
@@ -128,8 +128,8 @@ func (c *CDP) get(ch chan *rpcResponse) (*rpcResponse, error) {
 	}
 }
 
-// DefaultPage attach to default welcome page that opened after chrome start
-func (c *CDP) DefaultPage() (*Session, error) {
+// DefaultSession attach to default welcome page that opened after chrome start
+func (c *CDP) DefaultSession() (*Session, error) {
 	tick := time.NewTicker(time.Millisecond * 250)
 	implicitly := time.NewTimer(c.Timeouts.internal)
 	defer tick.Stop()
@@ -171,7 +171,7 @@ func (c *CDP) deleteSession(sessionID string) {
 	delete(c.sessions, sessionID)
 }
 
-func (c *CDP) addSession(session *Session) {
+func (c *CDP) addSession(session *CDPSession) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 	c.sessions[session.id] = session

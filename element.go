@@ -7,49 +7,13 @@ import (
 	"github.com/ecwid/witness/pkg/devtool"
 )
 
-// Select interface to find element
-type Select interface {
-	C(string, bool) Element // Select by CSS selector
-	Query(string) (Element, error)
-	QueryAll(string) []Element
-}
-
-// Element ...
-type Element interface {
-	Select
-
-	Click() error
-	Hover() error
-	Type(string, ...rune) error
-	Upload(...string) error
-	Clear() error
-	Select(...string) error
-	Checkbox(bool) error
-	SetAttr(string, string) error
-	Call(string, ...interface{}) (interface{}, error)
-	Focus() error
-
-	IsVisible() (bool, error)
-	GetText() (string, error)
-	GetAttr(attr string) (string, error)
-	GetRectangle() (*devtool.Rect, error)
-	GetComputedStyle(string) (string, error)
-	GetSelected(bool) ([]string, error)
-	IsChecked() (bool, error)
-	GetEventListeners() ([]string, error)
-	GetFrameID() (string, error)
-
-	ObserveMutation(attributes, childList, subtree bool) (chan string, chan error)
-	Release() error
-}
-
 func (e *element) Release() error {
 	return e.session.releaseObject(e.ID)
 }
 
 // Element ...
 type element struct {
-	session     *Session
+	session     *CDPSession
 	ID          string
 	description string
 	parent      *element
@@ -57,7 +21,7 @@ type element struct {
 	context     int64
 }
 
-func newElement(s *Session, parent *element, ID string, description string) *element {
+func newElement(s *CDPSession, parent *element, ID string, description string) *element {
 	c, _ := s.getContextID()
 	e := &element{
 		ID:          ID,
