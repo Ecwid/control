@@ -18,6 +18,7 @@ type Network interface {
 	SetCookies(...*devtool.Cookie) error
 	ClearBrowserCookies() error
 	Intercept([]*devtool.RequestPattern, func(*devtool.RequestPaused, *Intercepted)) func()
+	SetOffline(e bool) error
 }
 
 // Tab pages manage

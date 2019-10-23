@@ -20,6 +20,21 @@ func (session *CDPSession) SetExtraHTTPHeaders(headers map[string]string) error 
 	return err
 }
 
+// SetOffline set offline/online mode
+func (session *CDPSession) SetOffline(e bool) error {
+	return session.emulateNetworkConditions(e, 0, -1, -1)
+}
+
+func (session *CDPSession) emulateNetworkConditions(offline bool, latencyMs, downloadThroughputBps, uploadThroughputBps int) error {
+	_, err := session.blockingSend("Network.emulateNetworkConditions", Map{
+		"offline":            offline,
+		"latency":            latencyMs,
+		"downloadThroughput": downloadThroughputBps,
+		"uploadThroughput":   uploadThroughputBps,
+	})
+	return err
+}
+
 // fetchEnable https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-enable
 func (session *CDPSession) fetchEnable(patterns []*devtool.RequestPattern, handleAuthRequests bool) error {
 	_, err := session.blockingSend("Fetch.enable", Map{

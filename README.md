@@ -54,6 +54,7 @@ type Network interface {
 	SetCookies(...*devtool.Cookie) error
 	ClearBrowserCookies() error
 	Intercept([]*devtool.RequestPattern, func(*devtool.RequestPaused, *Intercepted)) func()
+	SetOffline(bool) error
 }
 
 type Tab interface {
