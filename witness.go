@@ -19,6 +19,7 @@ type Network interface {
 	ClearBrowserCookies() error
 	Intercept([]*devtool.RequestPattern, func(*devtool.RequestPaused, *Intercepted)) func()
 	SetOffline(e bool) error
+	SetThrottling(int, int, int) error
 }
 
 // Tab pages manage

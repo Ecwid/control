@@ -21,8 +21,14 @@ func (session *CDPSession) SetExtraHTTPHeaders(headers map[string]string) error 
 }
 
 // SetOffline set offline/online mode
+// SetOffline(false) - reset all network conditions to default
 func (session *CDPSession) SetOffline(e bool) error {
 	return session.emulateNetworkConditions(e, 0, -1, -1)
+}
+
+// SetThrottling set latency in milliseconds, download & upload throttling in bytes per second
+func (session *CDPSession) SetThrottling(latencyMs, downloadThroughputBps, uploadThroughputBps int) error {
+	return session.emulateNetworkConditions(false, latencyMs, downloadThroughputBps, downloadThroughputBps)
 }
 
 func (session *CDPSession) emulateNetworkConditions(offline bool, latencyMs, downloadThroughputBps, uploadThroughputBps int) error {
