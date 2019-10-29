@@ -147,7 +147,7 @@ func (session *CDPSession) listener() {
 			if err := e.Params.Unmarshal(targetCrashed); err != nil {
 				session.panic(err)
 			}
-			session.panic(targetCrashed)
+			session.panic(*targetCrashed)
 
 		case "Target.targetDestroyed":
 			targetDestroyed := new(devtool.TargetDestroyed)

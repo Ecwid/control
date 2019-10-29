@@ -69,3 +69,9 @@ func (session *CDPSession) callFunctionOn(objectID string, functionDeclaration s
 	}
 	return evaluateResult(msg)
 }
+
+// TerminateExecution Terminate current or next JavaScript execution. Will cancel the termination when the outer-most script execution ends
+func (session *CDPSession) TerminateExecution() error {
+	_, err := session.blockingSend("Runtime.terminateExecution", Map{})
+	return err
+}

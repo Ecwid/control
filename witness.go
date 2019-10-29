@@ -39,6 +39,7 @@ type Input interface {
 // Runtime runtime domain
 type Runtime interface {
 	Evaluate(string, bool) (interface{}, error)
+	TerminateExecution() error
 }
 
 // Message internal CDP methods
