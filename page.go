@@ -282,18 +282,19 @@ func (session *CDPSession) OnNewTabOpen() chan string {
 
 // Listen subscribe to listen cdp event with name
 // return channel with incomming events and func to unsubscribe
+// channel will be closed after unsubscribe func call
 func (session *CDPSession) Listen(name string) (chan []byte, func()) {
 	message := make(chan []byte, 1)
-	exit := make(chan struct{})
+	unsub := make(chan struct{})
 	unsubscribe := session.subscribe(name, func(msg []byte) {
 		select {
 		case message <- msg:
-		case <-exit:
-			close(message)
+		case <-unsub:
 		}
 	})
 	return message, func() {
 		unsubscribe()
-		close(exit)
+		close(unsub)
+		close(message)
 	}
 }
