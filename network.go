@@ -1,6 +1,10 @@
 package witness
 
-import "github.com/ecwid/witness/pkg/devtool"
+import (
+	"encoding/json"
+
+	"github.com/ecwid/witness/pkg/devtool"
+)
 
 // ClearBrowserCookies ...
 func (session *CDPSession) ClearBrowserCookies() error {
@@ -56,7 +60,7 @@ func (session *CDPSession) fetchDisable() error {
 	return err
 }
 
-// failRequest https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-failRequest
+// Fail https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-failRequest
 func (session *CDPSession) Fail(requestID string, reason devtool.ErrorReason) error {
 	_, err := session.blockingSend("Fetch.failRequest", Map{
 		"requestId":   requestID,
@@ -108,9 +112,9 @@ type Interceptor interface {
 
 // Intercept ...
 func (session *CDPSession) Intercept(patterns []*devtool.RequestPattern, fn func(*devtool.RequestPaused, Interceptor)) func() {
-	unsubscribe := session.subscribe("Fetch.requestPaused", func(msg []byte) {
+	unsubscribe := session.subscribe("Fetch.requestPaused", func(e *Event) {
 		request := new(devtool.RequestPaused)
-		if err := bytes(msg).Unmarshal(request); err != nil {
+		if err := json.Unmarshal(e.Params, request); err != nil {
 			panic(err)
 		}
 		fn(request, session)

@@ -2,6 +2,7 @@ package witness
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math"
 	"time"
@@ -71,7 +72,7 @@ func (session *CDPSession) Close() error {
 // Navigate navigate to url
 func (session *CDPSession) Navigate(urlStr string) error {
 	eventFired := make(chan bool, 1)
-	unsubscribe := session.subscribe("Page.loadEventFired", func([]byte) {
+	unsubscribe := session.subscribe("Page.loadEventFired", func(*Event) {
 		select {
 		case eventFired <- true:
 		default:
@@ -112,7 +113,7 @@ func (session *CDPSession) Navigate(urlStr string) error {
 // Reload refresh current page ignores cache
 func (session *CDPSession) Reload() error {
 	eventFired := make(chan bool, 1)
-	unsubscribe := session.subscribe("Page.loadEventFired", func([]byte) {
+	unsubscribe := session.subscribe("Page.loadEventFired", func(*Event) {
 		select {
 		case eventFired <- true:
 		default:
@@ -266,9 +267,9 @@ func (session *CDPSession) OnNewTabOpen() chan string {
 	close := time.AfterFunc(session.client.Timeouts.Navigation, func() {
 		close(message)
 	})
-	unsubscribe = session.subscribe("Target.targetCreated", func(msg []byte) {
+	unsubscribe = session.subscribe("Target.targetCreated", func(e *Event) {
 		targetCreated := new(devtool.TargetCreated)
-		if err := bytes(msg).Unmarshal(targetCreated); err != nil {
+		if err := json.Unmarshal(e.Params, targetCreated); err != nil {
 			session.panic(err)
 		}
 		if targetCreated.TargetInfo.Type == "page" {
@@ -280,20 +281,26 @@ func (session *CDPSession) OnNewTabOpen() chan string {
 	return message
 }
 
-// Listen subscribe to listen cdp event with name
+// Listen subscribe to listen cdp events with methods name
 // return channel with incomming events and func to unsubscribe
 // channel will be closed after unsubscribe func call
-func (session *CDPSession) Listen(name string) (chan []byte, func()) {
-	message := make(chan []byte, 1)
+func (session *CDPSession) Listen(methods ...string) (chan *Event, func()) {
+	message := make(chan *Event, 1)
 	unsub := make(chan struct{})
-	unsubscribe := session.subscribe(name, func(msg []byte) {
+	unsubscribe := make([]func(), 0)
+	callback := func(e *Event) {
 		select {
-		case message <- msg:
+		case message <- e:
 		case <-unsub:
 		}
-	})
+	}
+	for _, m := range methods {
+		unsubscribe = append(unsubscribe, session.subscribe(m, callback))
+	}
 	return message, func() {
-		unsubscribe()
+		for _, un := range unsubscribe {
+			un()
+		}
 		close(unsub)
 		close(message)
 	}

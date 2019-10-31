@@ -45,7 +45,7 @@ type Runtime interface {
 // Message internal CDP methods
 type Message interface {
 	BlockingSend(method string, send interface{}) ([]byte, error)
-	Listen(string) (chan []byte, func())
+	Listen(...string) (chan *Event, func())
 }
 
 // Emulation Emulation domain

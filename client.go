@@ -27,9 +27,10 @@ func (e rpcError) Error() string {
 	return e.Message
 }
 
-type rpcEvent struct {
-	Method string `json:"method"`
-	Params bytes  `json:"params"`
+// Event ...
+type Event struct {
+	Method string          `json:"method"`
+	Params json.RawMessage `json:"params"`
 }
 
 // rpcResponse cdp message response
@@ -41,7 +42,7 @@ type rpcResponse struct {
 }
 
 type rpcRecv struct {
-	rpcEvent
+	Event
 	rpcResponse
 }
 
@@ -236,10 +237,10 @@ func (c *CDP) incoming(recv []byte) {
 		c.Stats.Events++
 		c.mx.Lock()
 		if message.SessionID != "" {
-			c.sessions[message.SessionID].incomingEvent <- &message.rpcEvent
+			c.sessions[message.SessionID].incomingEvent <- &message.Event
 		} else {
 			for _, e := range c.sessions {
-				e.incomingEvent <- &message.rpcEvent
+				e.incomingEvent <- &message.Event
 			}
 		}
 		c.mx.Unlock()

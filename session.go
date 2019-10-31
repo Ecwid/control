@@ -2,6 +2,7 @@ package witness
 
 import (
 	"container/list"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strings"
@@ -20,7 +21,7 @@ type CDPSession struct {
 	id            string
 	targetID      string
 	frameID       string
-	incomingEvent chan *rpcEvent
+	incomingEvent chan *Event
 	callbacks     map[string]*list.List
 	closed        chan bool
 }
@@ -37,7 +38,7 @@ func (session *CDPSession) panic(p interface{}) {
 func (c *CDP) newSession(targetID string) (*Session, error) {
 	session := &CDPSession{
 		client:        c,
-		incomingEvent: make(chan *rpcEvent, 1),
+		incomingEvent: make(chan *Event, 1),
 		callbacks:     make(map[string]*list.List),
 		closed:        make(chan bool, 1),
 		targetID:      targetID,
@@ -66,7 +67,7 @@ func (session *CDPSession) switchTarget() error {
 	enables := map[string]Map{
 		"Page.enable":    nil,
 		"Runtime.enable": nil,
-		"Network.enable": Map{"maxPostDataSize": 1024},
+		"Network.enable": Map{"maxPostDataSize": 1024}, // maxPostDataSize - Longest post body size (in bytes) that would be included in requestWillBeSent notification
 	}
 	for k, v := range enables {
 		if _, err := session.blockingSend(k, v); err != nil {
@@ -110,7 +111,7 @@ func (session *CDPSession) listener() {
 		lst, has := session.callbacks[e.Method]
 		if has {
 			for p := lst.Front(); p != nil; p = p.Next() {
-				go p.Value.(func([]byte))(e.Params)
+				go p.Value.(func(*Event))(e)
 			}
 		}
 		session.rw.Unlock()
@@ -124,14 +125,14 @@ func (session *CDPSession) listener() {
 
 		case "Runtime.executionContextCreated":
 			c := new(devtool.ExecutionContextCreated)
-			if err := e.Params.Unmarshal(c); err != nil {
+			if err := json.Unmarshal(e.Params, c); err != nil {
 				session.panic(err)
 			}
 			session.contexts.Store(c.Context.AuxData["frameId"].(string), c.Context.ID)
 
 		case "Runtime.executionContextDestroyed":
 			c := new(devtool.ExecutionContextDestroyed)
-			if err := e.Params.Unmarshal(c); err != nil {
+			if err := json.Unmarshal(e.Params, c); err != nil {
 				session.panic(err)
 			}
 			session.contexts.Range(func(k interface{}, v interface{}) bool {
@@ -144,14 +145,14 @@ func (session *CDPSession) listener() {
 
 		case "Target.targetCrashed":
 			targetCrashed := new(devtool.TargetCrashed)
-			if err := e.Params.Unmarshal(targetCrashed); err != nil {
+			if err := json.Unmarshal(e.Params, targetCrashed); err != nil {
 				session.panic(err)
 			}
 			session.panic(*targetCrashed)
 
 		case "Target.targetDestroyed":
 			targetDestroyed := new(devtool.TargetDestroyed)
-			if err := e.Params.Unmarshal(targetDestroyed); err != nil {
+			if err := json.Unmarshal(e.Params, targetDestroyed); err != nil {
 				session.panic(err)
 			}
 			if targetDestroyed.TargetID == session.targetID {
@@ -220,7 +221,7 @@ func (session *CDPSession) getNavigationHistory() (*devtool.NavigationHistory, e
 }
 
 // Subscribe subscribe to CDP event
-func (session *CDPSession) subscribe(method string, callback func(params []byte)) (unsubscribe func()) {
+func (session *CDPSession) subscribe(method string, callback func(event *Event)) (unsubscribe func()) {
 	session.rw.Lock()
 	defer session.rw.Unlock()
 	if _, has := session.callbacks[method]; !has {

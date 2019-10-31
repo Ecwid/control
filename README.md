@@ -76,7 +76,7 @@ type Runtime interface {
 
 type Message interface {
 	BlockingSend(method string, send interface{}) ([]byte, error)
-	Listen(string) (chan []byte, func())
+	Listen(...string) (chan *Event, func())
 }
 
 type Emulation interface {
