@@ -53,7 +53,7 @@ type Session struct {
 type Network interface {
 	SetCookies(...*devtool.Cookie) error
 	ClearBrowserCookies() error
-	Intercept([]*devtool.RequestPattern, func(*devtool.RequestPaused, *Intercepted)) func()
+	Intercept([]*devtool.RequestPattern, func(*devtool.RequestPaused, Interceptor)) func()
 	SetOffline(bool) error
 	SetThrottling(int, int, int) error
 }

@@ -57,7 +57,7 @@ func (session *CDPSession) fetchDisable() error {
 }
 
 // failRequest https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-failRequest
-func (session *CDPSession) failRequest(requestID string, reason devtool.ErrorReason) error {
+func (session *CDPSession) Fail(requestID string, reason devtool.ErrorReason) error {
 	_, err := session.blockingSend("Fetch.failRequest", Map{
 		"requestId":   requestID,
 		"errorReason": string(reason),
@@ -65,8 +65,8 @@ func (session *CDPSession) failRequest(requestID string, reason devtool.ErrorRea
 	return err
 }
 
-// fulfillRequest https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-fulfillRequest
-func (session *CDPSession) fulfillRequest(
+// Fulfill https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-fulfillRequest
+func (session *CDPSession) Fulfill(
 	requestID string,
 	responseCode int,
 	responseHeaders []*devtool.HeaderEntry,
@@ -85,8 +85,8 @@ func (session *CDPSession) fulfillRequest(
 	return err
 }
 
-// continueRequest https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-continueRequest
-func (session *CDPSession) continueRequest(requestID string, url *string, method *string, postData *string, headers []*devtool.HeaderEntry) error {
+// Continue https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-continueRequest
+func (session *CDPSession) Continue(requestID string, url *string, method *string, postData *string, headers []*devtool.HeaderEntry) error {
 	p := Map{
 		"requestId": requestID,
 		"url":       url,
@@ -99,26 +99,21 @@ func (session *CDPSession) continueRequest(requestID string, url *string, method
 	return err
 }
 
-// Intercepted continue paused request
-type Intercepted struct {
-	Fail     func(requestID string, reason devtool.ErrorReason) error
-	Fulfill  func(requestID string, responseCode int, responseHeaders []*devtool.HeaderEntry, body *string, responsePhrase *string) error
-	Continue func(requestID string, url *string, method *string, postData *string, headers []*devtool.HeaderEntry) error
+// Interceptor continue paused request
+type Interceptor interface {
+	Fail(requestID string, reason devtool.ErrorReason) error
+	Fulfill(requestID string, responseCode int, responseHeaders []*devtool.HeaderEntry, body *string, responsePhrase *string) error
+	Continue(requestID string, url *string, method *string, postData *string, headers []*devtool.HeaderEntry) error
 }
 
 // Intercept ...
-func (session *CDPSession) Intercept(patterns []*devtool.RequestPattern, fn func(*devtool.RequestPaused, *Intercepted)) func() {
-	intercepted := &Intercepted{
-		Fail:     session.failRequest,
-		Fulfill:  session.fulfillRequest,
-		Continue: session.continueRequest,
-	}
+func (session *CDPSession) Intercept(patterns []*devtool.RequestPattern, fn func(*devtool.RequestPaused, Interceptor)) func() {
 	unsubscribe := session.subscribe("Fetch.requestPaused", func(msg []byte) {
 		request := new(devtool.RequestPaused)
 		if err := bytes(msg).Unmarshal(request); err != nil {
 			panic(err)
 		}
-		fn(request, intercepted)
+		fn(request, session)
 	})
 	if err := session.fetchEnable(patterns, false); err != nil {
 		panic(err)
