@@ -12,13 +12,22 @@ import (
 
 // Rec har recorder
 type Rec struct {
+	run         bool
 	unsubscribe func()
 	Log         *HAR `json:"log"`
 }
 
+// Unsubscribe ...
+func (r *Rec) Unsubscribe() {
+	if r.run {
+		r.unsubscribe()
+		r.run = false
+	}
+}
+
 // Serialize stop recording and serialize to bytes
 func (r *Rec) Serialize() ([]byte, error) {
-	r.unsubscribe()
+	r.Unsubscribe()
 	return json.Marshal(r)
 }
 
@@ -35,6 +44,7 @@ func New(messages witness.Message) *Rec {
 			Pages:   make([]*Page, 0),
 			Entries: make([]*Entry, 0),
 		},
+		run: true,
 	}
 
 	var events chan *witness.Event
