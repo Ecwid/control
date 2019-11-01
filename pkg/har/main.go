@@ -150,7 +150,7 @@ func process(rec *Rec, events <-chan *witness.Event) {
 				StartedDateTime: epoch(willBeSent.WallTime), //epoch float64, eg 1440589909.59248
 				Pageref:         page.ID,
 				Request:         request,
-				Response:        &Response{},
+				Response:        &Response{Content: &Content{}},
 				Cache:           &Cache{},
 				PageTimings:     &PageTimings{},
 			}
