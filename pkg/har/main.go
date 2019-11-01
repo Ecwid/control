@@ -50,7 +50,6 @@ func New(messages witness.Message) *Rec {
 	var events chan *witness.Event
 	events, r.unsubscribe = messages.Listen(
 		"Page.frameStartedLoading",
-		"Page.frameAttached",
 		"Page.navigatedWithinDocument",
 		"Network.requestWillBeSent",
 		"Network.responseReceived",
@@ -157,7 +156,7 @@ func process(rec *Rec, events <-chan *witness.Event) {
 
 			if willBeSent.RedirectResponse != nil {
 				entry := rec.entryByRequestID(willBeSent.RequestID)
-				if e == nil {
+				if entry == nil {
 					log.Print("no original request for redirect response " + string(e.Params))
 					continue
 				}
