@@ -1,11 +1,13 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"time"
 
 	"github.com/ecwid/witness"
 	"github.com/ecwid/witness/pkg/chrome"
+	"github.com/ecwid/witness/pkg/har"
 )
 
 func main() {
@@ -25,6 +27,10 @@ func main() {
 	})
 
 	p := sess.Page
+
+	time.Sleep(time.Second * 2)
+
+	myhar := har.New(sess.Message)
 
 	p.Navigate("https://mdemo.ecwid.com/")
 
@@ -51,6 +57,14 @@ func main() {
 			panic("can't read price")
 		}
 		log.Printf("title = %s, price = %s", title, price)
+	}
+
+	b, err := myhar.Serialize()
+	if err != nil {
+		panic(err)
+	}
+	if err := ioutil.WriteFile("mdemo.har", b, 0644); err != nil {
+		panic(err)
 	}
 
 }
