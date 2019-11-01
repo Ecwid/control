@@ -115,9 +115,10 @@ func (session *CDPSession) Intercept(patterns []*devtool.RequestPattern, fn func
 	unsubscribe := session.subscribe("Fetch.requestPaused", func(e *Event) {
 		request := new(devtool.RequestPaused)
 		if err := json.Unmarshal(e.Params, request); err != nil {
-			panic(err)
+			session.panic(err)
+			return
 		}
-		fn(request, session)
+		go fn(request, session)
 	})
 	if err := session.fetchEnable(patterns, false); err != nil {
 		panic(err)

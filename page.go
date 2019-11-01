@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/ecwid/witness/pkg/devtool"
@@ -263,21 +264,29 @@ func (session *CDPSession) SetCPUThrottlingRate(rate int) error {
 // OnNewTabOpen subscribe to Target.targetCreated event and return channel with targetID
 func (session *CDPSession) OnNewTabOpen() chan string {
 	message := make(chan string, 1)
-	var unsubscribe func()
+	inner := make(chan string)
 	close := time.AfterFunc(session.client.Timeouts.Navigation, func() {
 		close(message)
 	})
-	unsubscribe = session.subscribe("Target.targetCreated", func(e *Event) {
+	unsubscribe := session.subscribe("Target.targetCreated", func(e *Event) {
 		targetCreated := new(devtool.TargetCreated)
 		if err := json.Unmarshal(e.Params, targetCreated); err != nil {
 			session.panic(err)
 		}
 		if targetCreated.TargetInfo.Type == "page" {
-			message <- targetCreated.TargetInfo.TargetID
-			unsubscribe()
-			close.Stop()
+			select {
+			case message <- targetCreated.TargetInfo.TargetID:
+				inner <- ""
+			default:
+			}
 		}
 	})
+	go func() {
+		<-inner
+		unsubscribe()
+		close.Stop()
+	}()
+
 	return message
 }
 
@@ -285,23 +294,27 @@ func (session *CDPSession) OnNewTabOpen() chan string {
 // return channel with incomming events and func to unsubscribe
 // channel will be closed after unsubscribe func call
 func (session *CDPSession) Listen(methods ...string) (chan *Event, func()) {
-	message := make(chan *Event, 1)
-	unsub := make(chan struct{})
+	wg := sync.WaitGroup{}
+	eventsChan := make(chan *Event, 1)
+	interrupt := make(chan struct{})
 	unsubscribe := make([]func(), 0)
 	callback := func(e *Event) {
+		wg.Add(1)
 		select {
-		case message <- e:
-		case <-unsub:
+		case eventsChan <- e:
+		case <-interrupt:
 		}
+		wg.Done()
 	}
 	for _, m := range methods {
 		unsubscribe = append(unsubscribe, session.subscribe(m, callback))
 	}
-	return message, func() {
+	return eventsChan, func() {
 		for _, un := range unsubscribe {
 			un()
 		}
-		close(unsub)
-		close(message)
+		close(interrupt)
+		wg.Wait()
+		close(eventsChan)
 	}
 }

@@ -237,10 +237,10 @@ func (c *CDP) incoming(recv []byte) {
 		c.Stats.Events++
 		c.mx.Lock()
 		if message.SessionID != "" {
-			c.sessions[message.SessionID].incomingEvent <- &message.Event
+			c.sessions[message.SessionID].incoming <- &message.Event
 		} else {
 			for _, e := range c.sessions {
-				e.incomingEvent <- &message.Event
+				e.incoming <- &message.Event
 			}
 		}
 		c.mx.Unlock()

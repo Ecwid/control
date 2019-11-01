@@ -15,15 +15,15 @@ import (
 
 // CDPSession CDP session
 type CDPSession struct {
-	client        *CDP
-	rw            sync.Mutex
-	contexts      sync.Map
-	id            string
-	targetID      string
-	frameID       string
-	incomingEvent chan *Event
-	callbacks     map[string]*list.List
-	closed        chan bool
+	client    *CDP
+	rw        sync.Mutex
+	contexts  sync.Map
+	id        string
+	targetID  string
+	frameID   string
+	incoming  chan *Event
+	callbacks map[string]*list.List
+	closed    chan bool
 }
 
 // TickerFunc ...
@@ -37,12 +37,12 @@ func (session *CDPSession) panic(p interface{}) {
 // NewSession ...
 func (c *CDP) newSession(targetID string) (*Session, error) {
 	session := &CDPSession{
-		client:        c,
-		incomingEvent: make(chan *Event, 1),
-		callbacks:     make(map[string]*list.List),
-		closed:        make(chan bool, 1),
-		targetID:      targetID,
-		frameID:       targetID,
+		client:    c,
+		incoming:  make(chan *Event, 1),
+		callbacks: make(map[string]*list.List),
+		closed:    make(chan bool, 1),
+		targetID:  targetID,
+		frameID:   targetID,
 	}
 	go session.listener()
 	sess := &Session{
@@ -105,13 +105,12 @@ func (session *CDPSession) getContextID() (int64, error) {
 }
 
 func (session *CDPSession) listener() {
-	for e := range session.incomingEvent {
+	for e := range session.incoming {
 
 		session.rw.Lock()
-		lst, has := session.callbacks[e.Method]
-		if has {
-			for p := lst.Front(); p != nil; p = p.Next() {
-				go p.Value.(func(*Event))(e)
+		if list, has := session.callbacks[e.Method]; has {
+			for p := list.Front(); p != nil; p = p.Next() {
+				p.Value.(func(*Event))(e)
 			}
 		}
 		session.rw.Unlock()
