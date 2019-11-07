@@ -34,6 +34,7 @@ type Tab interface {
 type Input interface {
 	MouseMove(float64, float64) error
 	SendKeys(...rune) error
+	InsertText(string) error
 }
 
 // Runtime runtime domain

@@ -249,7 +249,8 @@ func (e *element) Type(text string, key ...rune) error {
 		return err
 	}
 	// insert text, not typing
-	err = e.session.insertText(text)
+	// todo natural typing
+	err = e.session.InsertText(text)
 	if err != nil {
 		return err
 	}

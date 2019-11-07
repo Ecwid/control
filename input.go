@@ -54,7 +54,8 @@ func (session *CDPSession) dispatchKeyEvent(text string) error {
 	return nil
 }
 
-func (session *CDPSession) insertText(text string) error {
+// InsertText method emulates inserting text that doesn't come from a key press, for example an emoji keyboard or an IME
+func (session *CDPSession) InsertText(text string) error {
 	_, err := session.blockingSend("Input.insertText", Map{"text": text})
 	return err
 }
