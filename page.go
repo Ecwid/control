@@ -159,6 +159,9 @@ func (session *CDPSession) GetNavigationEntry() (*devtool.NavigationEntry, error
 // TakeScreenshot get screen of current page
 func (session *CDPSession) TakeScreenshot(format string, quality int8, clip *devtool.Viewport, fullPage bool) ([]byte, error) {
 	_, err := session.blockingSend("Target.activateTarget", Map{"targetId": session.targetID})
+	if err != nil {
+		return nil, err
+	}
 	if fullPage {
 		view, err := session.getLayoutMetrics()
 		if err != nil {
