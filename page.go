@@ -156,10 +156,13 @@ func (session *CDPSession) GetNavigationEntry() (*devtool.NavigationEntry, error
 	return history.Entries[history.CurrentIndex], nil
 }
 
-// TakeScreenshot get screen of current page
+// TakeScreenshot get screen of current page, clip is not using
 func (session *CDPSession) TakeScreenshot(format string, quality int8, clip *devtool.Viewport, fullPage bool) ([]byte, error) {
 	_, err := session.blockingSend("Target.activateTarget", Map{"targetId": session.targetID})
 	if err != nil {
+		return nil, err
+	}
+	if err := session.setScrollbarsHidden(true); err != nil {
 		return nil, err
 	}
 	if fullPage {
@@ -167,12 +170,12 @@ func (session *CDPSession) TakeScreenshot(format string, quality int8, clip *dev
 		if err != nil {
 			return nil, err
 		}
-		defer session.blockingSend("Emulation.clearDeviceMetricsOverride", Map{})
-		_, err = session.blockingSend("Emulation.setDeviceMetricsOverride", Map{
-			"width":             int64(math.Ceil(view.ContentSize.Width)),
-			"height":            int64(math.Ceil(view.ContentSize.Height)),
-			"deviceScaleFactor": 1,
-			"mobile":            false,
+		defer session.clearDeviceMetricsOverride()
+		err = session.setDeviceMetricsOverride(&devtool.DeviceMetrics{
+			Width:             int64(math.Ceil(view.ContentSize.Width)),
+			Height:            int64(math.Ceil(view.ContentSize.Height)),
+			DeviceScaleFactor: 1,
+			Mobile:            false,
 		})
 		if err != nil {
 			return nil, err
@@ -255,12 +258,6 @@ func (session *CDPSession) AddScriptToEvaluateOnNewDocument(source string) (stri
 // RemoveScriptToEvaluateOnNewDocument https://chromedevtools.github.io/devtools-protocol/tot/Page#method-removeScriptToEvaluateOnNewDocument
 func (session *CDPSession) RemoveScriptToEvaluateOnNewDocument(identifier string) error {
 	_, err := session.blockingSend("Page.removeScriptToEvaluateOnNewDocument", Map{"identifier": identifier})
-	return err
-}
-
-// SetCPUThrottlingRate https://chromedevtools.github.io/devtools-protocol/tot/Emulation#method-setCPUThrottlingRate
-func (session *CDPSession) SetCPUThrottlingRate(rate int) error {
-	_, err := session.blockingSend("Emulation.setCPUThrottlingRate", Map{"rate": rate})
 	return err
 }
 

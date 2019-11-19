@@ -82,6 +82,7 @@ type Message interface {
 
 type Emulation interface {
 	SetCPUThrottlingRate(rate int) error
+	Emulate(*mobile.Device) error
 }
 
 type Page interface {

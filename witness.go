@@ -1,6 +1,9 @@
 package witness
 
-import "github.com/ecwid/witness/pkg/devtool"
+import (
+	"github.com/ecwid/witness/pkg/devtool"
+	"github.com/ecwid/witness/pkg/mobile"
+)
 
 // Session entry point session
 type Session struct {
@@ -52,6 +55,7 @@ type Message interface {
 // Emulation Emulation domain
 type Emulation interface {
 	SetCPUThrottlingRate(rate int) error
+	Emulate(*mobile.Device) error
 }
 
 // Page page domain
