@@ -34,7 +34,6 @@ func (d Device) Rotated() *Device {
 
 // Predefined devices
 var (
-	f        = true
 	GalaxyS5 = &Device{
 		Metrics: &devtool.DeviceMetrics{
 			Width:             360,
