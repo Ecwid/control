@@ -82,6 +82,7 @@ type Message interface {
 
 type Emulation interface {
 	SetCPUThrottlingRate(rate int) error
+	SetUserAgent(userAgent string) error
 	Emulate(*mobile.Device) error
 }
 

@@ -10,6 +10,11 @@ func (session *CDPSession) setDeviceMetricsOverride(metrics *devtool.DeviceMetri
 	return err
 }
 
+// SetUserAgent set user agent
+func (session *CDPSession) SetUserAgent(userAgent string) error {
+	return session.setUserAgent(userAgent, nil, nil)
+}
+
 func (session *CDPSession) setUserAgent(userAgent string, acceptLanguage, platform *string) error {
 	p := Map{
 		"userAgent":      userAgent,
