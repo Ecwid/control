@@ -320,7 +320,7 @@ func (session *CDPSession) queryAll(parent *element, selector string) ([]Element
 		if cerr != nil {
 			return nil, cerr
 		}
-		array, err = session.evaluate(`document.querySelectorAll("`+selector+`")`, c, false)
+		array, err = session.evaluate(`document.querySelectorAll("`+selector+`")`, c, false, false)
 	} else {
 		array, err = parent.call(atom.QueryAll, selector)
 	}
@@ -351,7 +351,7 @@ func (session *CDPSession) query(parent *element, selector string) (*devtool.Rem
 		if cerr != nil {
 			return nil, cerr
 		}
-		element, err = session.evaluate(`document.querySelector("`+selector+`")`, c, false)
+		element, err = session.evaluate(`document.querySelector("`+selector+`")`, c, false, false)
 	} else {
 		element, err = parent.call(atom.Query, selector)
 	}

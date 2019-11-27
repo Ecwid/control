@@ -3,11 +3,13 @@ package witness
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"sync"
 	"time"
 
+	"github.com/ecwid/witness/internal/atom"
 	"github.com/ecwid/witness/pkg/devtool"
 )
 
@@ -137,7 +139,7 @@ func (session *CDPSession) Reload() error {
 
 // Evaluate evaluate javascript code at context of web page
 func (session *CDPSession) Evaluate(code string, async bool) (interface{}, error) {
-	result, err := session.evaluate(code, 0, async)
+	result, err := session.evaluate(code, 0, async, false)
 	if err != nil {
 		return "", err
 	}
@@ -158,24 +160,27 @@ func (session *CDPSession) GetNavigationEntry() (*devtool.NavigationEntry, error
 
 // TakeScreenshot get screen of current page, clip is not using
 func (session *CDPSession) TakeScreenshot(format string, quality int8, clip *devtool.Viewport, fullPage bool) ([]byte, error) {
-	_, err := session.blockingSend("Target.activateTarget", Map{"targetId": session.targetID})
-	if err != nil {
+	if _, err := session.blockingSend("Target.activateTarget", Map{"targetId": session.targetID}); err != nil {
 		return nil, err
 	}
 	if err := session.setScrollbarsHidden(true); err != nil {
 		return nil, err
 	}
 	if fullPage {
-		view, err := session.getLayoutMetrics()
+		roo, err := session.evaluate(atom.LayoutMetrics, 0, false, true)
 		if err != nil {
 			return nil, err
 		}
+		metrics, ok := roo.Value.(map[string]interface{})
+		if !ok {
+			return nil, errors.New("evaluate value is not map[string]interface{}")
+		}
 		defer session.clearDeviceMetricsOverride()
 		err = session.setDeviceMetricsOverride(&devtool.DeviceMetrics{
-			Width:             int64(math.Ceil(view.ContentSize.Width)),
-			Height:            int64(math.Ceil(view.ContentSize.Height)),
-			DeviceScaleFactor: 1,
-			Mobile:            false,
+			Width:             int64(math.Ceil(metrics["width"].(float64))),
+			Height:            int64(math.Ceil(metrics["height"].(float64))),
+			DeviceScaleFactor: 1, //metrics["deviceScaleFactor"].(float64),
+			Mobile:            metrics["mobile"].(bool),
 		})
 		if err != nil {
 			return nil, err

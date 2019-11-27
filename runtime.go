@@ -19,12 +19,12 @@ func evaluateResult(msg bytes) (*devtool.RemoteObject, error) {
 }
 
 // Evaluate Evaluates expression on global object.
-func (session *CDPSession) evaluate(expression string, contextID int64, async bool) (*devtool.RemoteObject, error) {
+func (session *CDPSession) evaluate(expression string, contextID int64, async, returnByValue bool) (*devtool.RemoteObject, error) {
 	exp := &devtool.EvaluatesExpression{
 		Expression:    expression,
 		ContextID:     contextID,
 		AwaitPromise:  !async,
-		ReturnByValue: false,
+		ReturnByValue: returnByValue,
 	}
 	msg, err := session.blockingSend("Runtime.evaluate", exp)
 	if err != nil {
