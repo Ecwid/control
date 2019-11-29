@@ -85,7 +85,7 @@ type CDP struct {
 	chanSend    chan []byte
 	chanReceive map[int64]chan *rpcResponse
 	close       chan bool
-	sessions    map[string]*CDPSession
+	sessions    sync.Map
 	context     context.Context
 	Stats       *stats
 	Timeouts    *timeouts
@@ -102,7 +102,6 @@ func New(cntx context.Context, webSocketURL string) (*CDP, error) {
 		conn:        conn,
 		chanSend:    make(chan []byte),                 /* channel for message sending */
 		chanReceive: make(map[int64]chan *rpcResponse), /* channel for receive message response */
-		sessions:    make(map[string]*CDPSession),
 		close:       make(chan bool),
 		context:     cntx,
 		Stats:       new(stats),
@@ -167,15 +166,11 @@ func (c *CDP) getTargets() ([]*devtool.TargetInfo, error) {
 }
 
 func (c *CDP) deleteSession(sessionID string) {
-	c.mx.Lock()
-	defer c.mx.Unlock()
-	delete(c.sessions, sessionID)
+	c.sessions.Delete(sessionID)
 }
 
 func (c *CDP) addSession(session *CDPSession) {
-	c.mx.Lock()
-	defer c.mx.Unlock()
-	c.sessions[session.id] = session
+	c.sessions.Store(session.id, session)
 }
 
 // SendOverProtocol send a message through cdp protocol
@@ -235,15 +230,16 @@ func (c *CDP) incoming(recv []byte) {
 	if message.isEvent() {
 		c.Logging.Printf(LevelProtocolEvents, "\033[1;30mevent <- %s\033[0m", string(recv))
 		c.Stats.Events++
-		c.mx.Lock()
 		if message.SessionID != "" {
-			c.sessions[message.SessionID].incoming <- &message.Event
-		} else {
-			for _, e := range c.sessions {
-				e.incoming <- &message.Event
+			if sess, ok := c.sessions.Load(message.SessionID); ok {
+				sess.(*CDPSession).incoming <- &message.Event
 			}
+		} else {
+			c.sessions.Range(func(_ interface{}, v interface{}) bool {
+				v.(*CDPSession).incoming <- &message.Event
+				return true
+			})
 		}
-		c.mx.Unlock()
 	} else {
 		c.Stats.Messages++
 		if message.isError() {
