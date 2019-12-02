@@ -247,12 +247,12 @@ func (c *CDP) incoming(recv []byte) {
 		} else {
 			c.Logging.Printf(LevelProtocolMessage, "\033[1;34mrecv <- %s\033[0m", string(recv))
 		}
+		c.mx.Lock()
 		if recv, ok := c.chanReceive[message.ID]; ok {
 			recv <- &message.rpcResponse
-			c.mx.Lock()
 			delete(c.chanReceive, message.ID)
-			c.mx.Unlock()
 		}
+		c.mx.Unlock()
 	}
 }
 
