@@ -315,10 +315,10 @@ func (session *CDPSession) Listen(methods ...string) (chan *Event, func()) {
 		unsubscribe = append(unsubscribe, session.subscribe(m, callback))
 	}
 	return eventsChan, func() {
+		close(interrupt)
 		for _, un := range unsubscribe {
 			un()
 		}
-		close(interrupt)
 		wg.Wait()
 		close(eventsChan)
 	}
