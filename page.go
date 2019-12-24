@@ -185,6 +185,7 @@ func (session *CDPSession) TakeScreenshot(format string, quality int8, clip *dev
 		if err != nil {
 			return nil, err
 		}
+		time.Sleep(time.Millisecond * 250)
 	}
 	msg, err := session.blockingSend("Page.captureScreenshot", Map{
 		"format":      format,
