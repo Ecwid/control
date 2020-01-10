@@ -178,9 +178,6 @@ func (session *CDPSession) fitToWindow() error {
 
 // CaptureScreenshot get screen of current page
 func (session *CDPSession) CaptureScreenshot(format string, quality int8, fullPage bool, cb func() error) ([]byte, error) {
-	if err := session.activate(); err != nil {
-		return nil, err
-	}
 	if fullPage {
 		if err := session.fitToWindow(); err != nil {
 			return nil, err
@@ -260,7 +257,8 @@ func (session *CDPSession) SwitchToFrame(frameID string) error {
 	return session.setFrame(frameID)
 }
 
-func (session *CDPSession) activate() error {
+// Activate activate current Target
+func (session *CDPSession) Activate() error {
 	_, err := session.blockingSend("Target.activateTarget", Map{"targetId": session.targetID})
 	return err
 }

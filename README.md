@@ -102,6 +102,7 @@ type Page interface {
 	AddScriptToEvaluateOnNewDocument(string) (string, error)
 	RemoveScriptToEvaluateOnNewDocument(string) error
 	CaptureScreenshot(string, int8, bool, func() error) ([]byte, error)
+	Activate() error
 
 	Ticker(call TickerFunc) (interface{}, error)
 }
