@@ -29,7 +29,7 @@ func main() {
 		if err := session.Emulation.Emulate(m); err != nil {
 			panic(err)
 		}
-		b, _ := session.Page.TakeScreenshot("png", 100, nil, true)
+		b, _ := session.Page.CaptureScreenshot("png", 100, true, nil)
 		ioutil.WriteFile(fmt.Sprintf("%d.png", i), b, 0644)
 	}
 

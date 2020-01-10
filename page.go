@@ -158,34 +158,42 @@ func (session *CDPSession) GetNavigationEntry() (*devtool.NavigationEntry, error
 	return history.Entries[history.CurrentIndex], nil
 }
 
-// TakeScreenshot get screen of current page, clip is not using
-func (session *CDPSession) TakeScreenshot(format string, quality int8, clip *devtool.Viewport, fullPage bool) ([]byte, error) {
-	if _, err := session.blockingSend("Target.activateTarget", Map{"targetId": session.targetID}); err != nil {
-		return nil, err
+// FitToWindow ...
+func (session *CDPSession) fitToWindow() error {
+	roo, err := session.evaluate(atom.LayoutMetrics, 0, false, true)
+	if err != nil {
+		return err
 	}
-	if err := session.setScrollbarsHidden(true); err != nil {
+	metrics, ok := roo.Value.(map[string]interface{})
+	if !ok {
+		return errors.New("evaluate value is not map[string]interface{}")
+	}
+	return session.setDeviceMetricsOverride(&devtool.DeviceMetrics{
+		Width:             int64(math.Ceil(metrics["width"].(float64))),
+		Height:            int64(math.Ceil(metrics["height"].(float64))),
+		DeviceScaleFactor: 1, //metrics["deviceScaleFactor"].(float64),
+		Mobile:            metrics["mobile"].(bool),
+	})
+}
+
+// CaptureScreenshot get screen of current page
+func (session *CDPSession) CaptureScreenshot(format string, quality int8, fullPage bool, cb func() error) ([]byte, error) {
+	if err := session.activate(); err != nil {
 		return nil, err
 	}
 	if fullPage {
-		roo, err := session.evaluate(atom.LayoutMetrics, 0, false, true)
-		if err != nil {
+		if err := session.fitToWindow(); err != nil {
 			return nil, err
-		}
-		metrics, ok := roo.Value.(map[string]interface{})
-		if !ok {
-			return nil, errors.New("evaluate value is not map[string]interface{}")
 		}
 		defer session.clearDeviceMetricsOverride()
-		err = session.setDeviceMetricsOverride(&devtool.DeviceMetrics{
-			Width:             int64(math.Ceil(metrics["width"].(float64))),
-			Height:            int64(math.Ceil(metrics["height"].(float64))),
-			DeviceScaleFactor: 1, //metrics["deviceScaleFactor"].(float64),
-			Mobile:            metrics["mobile"].(bool),
-		})
-		if err != nil {
+	}
+	if cb != nil {
+		if err := cb(); err != nil {
 			return nil, err
 		}
-		time.Sleep(time.Millisecond * 250)
+	}
+	if err := session.setScrollbarsHidden(true); err != nil {
+		return nil, err
 	}
 	msg, err := session.blockingSend("Page.captureScreenshot", Map{
 		"format":      format,
@@ -250,6 +258,11 @@ func (session *CDPSession) MainFrame() error {
 // SwitchToFrame switch context to frame
 func (session *CDPSession) SwitchToFrame(frameID string) error {
 	return session.setFrame(frameID)
+}
+
+func (session *CDPSession) activate() error {
+	_, err := session.blockingSend("Target.activateTarget", Map{"targetId": session.targetID})
+	return err
 }
 
 // AddScriptToEvaluateOnNewDocument https://chromedevtools.github.io/devtools-protocol/tot/Page#method-addScriptToEvaluateOnNewDocument

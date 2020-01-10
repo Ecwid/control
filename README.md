@@ -101,7 +101,7 @@ type Page interface {
 
 	AddScriptToEvaluateOnNewDocument(string) (string, error)
 	RemoveScriptToEvaluateOnNewDocument(string) error
-	TakeScreenshot(string, int8, *devtool.Viewport, bool) ([]byte, error)
+	CaptureScreenshot(string, int8, bool, func() error) ([]byte, error)
 
 	Ticker(call TickerFunc) (interface{}, error)
 }
