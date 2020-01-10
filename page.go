@@ -3,13 +3,11 @@ package witness
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"sync"
 	"time"
 
-	"github.com/ecwid/witness/internal/atom"
 	"github.com/ecwid/witness/pkg/devtool"
 )
 
@@ -160,19 +158,15 @@ func (session *CDPSession) GetNavigationEntry() (*devtool.NavigationEntry, error
 
 // FitToWindow ...
 func (session *CDPSession) fitToWindow() error {
-	roo, err := session.evaluate(atom.LayoutMetrics, 0, false, true)
+	view, err := session.getLayoutMetrics()
 	if err != nil {
 		return err
 	}
-	metrics, ok := roo.Value.(map[string]interface{})
-	if !ok {
-		return errors.New("evaluate value is not map[string]interface{}")
-	}
 	return session.setDeviceMetricsOverride(&devtool.DeviceMetrics{
-		Width:             int64(math.Ceil(metrics["width"].(float64))),
-		Height:            int64(math.Ceil(metrics["height"].(float64))),
-		DeviceScaleFactor: 1, //metrics["deviceScaleFactor"].(float64),
-		Mobile:            metrics["mobile"].(bool),
+		Width:             int64(math.Ceil(view.ContentSize.Width)),
+		Height:            int64(math.Ceil(view.ContentSize.Height)),
+		DeviceScaleFactor: 1,
+		Mobile:            false,
 	})
 }
 
