@@ -163,7 +163,7 @@ func (session *CDPSession) fitToWindow() error {
 		return err
 	}
 	return session.setDeviceMetricsOverride(&devtool.DeviceMetrics{
-		Width:             int64(math.Ceil(view.ContentSize.Width)),
+		Width:             view.LayoutViewport.ClientWidth,
 		Height:            int64(math.Ceil(view.ContentSize.Height)),
 		DeviceScaleFactor: 1,
 		Mobile:            false,
