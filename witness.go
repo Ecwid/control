@@ -20,6 +20,7 @@ type Session struct {
 type Network interface {
 	SetCookies(...*devtool.Cookie) error
 	ClearBrowserCookies() error
+	GetCookies(...string) ([]*devtool.Cookie, error)
 	Intercept([]*devtool.RequestPattern, func(*devtool.RequestPaused, Interceptor)) func()
 	SetOffline(e bool) error
 	SetThrottling(int, int, int) error

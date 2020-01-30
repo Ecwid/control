@@ -66,6 +66,11 @@ type Cookie struct {
 	Secure   bool   `json:"secure"`
 }
 
+// GetCookies https://chromedevtools.github.io/devtools-protocol/tot/Network#method-getCookies
+type GetCookies struct {
+	Cookies []*Cookie `json:"cookies"`
+}
+
 // Request https://chromedevtools.github.io/devtools-protocol/tot/Network#type-Request
 type Request struct {
 	URL              string                 `json:"url"`

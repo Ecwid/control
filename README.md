@@ -53,6 +53,7 @@ type Session struct {
 type Network interface {
 	SetCookies(...*devtool.Cookie) error
 	ClearBrowserCookies() error
+	GetCookies(...string) ([]*devtool.Cookie, error)
 	Intercept([]*devtool.RequestPattern, func(*devtool.RequestPaused, Interceptor)) func()
 	SetOffline(bool) error
 	SetThrottling(int, int, int) error
@@ -108,7 +109,7 @@ type Page interface {
 }
 
 type Findable interface {
-	C(string, bool) Element // Select by CSS selector
+	C(string, bool) Element // must get element by css-selector with implicity wait or panic
 	Query(string) (Element, error)
 	QueryAll(string) []Element
 }

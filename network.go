@@ -18,6 +18,23 @@ func (session *CDPSession) SetCookies(cookies ...*devtool.Cookie) error {
 	return err
 }
 
+// GetCookies returns all browser cookies for the current URL
+func (session *CDPSession) GetCookies(urls ...string) ([]*devtool.Cookie, error) {
+	cmap := Map{}
+	if urls != nil {
+		cmap["urls"] = urls
+	}
+	getCookies, err := session.blockingSend("Network.getCookies", cmap)
+	if err != nil {
+		return nil, err
+	}
+	cookies := new(devtool.GetCookies)
+	if err := json.Unmarshal(getCookies, cookies); err != nil {
+		return nil, err
+	}
+	return cookies.Cookies, nil
+}
+
 // SetExtraHTTPHeaders Specifies whether to always send extra HTTP headers with the requests from this page.
 func (session *CDPSession) SetExtraHTTPHeaders(headers map[string]string) error {
 	_, err := session.blockingSend("Network.setExtraHTTPHeaders", Map{"headers": headers})
