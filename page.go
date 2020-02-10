@@ -274,48 +274,56 @@ func (session *CDPSession) RemoveScriptToEvaluateOnNewDocument(identifier string
 
 // OnNewTabOpen subscribe to Target.targetCreated event and return channel with targetID
 func (session *CDPSession) OnNewTabOpen() chan string {
-	message := make(chan string, 1)
-	inner := make(chan string)
-	close := time.AfterFunc(session.client.Timeouts.Navigation, func() {
-		close(message)
-	})
+	var (
+		wg                = sync.WaitGroup{}
+		targetCreatedChan = make(chan string, 1)
+		stopChan          = make(chan struct{})
+	)
 	unsubscribe := session.subscribe("Target.targetCreated", func(e *Event) {
+		wg.Add(1)
+		defer wg.Done()
 		targetCreated := new(devtool.TargetCreated)
 		if err := json.Unmarshal(e.Params, targetCreated); err != nil {
 			session.panic(err)
 		}
 		if targetCreated.TargetInfo.Type == "page" {
 			select {
-			case message <- targetCreated.TargetInfo.TargetID:
-				inner <- ""
+			case targetCreatedChan <- targetCreated.TargetInfo.TargetID:
+				stopChan <- struct{}{}
 			default:
 			}
 		}
 	})
 	go func() {
-		<-inner
+		select {
+		case <-stopChan:
+		case <-time.After(session.client.Timeouts.Navigation): // to close channel after timeout to prevent hangs
+		}
 		unsubscribe()
-		close.Stop()
+		wg.Wait()
+		close(targetCreatedChan)
 	}()
 
-	return message
+	return targetCreatedChan
 }
 
 // Listen subscribe to listen cdp events with methods name
 // return channel with incomming events and func to unsubscribe
 // channel will be closed after unsubscribe func call
 func (session *CDPSession) Listen(methods ...string) (chan *Event, func()) {
-	wg := sync.WaitGroup{}
-	eventsChan := make(chan *Event, 1)
-	interrupt := make(chan struct{})
-	unsubscribe := make([]func(), 0)
+	var (
+		wg          = sync.WaitGroup{}
+		eventsChan  = make(chan *Event, 1)
+		interrupt   = make(chan struct{})
+		unsubscribe = make([]func(), 0)
+	)
 	callback := func(e *Event) {
 		wg.Add(1)
+		defer wg.Done()
 		select {
 		case eventsChan <- e:
 		case <-interrupt:
 		}
-		wg.Done()
 	}
 	for _, m := range methods {
 		unsubscribe = append(unsubscribe, session.subscribe(m, callback))
