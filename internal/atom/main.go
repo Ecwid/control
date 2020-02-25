@@ -3,7 +3,7 @@ package atom
 // Atom JS functions
 const (
 	ScrollIntoView   = `async function(){return await async function(a){const b=await new Promise(b=>{const c=new IntersectionObserver(a=>{b(a[0].intersectionRatio),c.disconnect()});c.observe(a)});1!==b&&a.scrollIntoView({block:"center",inline:"center",behavior:"instant"})}(this)}`
-	ClearInput       = `function(){"INPUT"===this.nodeName?this.value="":this.innerText=""}`
+	ClearInput       = `function(){("INPUT"===this.nodeName||"TEXTAREA"===this.nodeName)?this.value="":this.innerText=""}`
 	GetInnerText     = `function(){return this.value||this.innerText}`
 	DispatchEvents   = `function(l){for(const e of l)this.dispatchEvent(new Event(e,{'bubbles':!0}))}`
 	Select           = `function(a){const b=Array.from(this.options);this.value=void 0;for(const c of b)if(c.selected=a.includes(c.value),c.selected&&!this.multiple)break}`
