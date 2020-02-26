@@ -219,6 +219,13 @@ func (session *CDPSession) getNavigationHistory() (*devtool.NavigationHistory, e
 	return history, nil
 }
 
+func (session *CDPSession) navigateToHistoryEntry(entryID int64) error {
+	_, err := session.blockingSend("Page.navigateToHistoryEntry", Map{
+		"entryId": entryID,
+	})
+	return err
+}
+
 // Subscribe subscribe to CDP event
 func (session *CDPSession) subscribe(method string, callback func(event *Event)) (unsubscribe func()) {
 	session.rw.Lock()

@@ -70,6 +70,28 @@ func (session *CDPSession) Close() error {
 	return nil
 }
 
+func (session *CDPSession) navigateHistory(delta int64) error {
+	history, err := session.getNavigationHistory()
+	if err != nil {
+		return err
+	}
+	move := history.CurrentIndex + delta
+	if move > 0 && move < int64(len(history.Entries)) {
+		return session.navigateToHistoryEntry(history.Entries[move].ID)
+	}
+	return nil
+}
+
+// Back navigate back
+func (session *CDPSession) Back() error {
+	return session.navigateHistory(-1)
+}
+
+// Forward navigate forward
+func (session *CDPSession) Forward() error {
+	return session.navigateHistory(+1)
+}
+
 // Navigate navigate to url
 func (session *CDPSession) Navigate(urlStr string) error {
 	eventFired := make(chan bool, 1)

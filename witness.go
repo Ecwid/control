@@ -71,6 +71,8 @@ type Page interface {
 	IsClosed() bool
 	MainFrame() error
 	SwitchToFrame(string) error
+	Back() error
+	Forward() error
 
 	ID() string
 

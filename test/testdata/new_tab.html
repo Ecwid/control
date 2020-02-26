@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+</head>
+
+<body>
+    <a id="newtabs" href="#" onclick="NewTab(5);">open 5 new tab</a>
+    <script>
+        function NewTab(n) {
+            for (i = 0; i < parseInt(n); i++) {
+                window.open('https://google.com/' + n);
+            }
+        }
+    </script>
+</body>
+
+</html>
