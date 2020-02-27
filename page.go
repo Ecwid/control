@@ -76,7 +76,7 @@ func (session *CDPSession) navigateHistory(delta int64) error {
 		return err
 	}
 	move := history.CurrentIndex + delta
-	if move > 0 && move < int64(len(history.Entries)) {
+	if move >= 0 && move < int64(len(history.Entries)) {
 		return session.navigateToHistoryEntry(history.Entries[move].ID)
 	}
 	return nil
