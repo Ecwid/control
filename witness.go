@@ -78,6 +78,7 @@ type Page interface {
 
 	AddScriptToEvaluateOnNewDocument(string) (string, error)
 	RemoveScriptToEvaluateOnNewDocument(string) error
+	SetDownloadBehavior(devtool.DownloadBehavior, string) error
 	CaptureScreenshot(string, int8, bool, func() error) ([]byte, error)
 	Activate() error
 

@@ -3,6 +3,16 @@ package devtool
 // LifecycleEventType type of LifecycleEvent
 type LifecycleEventType string
 
+// DownloadBehavior deny, allow, default
+type DownloadBehavior string
+
+// DownloadBehavior
+const (
+	DownloadBehaviorDeny    DownloadBehavior = "deny"
+	DownloadBehaviorAllow   DownloadBehavior = "allow"
+	DownloadBehaviorDefault DownloadBehavior = "default"
+)
+
 // LifecycleEventType
 const (
 	DOMContentLoaded              LifecycleEventType = "DOMContentLoaded"

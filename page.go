@@ -294,6 +294,15 @@ func (session *CDPSession) RemoveScriptToEvaluateOnNewDocument(identifier string
 	return err
 }
 
+// SetDownloadBehavior https://chromedevtools.github.io/devtools-protocol/tot/Page#method-setDownloadBehavior
+func (session *CDPSession) SetDownloadBehavior(behavior devtool.DownloadBehavior, downloadPath string) error {
+	_, err := session.blockingSend("Page.setDownloadBehavior", Map{
+		"behavior":     string(behavior),
+		"downloadPath": downloadPath,
+	})
+	return err
+}
+
 // OnNewTabOpen subscribe to Target.targetCreated event and return channel with targetID
 func (session *CDPSession) OnNewTabOpen() chan string {
 	var (
