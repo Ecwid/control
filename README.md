@@ -73,7 +73,7 @@ type Input interface {
 }
 
 type Runtime interface {
-	Evaluate(string, bool) (interface{}, error)
+	Evaluate(string, bool, bool) (interface{}, error)
 }
 
 type Message interface {

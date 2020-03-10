@@ -158,8 +158,8 @@ func (session *CDPSession) Reload() error {
 }
 
 // Evaluate evaluate javascript code at context of web page
-func (session *CDPSession) Evaluate(code string, async bool) (interface{}, error) {
-	result, err := session.evaluate(code, 0, async, false)
+func (session *CDPSession) Evaluate(code string, async bool, returnByValue bool) (interface{}, error) {
+	result, err := session.evaluate(code, 0, async, returnByValue)
 	if err != nil {
 		return "", err
 	}

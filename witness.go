@@ -43,7 +43,7 @@ type Input interface {
 
 // Runtime runtime domain
 type Runtime interface {
-	Evaluate(string, bool) (interface{}, error)
+	Evaluate(string, bool, bool) (interface{}, error)
 	TerminateExecution() error
 }
 
