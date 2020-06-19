@@ -24,6 +24,7 @@ type Network interface {
 	Intercept([]*devtool.RequestPattern, func(*devtool.RequestPaused, Interceptor)) func()
 	SetOffline(e bool) error
 	SetThrottling(int, int, int) error
+	SetBlockedURLs([]string) error
 }
 
 // Tab pages manage

@@ -52,6 +52,13 @@ func (session *CDPSession) SetThrottling(latencyMs, downloadThroughputBps, uploa
 	return session.emulateNetworkConditions(false, latencyMs, downloadThroughputBps, downloadThroughputBps)
 }
 
+func (session *CDPSession) SetBlockedURLs(urls []string) error {
+	_, err := session.blockingSend("Network.setBlockedURLs", Map{
+		"urls": urls,
+	})
+	return err
+}
+
 func (session *CDPSession) emulateNetworkConditions(offline bool, latencyMs, downloadThroughputBps, uploadThroughputBps int) error {
 	_, err := session.blockingSend("Network.emulateNetworkConditions", Map{
 		"offline":            offline,

@@ -57,6 +57,7 @@ type Network interface {
 	Intercept([]*devtool.RequestPattern, func(*devtool.RequestPaused, Interceptor)) func()
 	SetOffline(bool) error
 	SetThrottling(int, int, int) error
+	SetBlockedURLs([]string) error
 }
 
 type Tab interface {
