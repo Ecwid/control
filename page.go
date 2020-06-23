@@ -317,7 +317,7 @@ func (session *CDPSession) OnNewTabOpen() chan string {
 		if err := json.Unmarshal(e.Params, targetCreated); err != nil {
 			session.panic(err)
 		}
-		if targetCreated.TargetInfo.Type == "page" {
+		if targetCreated.TargetInfo.Type == "page" && targetCreated.TargetInfo.OpenerID == session.targetID {
 			select {
 			case targetCreatedChan <- targetCreated.TargetInfo.TargetID:
 				stopChan <- struct{}{}
