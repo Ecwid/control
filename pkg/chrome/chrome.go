@@ -75,7 +75,6 @@ func New(userFlags ...string) (*Chrome, error) {
 		"--use-mock-keychain",
 		"--enable-automation",
 		"--disable-gpu",
-		"--disable-dev-shm-usage",
 		"--disable-default-apps",
 		"--disable-extensions",
 		"--disable-browser-side-navigation",
