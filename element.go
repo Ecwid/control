@@ -190,7 +190,7 @@ func (e *element) GetFrameID() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if "IFRAME" != node.NodeName {
+	if "IFRAME" != node.NodeName && "FRAME" != node.NodeName {
 		return "", ErrInvalidElementFrame
 	}
 	return node.FrameID, nil
