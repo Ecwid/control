@@ -127,8 +127,10 @@ func (e *element) Focus() error {
 }
 
 func (e *element) call(functionDeclaration string, arg ...interface{}) (*devtool.RemoteObject, error) {
-	if err := e.renew(); err != nil {
-		return nil, err
+	if e.session.client.Timeouts.AutoStaleUpdate {
+		if err := e.renew(); err != nil {
+			return nil, err
+		}
 	}
 	return e.session.callFunctionOn(e.ID, functionDeclaration, arg...)
 }
@@ -162,24 +164,34 @@ func (e *element) clickablePoint() (x float64, y float64, err error) {
 
 // Click ...
 func (e *element) Click() error {
-	if _, err := e.call(atom.ScrollIntoView); err != nil {
+	var err error
+	if _, err = e.call(atom.ScrollIntoView); err != nil {
 		return err
 	}
 	x, y, err := e.clickablePoint()
 	if err != nil {
 		return err
 	}
-	if _, err := e.call(atom.PreventMissClick); err != nil {
+	if _, err = e.call(atom.PreventMissClick); err != nil {
 		return err
 	}
-	e.session.dispatchMouseEvent(x, y, dispatchMouseEventMoved, "none")
-	e.session.dispatchMouseEvent(x, y, dispatchMouseEventPressed, "left")
-	e.session.dispatchMouseEvent(x, y, dispatchMouseEventReleased, "left")
+	if err = e.session.dispatchMouseEvent(x, y, dispatchMouseEventMoved, "none"); err != nil {
+		return err
+	}
+	if err = e.session.dispatchMouseEvent(x, y, dispatchMouseEventPressed, "left"); err != nil {
+		return err
+	}
+	if err = e.session.dispatchMouseEvent(x, y, dispatchMouseEventReleased, "left"); err != nil {
+		return err
+	}
 	hit, err := e.call(atom.IsClickHit)
 	// in case when click is initiate navigation which destroyed context of element (ErrNoSuchContext)
 	// or click may closes a popup (ErrSessionClosed)
 	if (err == nil && hit.Bool()) || err == ErrNoSuchContext || err == ErrSessionClosed {
 		return nil
+	}
+	if err != nil {
+		return err
 	}
 	return ErrElementMissClick
 }

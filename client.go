@@ -62,19 +62,21 @@ type stats struct {
 }
 
 type timeouts struct {
-	Navigation time.Duration
-	Implicitly time.Duration
-	Poll       time.Duration
-	WSTimeout  time.Duration
-	internal   time.Duration
+	Navigation      time.Duration
+	Implicitly      time.Duration
+	Poll            time.Duration
+	WSTimeout       time.Duration
+	internal        time.Duration
+	AutoStaleUpdate bool
 }
 
 var dto = &timeouts{
-	Navigation: time.Second * 60,
-	Implicitly: time.Second * 60,
-	Poll:       time.Millisecond * 500,
-	WSTimeout:  time.Minute * 1,
-	internal:   time.Second * 10,
+	Navigation:      time.Second * 60,
+	Implicitly:      time.Second * 60,
+	Poll:            time.Millisecond * 500,
+	WSTimeout:       time.Minute * 1,
+	internal:        time.Second * 10,
+	AutoStaleUpdate: true,
 }
 
 // CDP chrome devtool protocol client
