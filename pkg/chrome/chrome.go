@@ -106,6 +106,7 @@ func New(userFlags ...string) (*Chrome, error) {
 		case <-exited:
 			return
 		case <-time.After(time.Second * 10):
+			_, _ = fmt.Fprint(os.Stderr, "chrome hangs, try to kill 9")
 			if err := cmd.Process.Kill(); err != nil {
 				panic(err)
 			}
