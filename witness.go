@@ -25,6 +25,8 @@ type Network interface {
 	SetOffline(e bool) error
 	SetThrottling(int, int, int) error
 	SetBlockedURLs([]string) error
+	GetRequestPostData(string) (string, error)
+	GetResponseBody(string) (string, error)
 }
 
 // Tab pages manage

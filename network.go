@@ -1,6 +1,7 @@
 package witness
 
 import (
+	"encoding/base64"
 	"encoding/json"
 
 	"github.com/ecwid/witness/pkg/devtool"
@@ -59,6 +60,38 @@ func (session *CDPSession) SetBlockedURLs(urls []string) error {
 	return err
 }
 
+// GetRequestPostData https://chromedevtools.github.io/devtools-protocol/tot/Network/#method-getRequestPostData
+func (session *CDPSession) GetRequestPostData(requestID string) (string, error) {
+	body, err := session.blockingSend("Network.getRequestPostData", Map{
+		"requestId": requestID,
+	})
+	if err != nil {
+		return "", err
+	}
+	result := new(devtool.RequestPostData)
+	err = body.Unmarshal(result)
+	return result.PostData, err
+}
+
+// GetResponseBody https://chromedevtools.github.io/devtools-protocol/tot/Network/#method-getResponseBody
+func (session *CDPSession) GetResponseBody(requestID string) (string, error) {
+	body, err := session.blockingSend("Network.getResponseBody", Map{
+		"requestId": requestID,
+	})
+	if err != nil {
+		return "", err
+	}
+	result := new(devtool.ResponseBody)
+	if err = body.Unmarshal(result); err != nil {
+		return "", err
+	}
+	if result.Base64Encoded {
+		b, err := base64.StdEncoding.DecodeString(result.Body)
+		return string(b), err
+	}
+	return result.Body, nil
+}
+
 func (session *CDPSession) emulateNetworkConditions(offline bool, latencyMs, downloadThroughputBps, uploadThroughputBps int) error {
 	_, err := session.blockingSend("Network.emulateNetworkConditions", Map{
 		"offline":            offline,
@@ -80,7 +113,7 @@ func (session *CDPSession) fetchEnable(patterns []*devtool.RequestPattern, handl
 
 // fetchDisable https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-disable
 func (session *CDPSession) fetchDisable() error {
-	_, err := session.blockingSend("Fetch.enable", Map{})
+	_, err := session.blockingSend("Fetch.disable", Map{})
 	return err
 }
 

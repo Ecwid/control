@@ -339,7 +339,7 @@ func (session *CDPSession) OnNewTabOpen() chan string {
 }
 
 // Listen subscribe to listen cdp events with methods name
-// return channel with incomming events and func to unsubscribe
+// return channel with incoming events and func to unsubscribe
 // channel will be closed after unsubscribe func call
 func (session *CDPSession) Listen(methods ...string) (chan *Event, func()) {
 	var (

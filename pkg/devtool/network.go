@@ -174,3 +174,14 @@ type RequestPaused struct {
 	ResponseHeaders     []*HeaderEntry `json:"responseHeaders,omitempty"`
 	NetworkID           string         `json:"networkId,omitempty"`
 }
+
+// RequestPostData https://chromedevtools.github.io/devtools-protocol/tot/Network/#method-getRequestPostData
+type RequestPostData struct {
+	PostData string `json:"postData"`
+}
+
+// ResponseBody https://chromedevtools.github.io/devtools-protocol/tot/Network/#method-getResponseBody
+type ResponseBody struct {
+	Body          string `json:"body"`
+	Base64Encoded bool   `json:"base64Encoded"`
+}
