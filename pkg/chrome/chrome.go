@@ -105,7 +105,7 @@ func New(userFlags ...string) (*Chrome, error) {
 		select {
 		case <-exited:
 			return
-		case <-time.After(time.Millisecond * 2000):
+		case <-time.After(time.Second * 10):
 			if err := cmd.Process.Kill(); err != nil {
 				panic(err)
 			}
