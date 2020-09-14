@@ -20,7 +20,7 @@ const (
 	QueryAll         = `function(s){return this.querySelectorAll(s)}`
 	IsClickHit       = `function(){return this._cc}`
 	PreventMissClick = `function(){this._cc=!1,tt=this,z=function(b){for(var c=b;c;c=c.parentNode)if(c==tt)return!0;return!1},i=function(b){if (z(b.target)) {tt._cc=!0;} else {b.stopPropagation();b.preventDefault()}},document.addEventListener("click",i,{capture:!0,once:!0})}`
-	MutationObserver = `function(b,d,c){return new Promise(e=>{const f=new MutationObserver(b=>{for(var c of b){e(c.type),observer.disconnect();break}});f.observe(this,{attributes:b,childList:d,subtree:c})})}`
+	MutationObserver = `function(b,d,c){return new Promise(e=>{const f=new MutationObserver(b=>{for(var c of b){e(c.type),f.disconnect();break}});f.observe(this,{attributes:b,childList:d,subtree:c})})}`
 	LayoutMetrics    = `({
 		width: Math.min(
 		   window.innerWidth,
