@@ -23,5 +23,5 @@ func main() {
 
 	session.Page.C("[name='email']", true).Type("test@example.com")
 	session.Page.C("[name='password']", true).Type("xxxxxx")
-	session.Page.C("button.btn-primary", true).Click()
+	session.Page.C("button.btn-login-main", true).Click()
 }

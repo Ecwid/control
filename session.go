@@ -351,22 +351,24 @@ func (session *CDPSession) queryAll(parent *element, selector string) ([]Element
 
 func (session *CDPSession) query(parent *element, selector string) (*devtool.RemoteObject, error) {
 	selector = strings.ReplaceAll(selector, `"`, `\"`)
-	var element *devtool.RemoteObject
-	var err error
+	var (
+		queried   *devtool.RemoteObject
+		contextID int64
+		err       error
+	)
 	if parent == nil {
-		c, cerr := session.getContextID()
-		if cerr != nil {
-			return nil, cerr
+		if contextID, err = session.getContextID(); err != nil {
+			return nil, err
 		}
-		element, err = session.evaluate(`document.querySelector("`+selector+`")`, c, false, false)
+		queried, err = session.evaluate(`document.querySelector("`+selector+`")`, contextID, false, false)
 	} else {
-		element, err = parent.call(atom.Query, selector)
+		queried, err = parent.call(atom.Query, selector)
 	}
 	if err != nil {
 		return nil, err
 	}
-	if element.Subtype == "null" {
+	if queried.ObjectID == "" {
 		return nil, ErrNoSuchElement
 	}
-	return element, nil
+	return queried, nil
 }
