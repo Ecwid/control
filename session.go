@@ -294,6 +294,11 @@ func (session *CDPSession) getContentQuads(backendNodeID int64, objectID string,
 	return nil, ErrElementIsOutOfViewport
 }
 
+// GetLayoutMetrics ...
+func (session *CDPSession) GetLayoutMetrics() (*devtool.LayoutMetrics, error) {
+	return session.getLayoutMetrics()
+}
+
 func (session *CDPSession) getLayoutMetrics() (*devtool.LayoutMetrics, error) {
 	msg, err := session.blockingSend("Page.getLayoutMetrics", Map{})
 	if err != nil {

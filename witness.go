@@ -86,6 +86,8 @@ type Page interface {
 	Activate() error
 
 	Ticker(call TickerFunc) (interface{}, error)
+
+	GetLayoutMetrics() (*devtool.LayoutMetrics, error)
 }
 
 // Findable interface to find element
