@@ -269,8 +269,14 @@ func (c *CDP) receiver() {
 		default:
 			_, recv, err = c.conn.ReadMessage()
 			if err != nil {
-				c.Logging.Print(LevelFatal, err)
-				return
+				switch err.(type) {
+				case *websocket.CloseError:
+					// do nothing, browser was closed
+					return
+				default:
+					c.Logging.Print(LevelFatal, err)
+					return
+				}
 			}
 			c.Stats.Recv += len(recv)
 			c.incoming(recv)

@@ -3,6 +3,7 @@ package witness
 import (
 	"container/list"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -24,6 +25,7 @@ type CDPSession struct {
 	incoming  chan *Event
 	callbacks map[string]*list.List
 	closed    chan bool
+	err       chan error
 }
 
 // TickerFunc ...
@@ -41,6 +43,7 @@ func (c *CDP) newSession(targetID string) (*Session, error) {
 		incoming:  make(chan *Event, 1),
 		callbacks: make(map[string]*list.List),
 		closed:    make(chan bool, 1),
+		err:       make(chan error, 1),
 		targetID:  targetID,
 		frameID:   targetID,
 	}
@@ -67,7 +70,7 @@ func (session *CDPSession) switchTarget() error {
 	enables := map[string]Map{
 		"Page.enable":    nil,
 		"Runtime.enable": nil,
-		"Network.enable": Map{"maxPostDataSize": 1024}, // maxPostDataSize - Longest post body size (in bytes) that would be included in requestWillBeSent notification
+		"Network.enable": {"maxPostDataSize": 1024}, // maxPostDataSize - Longest post body size (in bytes) that would be included in requestWillBeSent notification
 	}
 	for k, v := range enables {
 		if _, err := session.blockingSend(k, v); err != nil {
@@ -147,7 +150,8 @@ func (session *CDPSession) listener() {
 			if err := json.Unmarshal(e.Params, targetCrashed); err != nil {
 				session.panic(err)
 			}
-			session.panic(string(e.Params))
+			session.err <- errors.New(string(e.Params))
+			return
 
 		case "Target.targetDestroyed":
 			targetDestroyed := new(devtool.TargetDestroyed)
@@ -178,6 +182,8 @@ func (session *CDPSession) blockingSend(method string, send interface{}) (bytes,
 		return message.Result, nil
 	case <-session.closed:
 		return nil, ErrSessionClosed
+	case err := <-session.err:
+		return nil, err
 	case <-time.After(session.client.Timeouts.WSTimeout):
 		return nil, fmt.Errorf("websocket response reached timeout %s for %s -> %+v", session.client.Timeouts.WSTimeout.String(), method, send)
 	}
