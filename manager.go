@@ -1,8 +1,6 @@
 package control
 
 import (
-	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/ecwid/control/protocol/common"
@@ -22,17 +20,6 @@ func newManager(s *Session, targetID target.TargetID) *Manager {
 	}
 	m.head = m.newFrame(common.FrameId(targetID), nil)
 	return m
-}
-
-func (manager *Manager) debug() {
-	fmt.Println("******************************")
-	i := 1
-	manager.head.walk(0, func(f *Frame, level int) bool {
-		fmt.Println(strings.Repeat("-", level+1), i, f.id, "-", f.contextID, "=")
-		i++
-		return true
-	})
-	fmt.Println("******************************")
 }
 
 func (manager *Manager) newFrame(ID common.FrameId, parent *Frame) *Frame {
