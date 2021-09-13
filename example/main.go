@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-
-	"github.com/ecwid/control/transport"
+	"time"
 
 	"github.com/ecwid/control"
 	"github.com/ecwid/control/chrome"
+	"github.com/ecwid/control/transport"
 )
 
 // Pretty преобразует struct в читаемый вид (форматированный json)
@@ -30,9 +30,20 @@ func main() {
 		panic(err)
 	}
 
-	var p = sess.Target()
-	err = p.Navigate("https://my.ecwid.com", control.LifecycleIdleNetwork)
+	var p = sess.Page()
+	err = p.Navigate("https://surfparadise.ecwid.com/", control.LifecycleIdleNetwork)
 	if err != nil {
 		panic(err)
+	}
+	time.Sleep(time.Second * 5)
+	app, err := p.QuerySelectorAll(".grid-product__title-inner")
+	if err != nil {
+		panic(err)
+	}
+	for _, i := range app {
+		_, err = i.GetText()
+		if err != nil {
+			panic(err)
+		}
 	}
 }

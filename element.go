@@ -3,10 +3,10 @@ package control
 import (
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/ecwid/control/protocol/dom"
 	"github.com/ecwid/control/protocol/input"
-	"github.com/ecwid/control/protocol/page"
 	"github.com/ecwid/control/protocol/runtime"
 )
 
@@ -19,7 +19,15 @@ func (e Element) Description() string {
 	return e.remote.Description
 }
 
-func (e Element) callFunction(function string, await, returnByValue bool, args []*runtime.CallArgument) (*runtime.RemoteObject, error) {
+func (e Element) QuerySelector(selector string) (*Element, error) {
+	val, err := e.CallFunction(`function(s){return this.querySelector(s)}`, true, false, NewCallArgument(selector))
+	if err != nil {
+		return nil, err
+	}
+	return &Element{frame: e.frame, remote: val}, nil
+}
+
+func (e Element) CallFunction(function string, await, returnByValue bool, args ...*runtime.CallArgument) (*runtime.RemoteObject, error) {
 	val, err := runtime.CallFunctionOn(e.frame, runtime.CallFunctionOnArgs{
 		FunctionDeclaration: function,
 		ObjectId:            e.remote.ObjectId,
@@ -36,38 +44,26 @@ func (e Element) callFunction(function string, await, returnByValue bool, args [
 	return val.Result, nil
 }
 
-func (e Element) ToFrame() (*Frame, error) {
-	if e.remote.ClassName != "HTMLIFrameElement" &&
-		e.remote.ClassName != "HTMLFrameElement" {
-		return nil, fmt.Errorf("can't use element as frame, not applicable type %s", e.remote.ClassName)
-	}
+func (e Element) DescribeNode() (*dom.Node, error) {
 	val, err := dom.DescribeNode(e.frame, dom.DescribeNodeArgs{
 		ObjectId: e.remote.ObjectId,
 	})
 	if err != nil {
 		return nil, err
 	}
-	var frame *Frame
-	e.frame.manager.edit(val.Node.FrameId, func(f *Frame) {
-		f.remote = e.remote
-		frame = f
-	})
-	if frame == nil {
-		return nil, fmt.Errorf("frame with id = %s not found", val.Node.FrameId)
-	}
-	return frame, nil
+	return val.Node, nil
 }
 
-func stringArguments(val ...string) []*runtime.CallArgument {
-	var args = make([]*runtime.CallArgument, len(val))
-	for i, a := range val {
-		args[i] = &runtime.CallArgument{Value: a}
-	}
-	return args
+func NewCallArgument(v interface{}) *runtime.CallArgument {
+	return &runtime.CallArgument{Value: v}
 }
 
 func (e Element) dispatchEvents(events ...string) error {
-	_, err := e.callFunction(functionDispatchEvents, true, false, stringArguments(events...))
+	var args = make([]*runtime.CallArgument, len(events))
+	for i, a := range events {
+		args[i] = NewCallArgument(a)
+	}
+	_, err := e.CallFunction(functionDispatchEvents, true, false, args...)
 	return err
 }
 
@@ -76,7 +72,7 @@ func (e Element) ScrollIntoView() error {
 }
 
 func (e Element) GetText() (string, error) {
-	v, err := e.callFunction(functionGetText, true, false, nil)
+	v, err := e.CallFunction(functionGetText, true, false)
 	if err != nil {
 		return "null", err
 	}
@@ -84,7 +80,7 @@ func (e Element) GetText() (string, error) {
 }
 
 func (e Element) Clear() error {
-	_, err := e.callFunction(functionClearText, true, false, nil)
+	_, err := e.CallFunction(functionClearText, true, false)
 	return err
 }
 
@@ -99,7 +95,7 @@ func (e Element) InsertText(text string) error {
 	if err = e.Focus(); err != nil {
 		return err
 	}
-	if err = input.InsertText(e.frame, input.InsertTextArgs{Text: text}); err != nil {
+	if err = e.frame.Session().Keyboard.InsertText(text); err != nil {
 		return err
 	}
 	if err = e.dispatchEvents(
@@ -109,6 +105,41 @@ func (e Element) InsertText(text string) error {
 		WebEventChange,
 	); err != nil {
 		return err
+	}
+	return nil
+}
+
+// Type ...
+func (e *Element) Type(text string, delay time.Duration) error {
+	var err error
+	if err = e.ScrollIntoView(); err != nil {
+		return err
+	}
+	if err = e.Clear(); err != nil {
+		return err
+	}
+	if err = e.Focus(); err != nil {
+		return err
+	}
+	for _, c := range text {
+		if isKey(c) {
+			if err = e.frame.Session().Keyboard.press(keyDefinitions[c]); err != nil {
+				return err
+			}
+		} else {
+			if err = e.InsertText(string(c)); err != nil {
+				return err
+			}
+		}
+		time.Sleep(delay)
+	}
+	if text == "" {
+		return e.dispatchEvents(
+			WebEventKeypress,
+			WebEventInput,
+			WebEventKeyup,
+			WebEventChange,
+		)
 	}
 	return nil
 }
@@ -124,7 +155,7 @@ func (e Element) GetContentQuad(viewportCorrection bool) (Quad, error) {
 	if len(quads) == 0 { // should be at least one
 		return nil, ErrElementInvisible
 	}
-	metric, err := page.GetLayoutMetrics(e.frame)
+	metric, err := e.frame.session.GetLayoutMetrics()
 	if err != nil {
 		return nil, err
 	}
@@ -171,10 +202,10 @@ func (e Element) click(button input.MouseButton) error {
 	if err != nil {
 		return err
 	}
-	if _, err = e.callFunction(functionPreventMissClick, true, false, nil); err != nil {
+	if _, err = e.CallFunction(functionPreventMissClick, true, false); err != nil {
 		return err
 	}
-	var mouse = e.frame.Session().Mouse()
+	var mouse = e.frame.Session().Mouse
 	if err = mouse.Move(MouseNone, x, y); err != nil {
 		return err
 	}
@@ -184,7 +215,7 @@ func (e Element) click(button input.MouseButton) error {
 	if err = mouse.Release(button, x, y); err != nil {
 		return err
 	}
-	clicked, err := e.callFunction(functionClickDone, true, false, nil)
+	clicked, err := e.CallFunction(functionClickDone, true, false)
 	if err != nil {
 		if err == ErrStaleElementReference || err == ErrSessionClosed {
 			return nil
@@ -216,27 +247,27 @@ func (e Element) Hover() error {
 	if err != nil {
 		return err
 	}
-	return e.frame.Session().Mouse().Move(MouseNone, x, y)
+	return e.frame.Session().Mouse.Move(MouseNone, x, y)
 }
 
 func (e Element) SetAttribute(attr string, value string) error {
-	_, err := e.callFunction(functionSetAttr, true, false, stringArguments(attr, value))
+	_, err := e.CallFunction(functionSetAttr, true, false, NewCallArgument(attr), NewCallArgument(value))
 	return err
 }
 
 func (e Element) GetAttribute(attr string) (string, error) {
-	return e.callFunctionStringValue(functionGetAttr, []*runtime.CallArgument{{Value: attr}})
+	return e.callFunctionStringValue(functionGetAttr, NewCallArgument(attr))
 }
 
 func (e Element) Checkbox(check bool) error {
-	if _, err := e.callFunction(functionCheckbox, true, false, []*runtime.CallArgument{{Value: check}}); err != nil {
+	if _, err := e.CallFunction(functionCheckbox, true, false, NewCallArgument(check)); err != nil {
 		return err
 	}
 	return e.dispatchEvents(WebEventClick, WebEventInput, WebEventChange)
 }
 
 func (e *Element) IsChecked() (bool, error) {
-	v, err := e.callFunction(functionIsChecked, true, false, nil)
+	v, err := e.CallFunction(functionIsChecked, true, false)
 	if err != nil {
 		return false, err
 	}
@@ -258,14 +289,14 @@ func (e Element) GetRectangle() (*dom.Rect, error) {
 }
 
 func (e Element) GetComputedStyle(style string) (string, error) {
-	return e.callFunctionStringValue(functionGetComputedStyle, []*runtime.CallArgument{{Value: style}})
+	return e.callFunctionStringValue(functionGetComputedStyle, NewCallArgument(style))
 }
 
 func (e Element) SelectValues(values ...string) error {
 	if e.remote.ClassName != "HTMLSelectElement" {
 		return fmt.Errorf("can't use element as SELECT, not applicable type %s", e.remote.ClassName)
 	}
-	_, err := e.callFunction(functionSelect, true, false, []*runtime.CallArgument{{Value: values}})
+	_, err := e.CallFunction(functionSelect, true, false, NewCallArgument(values))
 	if err != nil {
 		return err
 	}
@@ -276,20 +307,20 @@ func (e Element) GetSelectedValues() ([]string, error) {
 	return e.callFunctionStringArrayValue(functionGetSelectedValues, nil)
 }
 
-//func (e Element) GetSelectedText() ([]string, error) {
-//	return e.callFunctionStringArrayValue(functionGetSelectedValues, nil)
-//}
+func (e Element) GetSelectedText() ([]string, error) {
+	return e.callFunctionStringArrayValue(functionGetSelectedInnerText, nil)
+}
 
-func (e Element) callFunctionStringValue(function string, args []*runtime.CallArgument) (string, error) {
-	v, err := e.callFunction(function, true, false, args)
+func (e Element) callFunctionStringValue(function string, args ...*runtime.CallArgument) (string, error) {
+	v, err := e.CallFunction(function, true, false, args...)
 	if err != nil {
 		return "", err
 	}
 	return remoteObjectPrimitive(*v).String()
 }
 
-func (e Element) callFunctionStringArrayValue(function string, args []*runtime.CallArgument) ([]string, error) {
-	v, err := e.callFunction(function, true, false, args)
+func (e Element) callFunctionStringArrayValue(function string, args ...*runtime.CallArgument) ([]string, error) {
+	v, err := e.CallFunction(function, true, false, args...)
 	if err != nil {
 		return nil, err
 	}

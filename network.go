@@ -75,9 +75,10 @@ func (n Network) GetCookies(urls ...string) ([]*network.Cookie, error) {
 }
 
 // SetExtraHTTPHeaders Specifies whether to always send extra HTTP headers with the requests from this page.
-func (n Network) SetExtraHTTPHeaders(headers *network.Headers) error {
+func (n Network) SetExtraHTTPHeaders(v map[string]string) error {
+	val := network.Headers(v)
 	return network.SetExtraHTTPHeaders(n.s, network.SetExtraHTTPHeadersArgs{
-		Headers: headers,
+		Headers: &val,
 	})
 }
 

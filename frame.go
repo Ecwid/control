@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/ecwid/control/protocol/common"
@@ -14,11 +15,11 @@ import (
 )
 
 type NoSuchElementError struct {
-	selector string
+	Selector string
 }
 
 func (n NoSuchElementError) Error() string {
-	return fmt.Sprintf("no such element `%s`", n.selector)
+	return fmt.Sprintf("no such element `%s`", n.Selector)
 }
 
 type LifecycleEventType string
@@ -38,23 +39,27 @@ const (
 
 type Frame struct {
 	id        common.FrameId
-	contextID runtime.ExecutionContextId
+	contextID int32
 	remote    *runtime.RemoteObject // todo
-	manager   *Manager
+	session   *Session
 	parent    *Frame
 	child     []*Frame
 }
 
 func (f *Frame) Session() *Session {
-	return f.manager.sess
+	return f.session
 }
 
-func (f *Frame) walk(level int, val func(*Frame, int) bool) {
-	if !val(f, level) {
+func (f *Frame) ID() common.FrameId {
+	return f.id
+}
+
+func (f *Frame) walk(val func(*Frame) bool) {
+	if !val(f) {
 		return
 	}
 	for _, e := range f.child {
-		e.walk(level+1, val)
+		e.walk(val)
 	}
 }
 
@@ -135,9 +140,32 @@ func (f *Frame) QuerySelector(selector string) (*Element, error) {
 		return nil, err
 	}
 	if object.ObjectId == "" {
-		return nil, NoSuchElementError{selector: selector}
+		return nil, NoSuchElementError{Selector: selector}
 	}
 	return &Element{frame: f, remote: object}, nil
+}
+
+func (f *Frame) QuerySelectorAll(selector string) ([]*Element, error) {
+	selector = safeSelector(selector)
+	var array, err = f.evaluate(`document.querySelectorAll("`+selector+`")`, true, false)
+	if err != nil {
+		return nil, err
+	}
+	if array == nil || array.Description == "NodeList(0)" {
+		return nil, nil
+	}
+	all := make([]*Element, 0)
+	descriptor, err := f.getProperties(array.ObjectId, true, false)
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range descriptor {
+		if !d.Enumerable {
+			continue
+		}
+		all = append(all, &Element{frame: f, remote: d.Value})
+	}
+	return all, nil
 }
 
 type RuntimeError runtime.ExceptionDetails
@@ -156,10 +184,11 @@ func (f Frame) Evaluate(expression string, await, returnByValue bool) (interface
 }
 
 func (f Frame) evaluate(expression string, await, returnByValue bool) (*runtime.RemoteObject, error) {
+	var cid = runtime.ExecutionContextId(atomic.LoadInt32(&f.contextID))
 	val, err := runtime.Evaluate(f, runtime.EvaluateArgs{
 		Expression:            expression,
 		IncludeCommandLineAPI: true,
-		ContextId:             f.contextID,
+		ContextId:             cid,
 		AwaitPromise:          await,
 		ReturnByValue:         returnByValue,
 	})
@@ -182,4 +211,19 @@ func (f Frame) GetNavigationEntry() (*page.NavigationEntry, error) {
 		return &page.NavigationEntry{Url: blankPage}, nil
 	}
 	return val.Entries[val.CurrentIndex], nil
+}
+
+// NavigateHistory -1 = Back, +1 = Forward
+func (f Frame) NavigateHistory(delta int) error {
+	val, err := page.GetNavigationHistory(f)
+	if err != nil {
+		return err
+	}
+	move := val.CurrentIndex + delta
+	if move >= 0 && move < len(val.Entries) {
+		return page.NavigateToHistoryEntry(f, page.NavigateToHistoryEntryArgs{
+			EntryId: val.Entries[move].Id,
+		})
+	}
+	return nil
 }

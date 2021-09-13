@@ -1,7 +1,6 @@
 package control
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,14 +25,18 @@ const (
 type Session struct {
 	transport    transport.T
 	id           target.SessionID
+	tree         *ctxTree
 	eventPool    chan observe.Value
-	manager      *Manager
 	exited       chan struct{}
 	exitCode     error
 	observable   *observe.Observable
 	obsuid       uint64 // observers incremental id
 	Timeout      time.Duration
 	PoolingEvery time.Duration
+	Network      Network
+	Mouse        Mouse
+	Emulation    Emulation
+	Keyboard     Keyboard
 }
 
 func (s Session) Call(method string, send, recv interface{}) error {
@@ -46,7 +49,7 @@ func (s Session) Call(method string, send, recv interface{}) error {
 }
 
 func New(t transport.T) *Session {
-	var headlessSession = &Session{
+	var hlSess = &Session{
 		obsuid:       0,
 		id:           "",
 		transport:    t,
@@ -56,7 +59,11 @@ func New(t transport.T) *Session {
 		Timeout:      time.Second * 15,
 		PoolingEvery: time.Millisecond * 500,
 	}
-	return headlessSession
+	hlSess.Mouse = Mouse{s: hlSess}
+	hlSess.Network = Network{s: hlSess}
+	hlSess.Emulation = Emulation{s: hlSess}
+	hlSess.Keyboard = Keyboard{s: hlSess}
+	return hlSess
 }
 func (s Session) GetTransport() transport.T {
 	return s.transport
@@ -95,7 +102,7 @@ func (s *Session) AttachToTarget(targetID target.TargetID) error {
 	// run session lifecycle
 	// s.targetID = targetID
 	s.id = val.SessionId
-	s.manager = newManager(s, targetID)
+	s.tree = createContextTree(s, targetID)
 	go s.lifecycle()
 	s.transport.Add(s)
 
@@ -123,12 +130,23 @@ func (s Session) Event() string {
 	return s.ID()
 }
 
-func (s Session) Target() *Frame {
-	return s.manager.head
+func (s Session) Page() *Frame {
+	return s.tree.root
+}
+
+func (s Session) Frame(id common.FrameId) (*Frame, error) {
+	var frame *Frame
+	s.tree.find(id, func(f *Frame) {
+		frame = f
+	})
+	if frame == nil {
+		return nil, fmt.Errorf("frame with id = %s not found", id)
+	}
+	return frame, nil
 }
 
 func (s Session) TargetID() target.TargetID {
-	return target.TargetID(s.Target().id)
+	return target.TargetID(s.Page().id)
 }
 
 func (s Session) Activate() error {
@@ -159,7 +177,7 @@ func (s *Session) lifecycle() {
 				s.abort(err)
 				return
 			}
-			s.manager.add(v.ParentFrameId, v.FrameId)
+			s.tree.appendChild(v.ParentFrameId, v.FrameId)
 
 		case "Page.frameDetached":
 			var v = new(page.FrameDetached)
@@ -167,7 +185,7 @@ func (s *Session) lifecycle() {
 				s.abort(err)
 				return
 			}
-			s.manager.delete(v.FrameId)
+			s.tree.deleteNode(v.FrameId)
 
 		case "Runtime.executionContextCreated":
 			var v = new(runtime.ExecutionContextCreated)
@@ -176,8 +194,8 @@ func (s *Session) lifecycle() {
 				return
 			}
 			frameID := common.FrameId((v.Context.AuxData.(map[string]interface{}))["frameId"].(string))
-			s.manager.edit(frameID, func(f *Frame) {
-				f.contextID = v.Context.Id
+			s.tree.find(frameID, func(f *Frame) {
+				atomic.StoreInt32(&f.contextID, int32(v.Context.Id))
 			})
 
 		case "Target.targetCrashed":
@@ -225,18 +243,6 @@ func (s *Session) Subscribe(event string, async bool, v func(e observe.Value)) (
 	}
 }
 
-func (s *Session) Mouse() Mouse {
-	return Mouse{s: s}
-}
-
-func (s *Session) Network() Network {
-	return Network{s: s}
-}
-
-func (s *Session) Emulation() Emulation {
-	return Emulation{s: s}
-}
-
 // CaptureScreenshot get screen of current page
 func (s Session) CaptureScreenshot(format string, quality int, clip *page.Viewport, fromSurface, captureBeyondViewport bool) ([]byte, error) {
 	val, err := page.CaptureScreenshot(s, page.CaptureScreenshotArgs{
@@ -249,7 +255,7 @@ func (s Session) CaptureScreenshot(format string, quality int, clip *page.Viewpo
 	if err != nil {
 		return nil, err
 	}
-	return base64.StdEncoding.DecodeString(string(val.Data))
+	return val.Data, nil
 }
 
 // AddScriptToEvaluateOnNewDocument https://chromedevtools.github.io/devtools-protocol/tot/Page#method-addScriptToEvaluateOnNewDocument
@@ -285,6 +291,14 @@ func (s Session) HandleJavaScriptDialog(accept bool, promptText string) error {
 		Accept:     accept,
 		PromptText: promptText,
 	})
+}
+
+func (s Session) GetLayoutMetrics() (*page.GetLayoutMetricsVal, error) {
+	view, err := page.GetLayoutMetrics(s)
+	if err != nil {
+		return nil, err
+	}
+	return view, nil
 }
 
 func (s Session) Close() error {
