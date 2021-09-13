@@ -9,9 +9,9 @@ import (
 	"github.com/ecwid/control/transport/observe"
 )
 
-func (f *Frame) NewNetworkCondition(predicate func(request *network.Request) bool) Condition {
-	return NewCondition(f.Session(), f.Session().Timeout, func(value observe.Value) (bool, error) {
-		var requestID network.RequestId
+func (s *Session) NewNetworkCondition(predicate func(request *network.Request) bool) Condition {
+	var requestID network.RequestId
+	return NewCondition(s, s.Timeout, func(value observe.Value) (bool, error) {
 
 		switch value.Method {
 
@@ -20,7 +20,7 @@ func (f *Frame) NewNetworkCondition(predicate func(request *network.Request) boo
 			if err := json.Unmarshal(value.Params, sent); err != nil {
 				return false, err
 			}
-			if sent.FrameId == f.id && predicate(sent.Request) {
+			if predicate(sent.Request) {
 				requestID = sent.RequestId
 			}
 

@@ -217,10 +217,7 @@ func (e Element) click(button input.MouseButton) error {
 	}
 	clicked, err := e.CallFunction(functionClickDone, true, false)
 	if err != nil {
-		if err == ErrStaleElementReference || err == ErrSessionClosed {
-			return nil
-		}
-		return err
+		return nil // context was destroyed by navigate after click
 	}
 	if val, ok := clicked.Value.(bool); ok && !val {
 		return ErrElementMissClick

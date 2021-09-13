@@ -9,6 +9,7 @@ import (
 
 	"github.com/ecwid/control/protocol/browser"
 	"github.com/ecwid/control/protocol/common"
+	"github.com/ecwid/control/protocol/network"
 	"github.com/ecwid/control/protocol/page"
 	"github.com/ecwid/control/protocol/runtime"
 	"github.com/ecwid/control/protocol/target"
@@ -117,6 +118,10 @@ func (s *Session) AttachToTarget(targetID target.TargetID) error {
 		return err
 	}
 	if err = target.SetDiscoverTargets(s, target.SetDiscoverTargetsArgs{Discover: true}); err != nil {
+		return err
+	}
+	// maxPostDataSize - Longest post body size (in bytes) that would be included in requestWillBeSent notification
+	if err = network.Enable(s, network.EnableArgs{MaxPostDataSize: 2 * 1024}); err != nil {
 		return err
 	}
 	return nil
