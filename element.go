@@ -301,11 +301,11 @@ func (e Element) SelectValues(values ...string) error {
 }
 
 func (e Element) GetSelectedValues() ([]string, error) {
-	return e.callFunctionStringArrayValue(functionGetSelectedValues, nil)
+	return e.callFunctionStringArrayValue(functionGetSelectedValues)
 }
 
 func (e Element) GetSelectedText() ([]string, error) {
-	return e.callFunctionStringArrayValue(functionGetSelectedInnerText, nil)
+	return e.callFunctionStringArrayValue(functionGetSelectedInnerText)
 }
 
 func (e Element) callFunctionStringValue(function string, args ...*runtime.CallArgument) (string, error) {
