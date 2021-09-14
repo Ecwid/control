@@ -57,7 +57,7 @@ func New(t transport.T) *Session {
 		eventPool:    make(chan observe.Value, 999),
 		observable:   observe.New(),
 		exited:       make(chan struct{}, 1),
-		Timeout:      time.Second * 15,
+		Timeout:      time.Second * 60,
 		PoolingEvery: time.Millisecond * 500,
 	}
 	hlSess.Mouse = Mouse{s: hlSess}
