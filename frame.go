@@ -112,21 +112,6 @@ func (f Frame) Reload(ignoreCache bool, scriptToEvaluateOnLoad string, waitFor L
 	return f.NewLifecycleEventCondition(waitFor).Do(reload)
 }
 
-func (f *Frame) MustElement(selector string) Element {
-	var (
-		v   *Element
-		err error
-	)
-	for start := time.Now(); time.Since(start) < f.Session().Timeout; {
-		v, err = f.QuerySelector(selector)
-		if err == nil {
-			return *v
-		}
-		time.Sleep(f.Session().PoolingEvery)
-	}
-	panic(err)
-}
-
 func safeSelector(v string) string {
 	v = strings.TrimSpace(v)
 	v = strings.ReplaceAll(v, `"`, `\"`)
@@ -142,7 +127,7 @@ func (f *Frame) QuerySelector(selector string) (*Element, error) {
 	if object.ObjectId == "" {
 		return nil, NoSuchElementError{Selector: selector}
 	}
-	return &Element{frame: f, remote: object}, nil
+	return createElement(selector, object, f), nil
 }
 
 func (f *Frame) QuerySelectorAll(selector string) ([]*Element, error) {
@@ -163,7 +148,7 @@ func (f *Frame) QuerySelectorAll(selector string) ([]*Element, error) {
 		if !d.Enumerable {
 			continue
 		}
-		all = append(all, &Element{frame: f, remote: d.Value})
+		all = append(all, createElement(selector, d.Value, f))
 	}
 	return all, nil
 }
@@ -226,4 +211,15 @@ func (f Frame) NavigateHistory(delta int) error {
 		})
 	}
 	return nil
+}
+
+func (f *Frame) WithTimeout(retry func() error) error {
+	var err error
+	for start := time.Now(); time.Since(start) < f.Session().Timeout; {
+		if err = retry(); err == nil {
+			return nil
+		}
+		time.Sleep(f.Session().PoolingEvery)
+	}
+	return err
 }

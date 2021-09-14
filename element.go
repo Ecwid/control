@@ -10,7 +10,12 @@ import (
 	"github.com/ecwid/control/protocol/runtime"
 )
 
+func createElement(query string, object *runtime.RemoteObject, frame *Frame) *Element {
+	return &Element{query: query, remote: object, frame: frame}
+}
+
 type Element struct {
+	query  string
 	remote *runtime.RemoteObject
 	frame  *Frame
 }
@@ -24,7 +29,7 @@ func (e Element) QuerySelector(selector string) (*Element, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Element{frame: e.frame, remote: val}, nil
+	return createElement(selector, val, e.frame), nil
 }
 
 func (e Element) CallFunction(function string, await, returnByValue bool, args []*runtime.CallArgument) (*runtime.RemoteObject, error) {
