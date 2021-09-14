@@ -20,14 +20,14 @@ func (e Element) Description() string {
 }
 
 func (e Element) QuerySelector(selector string) (*Element, error) {
-	val, err := e.CallFunction(`function(s){return this.querySelector(s)}`, true, false, NewCallArgument(selector))
+	val, err := e.CallFunction(`function(s){return this.querySelector(s)}`, true, false, NewSingleCallArgument(selector))
 	if err != nil {
 		return nil, err
 	}
 	return &Element{frame: e.frame, remote: val}, nil
 }
 
-func (e Element) CallFunction(function string, await, returnByValue bool, args ...*runtime.CallArgument) (*runtime.RemoteObject, error) {
+func (e Element) CallFunction(function string, await, returnByValue bool, args []*runtime.CallArgument) (*runtime.RemoteObject, error) {
 	val, err := runtime.CallFunctionOn(e.frame, runtime.CallFunctionOnArgs{
 		FunctionDeclaration: function,
 		ObjectId:            e.remote.ObjectId,
@@ -54,16 +54,12 @@ func (e Element) DescribeNode() (*dom.Node, error) {
 	return val.Node, nil
 }
 
-func NewCallArgument(v interface{}) *runtime.CallArgument {
-	return &runtime.CallArgument{Value: v}
+func NewSingleCallArgument(arg interface{}) []*runtime.CallArgument {
+	return []*runtime.CallArgument{{Value: arg}}
 }
 
 func (e Element) dispatchEvents(events ...string) error {
-	var args = make([]*runtime.CallArgument, len(events))
-	for i, a := range events {
-		args[i] = NewCallArgument(a)
-	}
-	_, err := e.CallFunction(functionDispatchEvents, true, false, args...)
+	_, err := e.CallFunction(functionDispatchEvents, true, false, NewSingleCallArgument(events))
 	return err
 }
 
@@ -72,7 +68,7 @@ func (e Element) ScrollIntoView() error {
 }
 
 func (e Element) GetText() (string, error) {
-	v, err := e.CallFunction(functionGetText, true, false)
+	v, err := e.CallFunction(functionGetText, true, false, nil)
 	if err != nil {
 		return "null", err
 	}
@@ -80,7 +76,7 @@ func (e Element) GetText() (string, error) {
 }
 
 func (e Element) Clear() error {
-	_, err := e.CallFunction(functionClearText, true, false)
+	_, err := e.CallFunction(functionClearText, true, false, nil)
 	return err
 }
 
@@ -202,7 +198,7 @@ func (e Element) click(button input.MouseButton) error {
 	if err != nil {
 		return err
 	}
-	if _, err = e.CallFunction(functionPreventMissClick, true, false); err != nil {
+	if _, err = e.CallFunction(functionPreventMissClick, true, false, nil); err != nil {
 		return err
 	}
 	var mouse = e.frame.Session().Mouse
@@ -215,7 +211,7 @@ func (e Element) click(button input.MouseButton) error {
 	if err = mouse.Release(button, x, y); err != nil {
 		return err
 	}
-	clicked, err := e.CallFunction(functionClickDone, true, false)
+	clicked, err := e.CallFunction(functionClickDone, true, false, nil)
 	if err != nil {
 		return nil // context was destroyed by navigate after click
 	}
@@ -248,23 +244,26 @@ func (e Element) Hover() error {
 }
 
 func (e Element) SetAttribute(attr string, value string) error {
-	_, err := e.CallFunction(functionSetAttr, true, false, NewCallArgument(attr), NewCallArgument(value))
+	_, err := e.CallFunction(functionSetAttr, true, false, []*runtime.CallArgument{
+		{Value: attr},
+		{Value: value},
+	})
 	return err
 }
 
 func (e Element) GetAttribute(attr string) (string, error) {
-	return e.callFunctionStringValue(functionGetAttr, NewCallArgument(attr))
+	return e.callFunctionStringValue(functionGetAttr, NewSingleCallArgument(attr))
 }
 
 func (e Element) Checkbox(check bool) error {
-	if _, err := e.CallFunction(functionCheckbox, true, false, NewCallArgument(check)); err != nil {
+	if _, err := e.CallFunction(functionCheckbox, true, false, NewSingleCallArgument(check)); err != nil {
 		return err
 	}
 	return e.dispatchEvents(WebEventClick, WebEventInput, WebEventChange)
 }
 
 func (e *Element) IsChecked() (bool, error) {
-	v, err := e.CallFunction(functionIsChecked, true, false)
+	v, err := e.CallFunction(functionIsChecked, true, false, nil)
 	if err != nil {
 		return false, err
 	}
@@ -286,14 +285,14 @@ func (e Element) GetRectangle() (*dom.Rect, error) {
 }
 
 func (e Element) GetComputedStyle(style string) (string, error) {
-	return e.callFunctionStringValue(functionGetComputedStyle, NewCallArgument(style))
+	return e.callFunctionStringValue(functionGetComputedStyle, NewSingleCallArgument(style))
 }
 
 func (e Element) SelectValues(values ...string) error {
 	if e.remote.ClassName != "HTMLSelectElement" {
 		return fmt.Errorf("can't use element as SELECT, not applicable type %s", e.remote.ClassName)
 	}
-	_, err := e.CallFunction(functionSelect, true, false, NewCallArgument(values))
+	_, err := e.CallFunction(functionSelect, true, false, NewSingleCallArgument(values))
 	if err != nil {
 		return err
 	}
@@ -308,16 +307,16 @@ func (e Element) GetSelectedText() ([]string, error) {
 	return e.callFunctionStringArrayValue(functionGetSelectedInnerText)
 }
 
-func (e Element) callFunctionStringValue(function string, args ...*runtime.CallArgument) (string, error) {
-	v, err := e.CallFunction(function, true, false, args...)
+func (e Element) callFunctionStringValue(function string, args []*runtime.CallArgument) (string, error) {
+	v, err := e.CallFunction(function, true, false, args)
 	if err != nil {
 		return "", err
 	}
 	return remoteObjectPrimitive(*v).String()
 }
 
-func (e Element) callFunctionStringArrayValue(function string, args ...*runtime.CallArgument) ([]string, error) {
-	v, err := e.CallFunction(function, true, false, args...)
+func (e Element) callFunctionStringArrayValue(function string) ([]string, error) {
+	v, err := e.CallFunction(function, true, false, nil)
 	if err != nil {
 		return nil, err
 	}

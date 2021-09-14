@@ -17,7 +17,7 @@ const (
 	functionClickDone            = `function(){return this._cc}`
 	functionSetAttr              = `function(a,v){this.setAttribute(a,v)}`
 	functionGetAttr              = `function(a){return this.getAttribute(a)}`
-	functionCheckbox             = `function(c){this.checked=c}`
+	functionCheckbox             = `function(v){this.checked=v}`
 	functionIsChecked            = `function(){return this.checked}`
 	functionGetComputedStyle     = `function(s){return getComputedStyle(this)[s]}`
 	functionSelect               = `function(a){const b=Array.from(this.options);this.value=void 0;for(const c of b)if(c.selected=a.includes(c.value),c.selected&&!this.multiple)break}`
