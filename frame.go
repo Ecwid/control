@@ -67,9 +67,9 @@ func (f Frame) Call(method string, send, recv interface{}) error {
 	return f.Session().Call(method, send, recv)
 }
 
-func (f Frame) NewLifecycleEventCondition(event LifecycleEventType) Condition {
+func (f Frame) NewLifecycleEventCondition(event LifecycleEventType) *Condition {
 	var isInit = false
-	return NewCondition(f.Session(), f.Session().Timeout, func(value observe.Value) (bool, error) {
+	return f.session.NewCondition(func(value observe.Value) (bool, error) {
 		if value.Method == "Page.lifecycleEvent" {
 			var v = new(page.LifecycleEvent)
 			if err := json.Unmarshal(value.Params, v); err != nil {
@@ -102,7 +102,7 @@ func (f Frame) Navigate(url string, waitFor LifecycleEventType) error {
 		}
 		return nil
 	}
-	return f.NewLifecycleEventCondition(waitFor).Do(navigate)
+	return f.NewLifecycleEventCondition(waitFor).Wait(navigate)
 }
 
 // Reload refresh current page
@@ -113,7 +113,7 @@ func (f Frame) Reload(ignoreCache bool, scriptToEvaluateOnLoad string, waitFor L
 			ScriptToEvaluateOnLoad: scriptToEvaluateOnLoad,
 		})
 	}
-	return f.NewLifecycleEventCondition(waitFor).Do(reload)
+	return f.NewLifecycleEventCondition(waitFor).Wait(reload)
 }
 
 func safeSelector(v string) string {

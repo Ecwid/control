@@ -324,8 +324,8 @@ func (s Session) ExitCode() error {
 	return s.exitCode
 }
 
-func (s *Session) NewTargetCreatedCondition(createdTargetID *target.TargetID) Condition {
-	return NewCondition(s, s.Timeout, func(value observe.Value) (bool, error) {
+func (s *Session) NewTargetCreatedCondition(createdTargetID *target.TargetID) *Condition {
+	return s.NewCondition(func(value observe.Value) (bool, error) {
 		if value.Method == "Target.targetCreated" {
 			var v = new(target.TargetCreated)
 			if err := json.Unmarshal(value.Params, v); err != nil {

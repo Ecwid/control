@@ -7,66 +7,69 @@ import (
 	"github.com/ecwid/control/transport/observe"
 )
 
-type ErrConditionTimeout struct {
-	name     string
-	deadline time.Duration
+type WaitTimeoutError struct {
+	timeout time.Duration
 }
 
-func (e ErrConditionTimeout) Error() string {
-	return fmt.Sprintf("condition timeout reached out after %s", e.deadline)
+func (e WaitTimeoutError) Error() string {
+	return fmt.Sprintf("waitUntil timeout reached out after %s", e.timeout)
 }
 
 type Condition struct {
-	session   *Session
-	condition func(value observe.Value) (bool, error)
-	deadline  time.Duration
+	session     *Session
+	isDone      chan struct{}
+	error       chan error
+	unsubscribe func()
 }
 
-func NewCondition(session *Session, deadline time.Duration, v func(observe.Value) (bool, error)) Condition {
-	return Condition{
-		session:   session,
-		condition: v,
-		deadline:  deadline,
+func (s *Session) NewCondition(condition func(value observe.Value) (bool, error)) *Condition {
+	u := &Condition{
+		session: s,
+		isDone:  make(chan struct{}, 1),
+		error:   make(chan error, 1),
 	}
-}
-
-func (con Condition) Do(initialAction func() error) error {
-	var (
-		isDone      = make(chan bool, 1)
-		internalErr = make(chan error, 1)
-	)
-	defer close(isDone)
-	defer close(internalErr)
-	unsubscribe := con.session.Subscribe("*", false, func(e observe.Value) {
-		v, err := con.condition(e)
+	u.unsubscribe = s.Subscribe("*", false, func(e observe.Value) {
+		v, err := condition(e)
 		if err != nil {
 			select {
-			case internalErr <- err:
+			case u.error <- err:
 			default:
 			}
 			return
 		}
 		if v {
 			select {
-			case isDone <- true:
+			case u.isDone <- struct{}{}:
 			default:
 			}
 		}
 	})
-	defer unsubscribe()
-	if initialAction != nil {
-		if err := initialAction(); err != nil {
+	return u
+}
+
+func (u Condition) Wait(initial func() error) error {
+	return u.WaitWithTimeout(initial, u.session.Timeout)
+}
+
+func (u Condition) WaitWithTimeout(initial func() error, timeout time.Duration) error {
+	defer close(u.isDone)
+	defer close(u.error)
+	defer u.unsubscribe()
+
+	if initial != nil {
+		if err := initial(); err != nil {
 			return err
 		}
 	}
+
 	select {
-	case <-isDone:
+	case <-u.isDone:
 		return nil
-	case err := <-internalErr:
+	case err := <-u.error:
 		return err
-	case <-con.session.exited:
-		return con.session.exitCode
-	case <-time.After(con.deadline):
-		return ErrConditionTimeout{deadline: con.deadline}
+	case <-u.session.exited:
+		return u.session.exitCode
+	case <-time.After(timeout):
+		return WaitTimeoutError{timeout: timeout}
 	}
 }
