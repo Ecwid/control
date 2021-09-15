@@ -96,7 +96,7 @@ func (e Element) InsertText(text string) error {
 	if err = e.Focus(); err != nil {
 		return err
 	}
-	if err = e.frame.Session().Keyboard.InsertText(text); err != nil {
+	if err = e.frame.Session().Input.InsertText(text); err != nil {
 		return err
 	}
 	if err = e.dispatchEvents(
@@ -124,7 +124,7 @@ func (e *Element) Type(text string, delay time.Duration) error {
 	}
 	for _, c := range text {
 		if isKey(c) {
-			if err = e.frame.Session().Keyboard.press(keyDefinitions[c]); err != nil {
+			if err = e.frame.Session().Input.press(keyDefinitions[c]); err != nil {
 				return err
 			}
 		} else {
@@ -206,14 +206,14 @@ func (e Element) click(button input.MouseButton) error {
 	if _, err = e.CallFunction(functionPreventMissClick, true, false, nil); err != nil {
 		return err
 	}
-	var mouse = e.frame.Session().Mouse
-	if err = mouse.Move(MouseNone, x, y); err != nil {
+	var input = e.frame.Session().Input
+	if err = input.MouseMove(MouseNone, x, y); err != nil {
 		return err
 	}
-	if err = mouse.Press(button, x, y); err != nil {
+	if err = input.MousePress(button, x, y); err != nil {
 		return err
 	}
-	if err = mouse.Release(button, x, y); err != nil {
+	if err = input.MouseRelease(button, x, y); err != nil {
 		return err
 	}
 	clicked, err := e.CallFunction(functionClickDone, true, false, nil)
@@ -245,7 +245,7 @@ func (e Element) Hover() error {
 	if err != nil {
 		return err
 	}
-	return e.frame.Session().Mouse.Move(MouseNone, x, y)
+	return e.frame.Session().Input.MouseMove(MouseNone, x, y)
 }
 
 func (e Element) SetAttribute(attr string, value string) error {

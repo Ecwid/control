@@ -2,12 +2,10 @@ package control
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
 
-	"github.com/ecwid/control/protocol/browser"
 	"github.com/ecwid/control/protocol/common"
 	"github.com/ecwid/control/protocol/network"
 	"github.com/ecwid/control/protocol/page"
@@ -26,6 +24,7 @@ const (
 type Session struct {
 	transport    *transport.Client
 	id           target.SessionID
+	tid          target.TargetID
 	tree         *ctxTree
 	eventPool    chan observe.Value
 	exited       chan struct{}
@@ -35,9 +34,8 @@ type Session struct {
 	Timeout      time.Duration
 	PoolingEvery time.Duration
 	Network      Network
-	Mouse        Mouse
+	Input        Input
 	Emulation    Emulation
-	Keyboard     Keyboard
 }
 
 func (s Session) Call(method string, send, recv interface{}) error {
@@ -60,10 +58,9 @@ func New(t *transport.Client) *Session {
 		Timeout:      time.Second * 60,
 		PoolingEvery: time.Millisecond * 500,
 	}
-	hlSess.Mouse = Mouse{s: hlSess}
+	hlSess.Input = Input{s: hlSess}
 	hlSess.Network = Network{s: hlSess}
 	hlSess.Emulation = Emulation{s: hlSess}
-	hlSess.Keyboard = Keyboard{s: hlSess}
 	return hlSess
 }
 func (s Session) GetTransport() *transport.Client {
@@ -96,7 +93,7 @@ func (s *Session) AttachToTarget(targetID target.TargetID) error {
 	}
 
 	// run session lifecycle
-	// s.targetID = targetID
+	s.tid = targetID
 	s.id = val.SessionId
 	s.tree = createContextTree(s, targetID)
 	go s.lifecycle()
@@ -145,86 +142,83 @@ func (s Session) Frame(id common.FrameId) (*Frame, error) {
 	return frame, nil
 }
 
-func (s Session) TargetID() target.TargetID {
-	return target.TargetID(s.Page().id)
-}
-
 func (s Session) Activate() error {
 	return target.ActivateTarget(s, target.ActivateTargetArgs{
-		TargetId: s.TargetID(),
+		TargetId: s.tid,
 	})
-}
-
-func (s Session) abort(err error) {
-	s.exitCode = err
-	close(s.exited)
 }
 
 func (s Session) Notify(val observe.Value) {
 	s.eventPool <- val
 }
 
+func (s *Session) handle(e observe.Value) error {
+	switch e.Method {
+
+	case "Page.frameAttached":
+		var v = page.FrameAttached{}
+		if err := json.Unmarshal(e.Params, &v); err != nil {
+			return err
+		}
+		s.tree.appendChild(v.ParentFrameId, v.FrameId)
+
+	case "Page.frameDetached":
+		var v = page.FrameDetached{}
+		if err := json.Unmarshal(e.Params, &v); err != nil {
+			return err
+		}
+		s.tree.deleteNode(v.FrameId)
+
+	case "Runtime.executionContextCreated":
+		var v = runtime.ExecutionContextCreated{}
+		if err := json.Unmarshal(e.Params, &v); err != nil {
+			return err
+		}
+		frameID := common.FrameId((v.Context.AuxData.(map[string]interface{}))["frameId"].(string))
+		s.tree.find(frameID, func(f *Frame) {
+			atomic.StoreInt32(&f.contextID, int32(v.Context.Id))
+		})
+
+	case "Target.targetCrashed":
+		var v = target.TargetCrashed{}
+		if err := json.Unmarshal(e.Params, &v); err != nil {
+			return err
+		}
+		return ErrTargetCrashed(v)
+
+	case "Target.targetDestroyed":
+		var v = target.TargetDestroyed{}
+		if err := json.Unmarshal(e.Params, &v); err != nil {
+			return err
+		}
+		if v.TargetId == s.tid {
+			return ErrTargetDestroyed
+		}
+
+	case "Target.detachedFromTarget":
+		var v = target.DetachedFromTarget{}
+		if err := json.Unmarshal(e.Params, &v); err != nil {
+			return err
+		}
+		if v.SessionId == s.id {
+			return ErrDetachedFromTarget
+		}
+
+	}
+	s.observable.Notify(e.Method, e)
+	return nil
+}
+
 func (s *Session) lifecycle() {
 	defer func() {
 		s.transport.Unregister(s)
+		close(s.exited)
 	}()
 	for e := range s.eventPool {
-		switch e.Method {
-
-		case "Page.frameAttached":
-			var v = new(page.FrameAttached)
-			if err := json.Unmarshal(e.Params, v); err != nil {
-				s.abort(err)
-				return
-			}
-			s.tree.appendChild(v.ParentFrameId, v.FrameId)
-
-		case "Page.frameDetached":
-			var v = new(page.FrameDetached)
-			if err := json.Unmarshal(e.Params, v); err != nil {
-				s.abort(err)
-				return
-			}
-			s.tree.deleteNode(v.FrameId)
-
-		case "Runtime.executionContextCreated":
-			var v = new(runtime.ExecutionContextCreated)
-			if err := json.Unmarshal(e.Params, v); err != nil {
-				s.abort(err)
-				return
-			}
-			frameID := common.FrameId((v.Context.AuxData.(map[string]interface{}))["frameId"].(string))
-			s.tree.find(frameID, func(f *Frame) {
-				atomic.StoreInt32(&f.contextID, int32(v.Context.Id))
-			})
-
-		case "Target.targetCrashed":
-			s.abort(errors.New(string(e.Params)))
+		if err := s.handle(e); err != nil {
+			s.exitCode = err
 			return
-
-		case "Target.targetDestroyed":
-			var v = new(target.TargetDestroyed)
-			if err := json.Unmarshal(e.Params, v); err != nil {
-				s.abort(err)
-				return
-			}
-			if v.TargetId == s.TargetID() {
-				s.abort(ErrSessionClosed)
-				return
-			}
-
-		case "Target.detachedFromTarget":
-			var v = new(target.DetachedFromTarget)
-			if err := json.Unmarshal(e.Params, v); err != nil {
-				s.abort(err)
-				return
-			}
-			if v.SessionId == s.id {
-				return
-			}
-
 		}
-		s.observable.Notify(e.Method, e)
 	}
 }
 
@@ -243,67 +237,9 @@ func (s *Session) Subscribe(event string, async bool, v func(e observe.Value)) (
 	}
 }
 
-// CaptureScreenshot get screen of current page
-func (s Session) CaptureScreenshot(format string, quality int, clip *page.Viewport, fromSurface, captureBeyondViewport bool) ([]byte, error) {
-	val, err := page.CaptureScreenshot(s, page.CaptureScreenshotArgs{
-		Format:                format,
-		Quality:               quality,
-		Clip:                  clip,
-		FromSurface:           fromSurface,
-		CaptureBeyondViewport: captureBeyondViewport,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return val.Data, nil
-}
-
-// AddScriptToEvaluateOnNewDocument https://chromedevtools.github.io/devtools-protocol/tot/Page#method-addScriptToEvaluateOnNewDocument
-func (s Session) AddScriptToEvaluateOnNewDocument(source string) (page.ScriptIdentifier, error) {
-	val, err := page.AddScriptToEvaluateOnNewDocument(s, page.AddScriptToEvaluateOnNewDocumentArgs{
-		Source: source,
-	})
-	if err != nil {
-		return "", err
-	}
-	return val.Identifier, nil
-}
-
-// RemoveScriptToEvaluateOnNewDocument https://chromedevtools.github.io/devtools-protocol/tot/Page#method-removeScriptToEvaluateOnNewDocument
-func (s Session) RemoveScriptToEvaluateOnNewDocument(identifier page.ScriptIdentifier) error {
-	return page.RemoveScriptToEvaluateOnNewDocument(s, page.RemoveScriptToEvaluateOnNewDocumentArgs{
-		Identifier: identifier,
-	})
-}
-
-// SetDownloadBehavior https://chromedevtools.github.io/devtools-protocol/tot/Page#method-setDownloadBehavior
-func (s Session) SetDownloadBehavior(behavior string, downloadPath string, eventsEnabled bool) error {
-	return browser.SetDownloadBehavior(s, browser.SetDownloadBehaviorArgs{
-		Behavior:      behavior,
-		DownloadPath:  downloadPath,
-		EventsEnabled: eventsEnabled, // default false
-	})
-}
-
-// HandleJavaScriptDialog ...
-func (s Session) HandleJavaScriptDialog(accept bool, promptText string) error {
-	return page.HandleJavaScriptDialog(s, page.HandleJavaScriptDialogArgs{
-		Accept:     accept,
-		PromptText: promptText,
-	})
-}
-
-func (s Session) GetLayoutMetrics() (*page.GetLayoutMetricsVal, error) {
-	view, err := page.GetLayoutMetrics(s)
-	if err != nil {
-		return nil, err
-	}
-	return view, nil
-}
-
 func (s Session) Close() error {
 	err := target.CloseTarget(s, target.CloseTargetArgs{
-		TargetId: s.TargetID(),
+		TargetId: s.tid,
 	})
 	if err != nil {
 		return err
@@ -331,7 +267,7 @@ func (s *Session) NewTargetCreatedCondition(createdTargetID *target.TargetID) *C
 			if err := json.Unmarshal(value.Params, v); err != nil {
 				return false, err
 			}
-			if v.TargetInfo.Type == "page" && v.TargetInfo.OpenerId == s.TargetID() {
+			if v.TargetInfo.Type == "page" && v.TargetInfo.OpenerId == s.tid {
 				*createdTargetID = v.TargetInfo.TargetId
 				return true, nil
 			}

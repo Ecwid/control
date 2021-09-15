@@ -128,12 +128,12 @@ var keyDefinitions = map[rune]keyDefinition{
 	'"':  {keyCode: 222, key: "\"", code: "Quote"},
 }
 
-type Mouse struct {
+type Input struct {
 	s *Session
 }
 
-func (m Mouse) Move(button input.MouseButton, x, y float64) error {
-	return input.DispatchMouseEvent(m.s, input.DispatchMouseEventArgs{
+func (i Input) MouseMove(button input.MouseButton, x, y float64) error {
+	return input.DispatchMouseEvent(i.s, input.DispatchMouseEventArgs{
 		X:          x,
 		Y:          y,
 		Type:       "mouseMoved",
@@ -142,8 +142,8 @@ func (m Mouse) Move(button input.MouseButton, x, y float64) error {
 	})
 }
 
-func (m Mouse) Press(button input.MouseButton, x, y float64) error {
-	return input.DispatchMouseEvent(m.s, input.DispatchMouseEventArgs{
+func (i Input) MousePress(button input.MouseButton, x, y float64) error {
+	return input.DispatchMouseEvent(i.s, input.DispatchMouseEventArgs{
 		X:          x,
 		Y:          y,
 		Type:       "mousePressed",
@@ -152,8 +152,8 @@ func (m Mouse) Press(button input.MouseButton, x, y float64) error {
 	})
 }
 
-func (m Mouse) Release(button input.MouseButton, x, y float64) error {
-	return input.DispatchMouseEvent(m.s, input.DispatchMouseEventArgs{
+func (i Input) MouseRelease(button input.MouseButton, x, y float64) error {
+	return input.DispatchMouseEvent(i.s, input.DispatchMouseEventArgs{
 		X:          x,
 		Y:          y,
 		Type:       "mouseReleased",
@@ -162,29 +162,25 @@ func (m Mouse) Release(button input.MouseButton, x, y float64) error {
 	})
 }
 
-type Keyboard struct {
-	s *Session
-}
-
 // Keyboard events
 const (
 	dispatchKeyEventKeyDown = "keyDown"
 	dispatchKeyEventKeyUp   = "keyUp"
 )
 
-func (k Keyboard) InsertText(text string) error {
-	return input.InsertText(k.s, input.InsertTextArgs{Text: text})
+func (i Input) InsertText(text string) error {
+	return input.InsertText(i.s, input.InsertTextArgs{Text: text})
 }
 
-func (k Keyboard) Press(c rune) error {
-	return k.press(keyDefinition{keyCode: int(c), text: string(c)})
+func (i Input) PressKey(c rune) error {
+	return i.press(keyDefinition{keyCode: int(c), text: string(c)})
 }
 
-func (k Keyboard) press(key keyDefinition) error {
+func (i Input) press(key keyDefinition) error {
 	if key.text == "" {
 		key.text = key.key
 	}
-	err := input.DispatchKeyEvent(k.s, input.DispatchKeyEventArgs{
+	err := input.DispatchKeyEvent(i.s, input.DispatchKeyEventArgs{
 		Type:                  dispatchKeyEventKeyDown,
 		Key:                   key.key,
 		Code:                  key.code,
@@ -194,7 +190,7 @@ func (k Keyboard) press(key keyDefinition) error {
 	if err != nil {
 		return err
 	}
-	return input.DispatchKeyEvent(k.s, input.DispatchKeyEventArgs{
+	return input.DispatchKeyEvent(i.s, input.DispatchKeyEventArgs{
 		Type: dispatchKeyEventKeyUp,
 		Key:  key.key,
 		Code: key.code,
