@@ -81,22 +81,17 @@ func (s *Session) CreateTarget(url string) error {
 	return s.AttachToTarget(r.TargetId)
 }
 
-func (s *Session) detachFromTarget() error {
-	if s.ID() != "" {
-		return target.DetachFromTarget(s, target.DetachFromTargetArgs{SessionId: s.id})
-	}
-	return nil
-}
-
 func (s *Session) AttachToTarget(targetID target.TargetID) error {
+	if s.id != "" {
+		if err := target.DetachFromTarget(s, target.DetachFromTargetArgs{SessionId: s.id}); err != nil {
+			return err
+		}
+	}
 	val, err := target.AttachToTarget(s, target.AttachToTargetArgs{
 		TargetId: targetID,
 		Flatten:  true,
 	})
 	if err != nil {
-		return err
-	}
-	if err = s.detachFromTarget(); err != nil {
 		return err
 	}
 
