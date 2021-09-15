@@ -19,13 +19,7 @@ type RoundTripper interface {
 	RoundTrip(*Request) (*Response, error)
 }
 
-type T interface {
-	Call(sessionID, method string, args, value interface{}) error
-	Add(val observe.Observer)
-	Remove(val observe.Observer)
-}
-
-type WS struct {
+type Client struct {
 	ctx          context.Context
 	conn         *websocket.Conn
 	seq          uint64
@@ -38,7 +32,7 @@ type WS struct {
 	Stderr       io.Writer
 }
 
-func (c *WS) Call(sessionID, method string, args, value interface{}) error {
+func (c *Client) Call(sessionID, method string, args, value interface{}) error {
 	c.seq++
 	r, err := c.RoundTripper.RoundTrip(&Request{
 		ID:        c.seq,
@@ -55,15 +49,15 @@ func (c *WS) Call(sessionID, method string, args, value interface{}) error {
 	return nil
 }
 
-func (c *WS) Add(val observe.Observer) {
-	c.observable.Add(val)
+func (c *Client) Register(val observe.Observer) {
+	c.observable.Register(val)
 }
 
-func (c *WS) Remove(val observe.Observer) {
-	c.observable.Remove(val)
+func (c *Client) Unregister(val observe.Observer) {
+	c.observable.Unregister(val)
 }
 
-func (c *WS) RoundTrip(req *Request) (*Response, error) {
+func (c *Client) RoundTrip(req *Request) (*Response, error) {
 	data, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -88,12 +82,12 @@ func (c *WS) RoundTrip(req *Request) (*Response, error) {
 	}
 }
 
-func Connect(ctx context.Context, webSocketURL string) (T, error) {
+func Connect(ctx context.Context, webSocketURL string) (*Client, error) {
 	conn, _, err := websocket.DefaultDialer.Dial(webSocketURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	c := &WS{
+	c := &Client{
 		ctx:        ctx,
 		conn:       conn,
 		seq:        0,
@@ -108,26 +102,26 @@ func Connect(ctx context.Context, webSocketURL string) (T, error) {
 	return c, nil
 }
 
-func (c *WS) stdout(format string, v ...interface{}) {
+func (c *Client) stdout(format string, v ...interface{}) {
 	if c.Stdout != nil {
 		_, _ = c.Stdout.Write([]byte(fmt.Sprintf(format, v...) + "\n"))
 	}
 }
 
-func (c *WS) stderr(format string, v ...interface{}) {
+func (c *Client) stderr(format string, v ...interface{}) {
 	if c.Stderr != nil {
 		_, _ = c.Stderr.Write([]byte(fmt.Sprintf(format, v...) + "\n"))
 	}
 }
 
-func (c *WS) stop(err error) {
+func (c *Client) stop(err error) {
 	if err != nil {
 		c.stderr("\033[1;31m%s\033[0m", err.Error())
 	}
 	c.fatal <- err
 }
 
-func (c *WS) reader() {
+func (c *Client) reader() {
 	for {
 		_, body, err := c.conn.ReadMessage()
 		if err != nil {

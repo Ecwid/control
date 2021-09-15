@@ -10,9 +10,9 @@ type Value struct {
 }
 
 type Observer interface {
-	ID() string    // unique observer's id, attaching and detaching by this id
-	Event() string // event handling
-	Notify(val Value)
+	ID() string       // unique observer's id, attaching and detaching by this id
+	Event() string    // on what event it should notified
+	Notify(val Value) // notification callback
 }
 
 type Observable struct {
@@ -23,7 +23,7 @@ type Observable struct {
 func New() *Observable {
 	return &Observable{
 		mx:        sync.Mutex{},
-		observers: []Observer{},
+		observers: make([]Observer, 0),
 	}
 }
 
@@ -39,13 +39,13 @@ func (o *Observable) Notify(event string, val Value) {
 	}
 }
 
-func (o *Observable) Add(val Observer) {
+func (o *Observable) Register(val Observer) {
 	o.mx.Lock()
 	defer o.mx.Unlock()
 	o.observers = append(o.observers, val)
 }
 
-func (o *Observable) Remove(val Observer) {
+func (o *Observable) Unregister(val Observer) {
 	o.mx.Lock()
 	defer o.mx.Unlock()
 	for n, e := range o.observers {

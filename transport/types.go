@@ -5,10 +5,6 @@ import (
 	"fmt"
 )
 
-var (
-	ErrConnectionClosed = ProtoError{Message: "Connection closed"}
-)
-
 type ProtoError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`

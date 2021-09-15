@@ -3,12 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"os"
-	"time"
 
 	"github.com/ecwid/control"
 	"github.com/ecwid/control/chrome"
-	"github.com/ecwid/control/transport"
 )
 
 // Pretty преобразует struct в читаемый вид (форматированный json)
@@ -23,7 +20,7 @@ func main() {
 		panic(err)
 	}
 	defer b.Close()
-	b.GetTransport().(*transport.WS).Stdout = os.Stdout
+	//b.GetTransport().Stdout = os.Stdout
 	sess := control.New(b.GetTransport())
 	err = sess.CreateTarget("")
 	if err != nil {
@@ -35,7 +32,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	time.Sleep(time.Second * 5)
 	app, err := p.QuerySelectorAll(".grid-product__title-inner")
 	if err != nil {
 		panic(err)

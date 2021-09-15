@@ -24,7 +24,7 @@ const (
 )
 
 type Session struct {
-	transport    transport.T
+	transport    *transport.Client
 	id           target.SessionID
 	tree         *ctxTree
 	eventPool    chan observe.Value
@@ -49,7 +49,7 @@ func (s Session) Call(method string, send, recv interface{}) error {
 	}
 }
 
-func New(t transport.T) *Session {
+func New(t *transport.Client) *Session {
 	var hlSess = &Session{
 		obsuid:       0,
 		id:           "",
@@ -66,7 +66,7 @@ func New(t transport.T) *Session {
 	hlSess.Keyboard = Keyboard{s: hlSess}
 	return hlSess
 }
-func (s Session) GetTransport() transport.T {
+func (s Session) GetTransport() *transport.Client {
 	return s.transport
 }
 
@@ -100,7 +100,7 @@ func (s *Session) AttachToTarget(targetID target.TargetID) error {
 	s.id = val.SessionId
 	s.tree = createContextTree(s, targetID)
 	go s.lifecycle()
-	s.transport.Add(s)
+	s.transport.Register(s)
 
 	// default settings
 	if err = page.Enable(s); err != nil {
@@ -166,7 +166,7 @@ func (s Session) Notify(val observe.Value) {
 
 func (s *Session) lifecycle() {
 	defer func() {
-		s.transport.Remove(s)
+		s.transport.Unregister(s)
 	}()
 	for e := range s.eventPool {
 		switch e.Method {
@@ -234,12 +234,12 @@ func (s *Session) Subscribe(event string, async bool, v func(e observe.Value)) (
 		val = observe.NewSimpleObserver(fmt.Sprintf("%d", uid), event, v)
 	)
 	if async {
-		s.observable.Add(observe.AsyncSimpleObserver(val))
+		s.observable.Register(observe.AsyncSimpleObserver(val))
 	} else {
-		s.observable.Add(val)
+		s.observable.Register(val)
 	}
 	return func() {
-		s.observable.Remove(val)
+		s.observable.Unregister(val)
 	}
 }
 

@@ -129,15 +129,16 @@ func (n Network) GetRequestPostData(requestID network.RequestId) (string, error)
 }
 
 // GetResponseBody https://chromedevtools.github.io/devtools-protocol/tot/Network/#method-getResponseBody
-func (n Network) GetResponseBody(requestID network.RequestId) ([]byte, error) {
+func (n Network) GetResponseBody(requestID network.RequestId) (string, error) {
 	val, err := network.GetResponseBody(n.s, network.GetResponseBodyArgs{
 		RequestId: requestID,
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if val.Base64Encoded {
-		return base64.StdEncoding.DecodeString(val.Body)
+		b, err1 := base64.StdEncoding.DecodeString(val.Body)
+		return string(b), err1
 	}
-	return []byte(val.Body), nil
+	return val.Body, nil
 }

@@ -43,18 +43,18 @@ type BrowserVersion struct {
 type Browser struct {
 	url      *url.URL
 	cmd      *exec.Cmd
-	conn     transport.T
+	client   *transport.Client
 	deadline time.Duration
 }
 
 // GetTransport ...
-func (c Browser) GetTransport() transport.T {
-	return c.conn
+func (c Browser) GetTransport() *transport.Client {
+	return c.client
 }
 
 // Crash ...
 func (c Browser) Crash() {
-	_ = c.conn.Call("", "Browser.crash", nil, nil)
+	_ = c.client.Call("", "Browser.crash", nil, nil)
 }
 
 func (c Browser) request(path string, response interface{}) error {
@@ -87,7 +87,7 @@ func (c Browser) Close() error {
 		state, _ := c.cmd.Process.Wait()
 		exited <- state.ExitCode()
 	}()
-	_ = c.conn.Call("", "Browser.close", nil, nil)
+	_ = c.client.Call("", "Browser.close", nil, nil)
 	select {
 	case <-exited:
 		return nil
@@ -180,7 +180,7 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 	if err != nil {
 		return nil, err
 	}
-	browser.conn, err = transport.Connect(ctx, webSocketURL)
+	browser.client, err = transport.Connect(ctx, webSocketURL)
 	return browser, err
 }
 
