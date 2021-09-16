@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/ecwid/control/protocol/common"
 	"github.com/ecwid/control/protocol/page"
@@ -33,11 +32,11 @@ type Frame struct {
 	session *Session
 }
 
-func (f *Frame) Session() *Session {
+func (f Frame) Session() *Session {
 	return f.session
 }
 
-func (f *Frame) ID() common.FrameId {
+func (f Frame) ID() common.FrameId {
 	return f.id
 }
 
@@ -100,7 +99,14 @@ func safeSelector(v string) string {
 	return v
 }
 
-func (f *Frame) QuerySelector(selector string) (*Element, error) {
+func (f Frame) IsExist(selector string) bool {
+	selector = safeSelector(selector)
+	val, _ := f.evaluate(`document.querySelector("`+selector+`") != null`, true, false)
+	b, _ := primitiveRemoteObject(*val).Bool()
+	return b
+}
+
+func (f Frame) QuerySelector(selector string) (*Element, error) {
 	selector = safeSelector(selector)
 	var object, err = f.evaluate(`document.querySelector("`+selector+`")`, true, false)
 	if err != nil {
@@ -109,10 +115,10 @@ func (f *Frame) QuerySelector(selector string) (*Element, error) {
 	if object.ObjectId == "" {
 		return nil, NoSuchElementError{Selector: selector}
 	}
-	return createElement(selector, object, f), nil
+	return createElement(selector, object, &f), nil
 }
 
-func (f *Frame) QuerySelectorAll(selector string) ([]*Element, error) {
+func (f Frame) QuerySelectorAll(selector string) ([]*Element, error) {
 	selector = safeSelector(selector)
 	var array, err = f.evaluate(`document.querySelectorAll("`+selector+`")`, true, false)
 	if err != nil {
@@ -130,7 +136,7 @@ func (f *Frame) QuerySelectorAll(selector string) ([]*Element, error) {
 		if !d.Enumerable {
 			continue
 		}
-		all = append(all, createElement(selector, d.Value, f))
+		all = append(all, createElement(selector, d.Value, &f))
 	}
 	return all, nil
 }
@@ -193,15 +199,4 @@ func (f Frame) NavigateHistory(delta int) error {
 		})
 	}
 	return nil
-}
-
-func (f *Frame) WithTimeout(retry func() error) error {
-	var err error
-	for start := time.Now(); time.Since(start) < f.Session().Timeout; {
-		if err = retry(); err == nil {
-			return nil
-		}
-		time.Sleep(f.Session().PoolingEvery)
-	}
-	return err
 }

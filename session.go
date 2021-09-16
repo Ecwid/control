@@ -21,20 +21,19 @@ const (
 )
 
 type Session struct {
-	transport    *transport.Client
-	id           target.SessionID
-	tid          target.TargetID
-	runtime      *dict
-	eventPool    chan observe.Value
-	exited       chan struct{}
-	exitCode     error
-	observable   *observe.Observable
-	guid         uint64 // observers incremental id
-	Timeout      time.Duration
-	PoolingEvery time.Duration
-	Network      Network
-	Input        Input
-	Emulation    Emulation
+	transport  *transport.Client
+	id         target.SessionID
+	tid        target.TargetID
+	runtime    *dict
+	eventPool  chan observe.Value
+	exited     chan struct{}
+	exitCode   error
+	observable *observe.Observable
+	guid       uint64 // observers incremental id
+	Timeout    time.Duration
+	Network    Network
+	Input      Input
+	Emulation  Emulation
 }
 
 func (s Session) Call(method string, send, recv interface{}) error {
@@ -48,14 +47,13 @@ func (s Session) Call(method string, send, recv interface{}) error {
 
 func New(t *transport.Client) *Session {
 	var hlSess = &Session{
-		guid:         0,
-		id:           "",
-		transport:    t,
-		eventPool:    make(chan observe.Value, 999),
-		observable:   observe.New(),
-		exited:       make(chan struct{}, 1),
-		Timeout:      time.Second * 60,
-		PoolingEvery: time.Millisecond * 500,
+		guid:       0,
+		id:         "",
+		transport:  t,
+		eventPool:  make(chan observe.Value, 999),
+		observable: observe.New(),
+		exited:     make(chan struct{}, 1),
+		Timeout:    time.Second * 60,
 	}
 	hlSess.Input = Input{s: hlSess}
 	hlSess.Network = Network{s: hlSess}
