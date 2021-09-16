@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/ecwid/control/protocol/common"
@@ -13,14 +12,6 @@ import (
 	"github.com/ecwid/control/protocol/runtime"
 	"github.com/ecwid/control/transport/observe"
 )
-
-type NoSuchElementError struct {
-	Selector string
-}
-
-func (n NoSuchElementError) Error() string {
-	return fmt.Sprintf("no such element `%s`", n.Selector)
-}
 
 type LifecycleEventType string
 
@@ -38,12 +29,8 @@ const (
 )
 
 type Frame struct {
-	id        common.FrameId
-	contextID int32
-	remote    *runtime.RemoteObject // todo
-	session   *Session
-	parent    *Frame
-	child     []*Frame
+	id      common.FrameId
+	session *Session
 }
 
 func (f *Frame) Session() *Session {
@@ -54,22 +41,13 @@ func (f *Frame) ID() common.FrameId {
 	return f.id
 }
 
-func (f *Frame) walk(val func(*Frame) bool) {
-	if !val(f) {
-		return
-	}
-	for _, e := range f.child {
-		e.walk(val)
-	}
-}
-
 func (f Frame) Call(method string, send, recv interface{}) error {
 	return f.Session().Call(method, send, recv)
 }
 
 func (f Frame) NewLifecycleEventCondition(event LifecycleEventType) *Condition {
 	var isInit = false
-	return f.session.NewCondition(func(value observe.Value) (bool, error) {
+	return f.Session().NewCondition(func(value observe.Value) (bool, error) {
 		if value.Method == "Page.lifecycleEvent" {
 			var v = new(page.LifecycleEvent)
 			if err := json.Unmarshal(value.Params, v); err != nil {
@@ -173,7 +151,7 @@ func (f Frame) Evaluate(expression string, await, returnByValue bool) (interface
 }
 
 func (f Frame) evaluate(expression string, await, returnByValue bool) (*runtime.RemoteObject, error) {
-	var cid = runtime.ExecutionContextId(atomic.LoadInt32(&f.contextID))
+	var cid = f.session.runtime.Load(f.id) //runtime.ExecutionContextId(atomic.LoadInt32(&f.contextID))
 	val, err := runtime.Evaluate(f, runtime.EvaluateArgs{
 		Expression:            expression,
 		IncludeCommandLineAPI: true,

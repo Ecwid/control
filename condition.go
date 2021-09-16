@@ -1,19 +1,10 @@
 package control
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/ecwid/control/transport/observe"
 )
-
-type WaitTimeoutError struct {
-	timeout time.Duration
-}
-
-func (e WaitTimeoutError) Error() string {
-	return fmt.Sprintf("waitUntil timeout reached out after %s", e.timeout)
-}
 
 type Condition struct {
 	session     *Session

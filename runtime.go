@@ -1,23 +1,12 @@
 package control
 
 import (
-	"fmt"
-
 	"github.com/ecwid/control/protocol/runtime"
 )
 
-type remoteObjectPrimitive runtime.RemoteObject
+type primitiveRemoteObject runtime.RemoteObject
 
-type RemoteObjectCastError struct {
-	object remoteObjectPrimitive
-	cast   string
-}
-
-func (r RemoteObjectCastError) Error() string {
-	return fmt.Sprintf("cast to %s failed for value %s", r.cast, r.object.Type)
-}
-
-func (p remoteObjectPrimitive) String() (string, error) {
+func (p primitiveRemoteObject) String() (string, error) {
 	const to = "string"
 	if p.Type == to {
 		return p.Value.(string), nil
@@ -29,7 +18,7 @@ func (p remoteObjectPrimitive) String() (string, error) {
 }
 
 // Bool RemoteObject as bool value
-func (p remoteObjectPrimitive) Bool() (bool, error) {
+func (p primitiveRemoteObject) Bool() (bool, error) {
 	const to = "boolean"
 	if p.Type == to {
 		return p.Value.(bool), nil

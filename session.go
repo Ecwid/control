@@ -3,6 +3,7 @@ package control
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -15,8 +16,6 @@ import (
 	"github.com/ecwid/control/transport/observe"
 )
 
-type Map map[string]interface{}
-
 const (
 	blankPage = "about:blank"
 )
@@ -25,12 +24,12 @@ type Session struct {
 	transport    *transport.Client
 	id           target.SessionID
 	tid          target.TargetID
-	tree         *ctxTree
+	runtime      *dict
 	eventPool    chan observe.Value
 	exited       chan struct{}
 	exitCode     error
 	observable   *observe.Observable
-	obsuid       uint64 // observers incremental id
+	guid         uint64 // observers incremental id
 	Timeout      time.Duration
 	PoolingEvery time.Duration
 	Network      Network
@@ -49,7 +48,7 @@ func (s Session) Call(method string, send, recv interface{}) error {
 
 func New(t *transport.Client) *Session {
 	var hlSess = &Session{
-		obsuid:       0,
+		guid:         0,
 		id:           "",
 		transport:    t,
 		eventPool:    make(chan observe.Value, 999),
@@ -95,11 +94,10 @@ func (s *Session) AttachToTarget(targetID target.TargetID) error {
 	// run session lifecycle
 	s.tid = targetID
 	s.id = val.SessionId
-	s.tree = createContextTree(s, targetID)
+	s.runtime = newDict()
 	go s.lifecycle()
 	s.transport.Register(s)
 
-	// default settings
 	if err = page.Enable(s); err != nil {
 		return err
 	}
@@ -128,18 +126,14 @@ func (s Session) Event() string {
 }
 
 func (s Session) Page() *Frame {
-	return s.tree.root
+	return &Frame{id: common.FrameId(s.tid), session: &s}
 }
 
 func (s Session) Frame(id common.FrameId) (*Frame, error) {
-	var frame *Frame
-	s.tree.find(id, func(f *Frame) {
-		frame = f
-	})
-	if frame == nil {
-		return nil, fmt.Errorf("frame with id = %s not found", id)
+	if s.runtime.Load(id) != 0 {
+		return &Frame{id: id, session: &s}, nil
 	}
-	return frame, nil
+	return nil, NoSuchFrameError{id: id}
 }
 
 func (s Session) Activate() error {
@@ -155,29 +149,13 @@ func (s Session) Notify(val observe.Value) {
 func (s *Session) handle(e observe.Value) error {
 	switch e.Method {
 
-	case "Page.frameAttached":
-		var v = page.FrameAttached{}
-		if err := json.Unmarshal(e.Params, &v); err != nil {
-			return err
-		}
-		s.tree.appendChild(v.ParentFrameId, v.FrameId)
-
-	case "Page.frameDetached":
-		var v = page.FrameDetached{}
-		if err := json.Unmarshal(e.Params, &v); err != nil {
-			return err
-		}
-		s.tree.deleteNode(v.FrameId)
-
 	case "Runtime.executionContextCreated":
 		var v = runtime.ExecutionContextCreated{}
 		if err := json.Unmarshal(e.Params, &v); err != nil {
 			return err
 		}
 		frameID := common.FrameId((v.Context.AuxData.(map[string]interface{}))["frameId"].(string))
-		s.tree.find(frameID, func(f *Frame) {
-			atomic.StoreInt32(&f.contextID, int32(v.Context.Id))
-		})
+		s.runtime.Store(frameID, v.Context.Id)
 
 	case "Target.targetCrashed":
 		var v = target.TargetCrashed{}
@@ -224,7 +202,7 @@ func (s *Session) lifecycle() {
 
 func (s *Session) Subscribe(event string, async bool, v func(e observe.Value)) (unsubscribe func()) {
 	var (
-		uid = atomic.AddUint64(&s.obsuid, 1)
+		uid = atomic.AddUint64(&s.guid, 1)
 		val = observe.NewSimpleObserver(fmt.Sprintf("%d", uid), event, v)
 	)
 	if async {
@@ -238,13 +216,9 @@ func (s *Session) Subscribe(event string, async bool, v func(e observe.Value)) (
 }
 
 func (s Session) Close() error {
-	err := target.CloseTarget(s, target.CloseTargetArgs{
+	return target.CloseTarget(s, target.CloseTargetArgs{
 		TargetId: s.tid,
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (s Session) IsClosed() bool {
@@ -268,10 +242,33 @@ func (s *Session) NewTargetCreatedCondition(createdTargetID *target.TargetID) *C
 				return false, err
 			}
 			if v.TargetInfo.Type == "page" && v.TargetInfo.OpenerId == s.tid {
-				*createdTargetID = v.TargetInfo.TargetId
+				if createdTargetID != nil {
+					*createdTargetID = v.TargetInfo.TargetId
+				}
 				return true, nil
 			}
 		}
 		return false, nil
 	})
+}
+
+type dict struct {
+	sync.Mutex
+	values map[common.FrameId]runtime.ExecutionContextId
+}
+
+func newDict() *dict {
+	return &dict{values: map[common.FrameId]runtime.ExecutionContextId{}}
+}
+
+func (m *dict) Store(key common.FrameId, val runtime.ExecutionContextId) {
+	m.Lock()
+	defer m.Unlock()
+	m.values[key] = val
+}
+
+func (m *dict) Load(key common.FrameId) runtime.ExecutionContextId {
+	m.Lock()
+	defer m.Unlock()
+	return m.values[key]
 }

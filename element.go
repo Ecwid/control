@@ -156,7 +156,7 @@ func (e Element) GetContentQuad(viewportCorrection bool) (Quad, error) {
 	if len(quads) == 0 { // should be at least one
 		return nil, ErrElementInvisible
 	}
-	metric, err := e.frame.session.GetLayoutMetrics()
+	metric, err := e.frame.Session().GetLayoutMetrics()
 	if err != nil {
 		return nil, err
 	}
@@ -216,11 +216,11 @@ func (e Element) click(button input.MouseButton) error {
 	if err = input.MouseRelease(button, x, y); err != nil {
 		return err
 	}
-	clicked, err := e.CallFunction(functionClickDone, true, false, nil)
+	done, err := e.CallFunction(functionClickDone, true, false, nil)
 	if err != nil {
-		return nil // context was destroyed by navigate after click
+		return nil // context was destroyed by navigate after click - it's ok
 	}
-	if val, ok := clicked.Value.(bool); ok && !val {
+	if clicked, _ := primitiveRemoteObject(*done).Bool(); !clicked {
 		return ErrElementMissClick
 	}
 	return nil
@@ -272,7 +272,7 @@ func (e *Element) IsChecked() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return remoteObjectPrimitive(*v).Bool()
+	return primitiveRemoteObject(*v).Bool()
 }
 
 func (e Element) GetRectangle() (*dom.Rect, error) {
@@ -317,7 +317,7 @@ func (e Element) callFunctionStringValue(function string, args []*runtime.CallAr
 	if err != nil {
 		return "", err
 	}
-	return remoteObjectPrimitive(*v).String()
+	return primitiveRemoteObject(*v).String()
 }
 
 func (e Element) callFunctionStringArrayValue(function string) ([]string, error) {
@@ -334,7 +334,11 @@ func (e Element) callFunctionStringArrayValue(function string) ([]string, error)
 		if !d.Enumerable {
 			continue
 		}
-		options = append(options, d.Value.Value.(string))
+		val, err1 := primitiveRemoteObject(*d.Value).String()
+		if err1 != nil {
+			return nil, err1
+		}
+		options = append(options, val)
 	}
 	return options, nil
 }
