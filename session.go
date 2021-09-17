@@ -216,9 +216,14 @@ func (s *Session) Subscribe(event string, async bool, v func(e observe.Value)) (
 }
 
 func (s Session) Close() error {
-	return target.CloseTarget(s, target.CloseTargetArgs{
+	err := target.CloseTarget(s, target.CloseTargetArgs{
 		TargetId: s.tid,
 	})
+	/* Target.detachedFromTarget event may come before the response of CloseTarget call */
+	if err == context.Canceled {
+		return nil
+	}
+	return err
 }
 
 func (s Session) IsClosed() bool {
