@@ -41,6 +41,7 @@ type BrowserVersion struct {
 
 // Browser ...
 type Browser struct {
+	ctx      context.Context
 	url      *url.URL
 	cmd      *exec.Cmd
 	client   *transport.Client
@@ -54,7 +55,7 @@ func (c Browser) GetTransport() *transport.Client {
 
 // Crash ...
 func (c Browser) Crash() {
-	_ = c.client.Call("", "Browser.crash", nil, nil)
+	_ = c.client.Call(c.ctx, "", "Browser.crash", nil, nil)
 }
 
 func (c Browser) request(path string, response interface{}) error {
@@ -87,7 +88,7 @@ func (c Browser) Close() error {
 		state, _ := c.cmd.Process.Wait()
 		exited <- state.ExitCode()
 	}()
-	_ = c.client.Call("", "Browser.close", nil, nil)
+	_ = c.client.Call(c.ctx, "", "Browser.close", nil, nil)
 	select {
 	case <-exited:
 		return nil
@@ -101,7 +102,10 @@ func (c Browser) Close() error {
 
 // Launch launch a new browser process
 func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
-	browser := &Browser{deadline: 10 * time.Second}
+	browser := &Browser{
+		ctx:      ctx,
+		deadline: 10 * time.Second,
+	}
 	var path string
 	bin := []string{
 		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -169,7 +173,7 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 		return nil, err
 	}
 	defer stderr.Close()
-	if err := browser.cmd.Start(); err != nil {
+	if err = browser.cmd.Start(); err != nil {
 		return nil, err
 	}
 	webSocketURL, err := addrFromStderr(stderr)

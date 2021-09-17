@@ -16,15 +16,16 @@ import (
 var ErrReceiveTimeout = errors.New("websocket response timeout reached")
 
 type RoundTripper interface {
-	RoundTrip(*Request) (*Response, error)
+	RoundTrip(context.Context, *Request) (*Response, error)
 }
 
 type Client struct {
-	ctx          context.Context
+	serverCtx    context.Context
 	conn         *websocket.Conn
 	seq          uint64
 	recv         chan *Response
-	fatal        chan error
+	exited       chan struct{}
+	exitCode     error
 	observable   *observe.Observable
 	RoundTripper RoundTripper
 	Timeout      time.Duration
@@ -32,9 +33,9 @@ type Client struct {
 	Stderr       io.Writer
 }
 
-func (c *Client) Call(sessionID, method string, args, value interface{}) error {
+func (c *Client) Call(ctx context.Context, sessionID, method string, args, value interface{}) error {
 	c.seq++
-	r, err := c.RoundTripper.RoundTrip(&Request{
+	r, err := c.RoundTripper.RoundTrip(ctx, &Request{
 		ID:        c.seq,
 		SessionID: sessionID,
 		Method:    method,
@@ -57,7 +58,7 @@ func (c *Client) Unregister(val observe.Observer) {
 	c.observable.Unregister(val)
 }
 
-func (c *Client) RoundTrip(req *Request) (*Response, error) {
+func (c *Client) RoundTrip(ctx context.Context, req *Request) (*Response, error) {
 	data, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -73,12 +74,14 @@ func (c *Client) RoundTrip(req *Request) (*Response, error) {
 			return nil, r.Error
 		}
 		return r, nil
-	case err = <-c.fatal:
-		return nil, err
+	case <-c.exited:
+		return nil, c.exitCode
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	case <-time.After(c.Timeout):
 		return nil, ErrReceiveTimeout
-	case <-c.ctx.Done():
-		return nil, c.ctx.Err()
+	case <-c.serverCtx.Done():
+		return nil, c.serverCtx.Err()
 	}
 }
 
@@ -88,11 +91,11 @@ func Connect(ctx context.Context, webSocketURL string) (*Client, error) {
 		return nil, err
 	}
 	c := &Client{
-		ctx:        ctx,
+		serverCtx:  ctx,
 		conn:       conn,
 		seq:        0,
 		recv:       make(chan *Response, 1),
-		fatal:      make(chan error, 1),
+		exited:     make(chan struct{}, 1),
 		observable: observe.New(),
 		Timeout:    time.Minute,
 		Stderr:     os.Stderr,
@@ -114,39 +117,37 @@ func (c *Client) stderr(format string, v ...interface{}) {
 	}
 }
 
-func (c *Client) stop(err error) {
+func (c *Client) read() error {
+	_, body, err := c.conn.ReadMessage()
 	if err != nil {
-		c.stderr("\033[1;31m%s\033[0m", err.Error())
+		return err
 	}
-	c.fatal <- err
+	var r = new(Response)
+	if err = json.Unmarshal(body, r); err != nil {
+		return err
+	}
+	if r.ID == c.seq {
+		if r.isError() {
+			c.stderr("\033[1;31mrecv_err <- %s\033[0m", string(body))
+		} else {
+			c.stdout("\033[1;34mrecv <- %s\033[0m", string(body))
+		}
+		c.recv <- r
+	} else {
+		c.stdout("\033[1;30mevent <- %s\033[0m", string(body))
+		c.observable.Notify(r.SessionID, observe.Value{Method: r.Method, Params: r.Params})
+	}
+	return nil
 }
 
 func (c *Client) reader() {
+	defer func() {
+		close(c.exited)
+	}()
 	for {
-		_, body, err := c.conn.ReadMessage()
-		if err != nil {
-			switch err.(type) {
-			case *websocket.CloseError:
-				err = nil // do nothing, connection was closed gracefully
-			}
-			c.stop(err)
+		if err := c.read(); err != nil {
+			c.exitCode = err
 			return
-		}
-		var r = new(Response)
-		if err = json.Unmarshal(body, r); err != nil {
-			c.stop(err)
-			return
-		}
-		if r.ID == c.seq {
-			if r.isError() {
-				c.stderr("\033[1;31mrecv_err <- %s\033[0m", string(body))
-			} else {
-				c.stdout("\033[1;34mrecv <- %s\033[0m", string(body))
-			}
-			c.recv <- r
-		} else {
-			c.stdout("\033[1;30mevent <- %s\033[0m", string(body))
-			c.observable.Notify(r.SessionID, observe.Value{Method: r.Method, Params: r.Params})
 		}
 	}
 }

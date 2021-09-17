@@ -1,6 +1,7 @@
 package control
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -26,7 +27,8 @@ type Session struct {
 	tid        target.TargetID
 	runtime    *dict
 	eventPool  chan observe.Value
-	exited     chan struct{}
+	context    context.Context
+	exit       func()
 	exitCode   error
 	observable *observe.Observable
 	guid       uint64 // observers incremental id
@@ -38,27 +40,27 @@ type Session struct {
 
 func (s Session) Call(method string, send, recv interface{}) error {
 	select {
-	case <-s.exited:
+	case <-s.context.Done():
 		return s.exitCode
 	default:
-		return s.transport.Call(string(s.id), method, send, recv)
+		return s.transport.Call(s.context, string(s.id), method, send, recv)
 	}
 }
 
 func New(t *transport.Client) *Session {
-	var hlSess = &Session{
+	var s = &Session{
 		guid:       0,
 		id:         "",
 		transport:  t,
-		eventPool:  make(chan observe.Value, 999),
+		eventPool:  make(chan observe.Value, 1000),
 		observable: observe.New(),
-		exited:     make(chan struct{}, 1),
 		Timeout:    time.Second * 60,
 	}
-	hlSess.Input = Input{s: hlSess}
-	hlSess.Network = Network{s: hlSess}
-	hlSess.Emulation = Emulation{s: hlSess}
-	return hlSess
+	s.context, s.exit = context.WithCancel(context.Background())
+	s.Input = Input{s: s}
+	s.Network = Network{s: s}
+	s.Emulation = Emulation{s: s}
+	return s
 }
 func (s Session) GetTransport() *transport.Client {
 	return s.transport
@@ -188,7 +190,7 @@ func (s *Session) handle(e observe.Value) error {
 func (s *Session) lifecycle() {
 	defer func() {
 		s.transport.Unregister(s)
-		close(s.exited)
+		s.exit()
 	}()
 	for e := range s.eventPool {
 		if err := s.handle(e); err != nil {
@@ -221,7 +223,7 @@ func (s Session) Close() error {
 
 func (s Session) IsClosed() bool {
 	select {
-	case <-s.exited:
+	case <-s.context.Done():
 		return true
 	default:
 		return false
