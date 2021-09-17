@@ -28,7 +28,7 @@ const (
 )
 
 type Frame struct {
-	id      common.FrameId
+	id      common.FrameId // readonly
 	session *Session
 }
 
@@ -118,7 +118,7 @@ func (f Frame) QuerySelector(selector string) (*Element, error) {
 	if object.ObjectId == "" {
 		return nil, NoSuchElementError{Selector: selector}
 	}
-	return createElement(selector, object, &f), nil
+	return f.constructElement(object)
 }
 
 func (f Frame) QuerySelectorAll(selector string) ([]*Element, error) {
@@ -130,7 +130,7 @@ func (f Frame) QuerySelectorAll(selector string) ([]*Element, error) {
 	if array == nil || array.Description == "NodeList(0)" {
 		return nil, nil
 	}
-	all := make([]*Element, 0)
+	list := make([]*Element, 0)
 	descriptor, err := f.getProperties(array.ObjectId, true, false)
 	if err != nil {
 		return nil, err
@@ -139,9 +139,13 @@ func (f Frame) QuerySelectorAll(selector string) ([]*Element, error) {
 		if !d.Enumerable {
 			continue
 		}
-		all = append(all, createElement(selector, d.Value, &f))
+		el, err1 := f.constructElement(d.Value)
+		if err1 != nil {
+			return nil, err1
+		}
+		list = append(list, el)
 	}
-	return all, nil
+	return list, nil
 }
 
 type RuntimeError runtime.ExceptionDetails

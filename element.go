@@ -10,18 +10,28 @@ import (
 	"github.com/ecwid/control/protocol/runtime"
 )
 
-func createElement(query string, object *runtime.RemoteObject, frame *Frame) *Element {
-	return &Element{query: query, remote: object, frame: frame}
+func (f Frame) constructElement(object *runtime.RemoteObject) (*Element, error) {
+	val, err := dom.DescribeNode(f, dom.DescribeNodeArgs{
+		ObjectId: object.ObjectId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &Element{node: val.Node, runtime: object, frame: &f}, nil
 }
 
 type Element struct {
-	query  string
-	remote *runtime.RemoteObject
-	frame  *Frame
+	runtime *runtime.RemoteObject
+	node    *dom.Node
+	frame   *Frame
 }
 
 func (e Element) Description() string {
-	return e.remote.Description
+	return e.runtime.Description
+}
+
+func (e Element) Node() *dom.Node {
+	return e.node
 }
 
 func (e Element) QuerySelector(selector string) (*Element, error) {
@@ -29,13 +39,13 @@ func (e Element) QuerySelector(selector string) (*Element, error) {
 	if err != nil {
 		return nil, err
 	}
-	return createElement(selector, val, e.frame), nil
+	return e.frame.constructElement(val)
 }
 
 func (e Element) CallFunction(function string, await, returnByValue bool, args []*runtime.CallArgument) (*runtime.RemoteObject, error) {
 	val, err := runtime.CallFunctionOn(e.frame, runtime.CallFunctionOnArgs{
 		FunctionDeclaration: function,
-		ObjectId:            e.remote.ObjectId,
+		ObjectId:            e.runtime.ObjectId,
 		AwaitPromise:        await,
 		ReturnByValue:       returnByValue,
 		Arguments:           args,
@@ -49,16 +59,6 @@ func (e Element) CallFunction(function string, await, returnByValue bool, args [
 	return val.Result, nil
 }
 
-func (e Element) DescribeNode() (*dom.Node, error) {
-	val, err := dom.DescribeNode(e.frame, dom.DescribeNodeArgs{
-		ObjectId: e.remote.ObjectId,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return val.Node, nil
-}
-
 func NewSingleCallArgument(arg interface{}) []*runtime.CallArgument {
 	return []*runtime.CallArgument{{Value: arg}}
 }
@@ -69,7 +69,7 @@ func (e Element) dispatchEvents(events ...string) error {
 }
 
 func (e Element) ScrollIntoView() error {
-	return dom.ScrollIntoViewIfNeeded(e.frame, dom.ScrollIntoViewIfNeededArgs{ObjectId: e.remote.ObjectId})
+	return dom.ScrollIntoViewIfNeeded(e.frame, dom.ScrollIntoViewIfNeededArgs{ObjectId: e.runtime.ObjectId})
 }
 
 func (e Element) GetText() (string, error) {
@@ -147,7 +147,7 @@ func (e *Element) Type(text string, delay time.Duration) error {
 
 func (e Element) GetContentQuad(viewportCorrection bool) (Quad, error) {
 	val, err := dom.GetContentQuads(e.frame, dom.GetContentQuadsArgs{
-		ObjectId: e.remote.ObjectId,
+		ObjectId: e.runtime.ObjectId,
 	})
 	if err != nil {
 		return nil, err
@@ -227,13 +227,13 @@ func (e Element) click(button input.MouseButton) error {
 }
 
 func (e Element) Focus() error {
-	return dom.Focus(e.frame, dom.FocusArgs{ObjectId: e.remote.ObjectId})
+	return dom.Focus(e.frame, dom.FocusArgs{ObjectId: e.runtime.ObjectId})
 }
 
 func (e Element) Upload(files ...string) error {
 	return dom.SetFileInputFiles(e.frame, dom.SetFileInputFilesArgs{
 		Files:    files,
-		ObjectId: e.remote.ObjectId,
+		ObjectId: e.runtime.ObjectId,
 	})
 }
 
@@ -294,8 +294,8 @@ func (e Element) GetComputedStyle(style string) (string, error) {
 }
 
 func (e Element) SelectValues(values ...string) error {
-	if e.remote.ClassName != "HTMLSelectElement" {
-		return fmt.Errorf("can't use element as SELECT, not applicable type %s", e.remote.ClassName)
+	if "SELECT" != e.node.NodeName {
+		return fmt.Errorf("can't use element as SELECT, not applicable type %s", e.node.NodeName)
 	}
 	_, err := e.CallFunction(functionSelect, true, false, NewSingleCallArgument(values))
 	if err != nil {
