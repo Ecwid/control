@@ -58,8 +58,8 @@ func (u Condition) WaitWithTimeout(initial func() error, timeout time.Duration) 
 		return nil
 	case err := <-u.error:
 		return err
-	case <-u.session.context.Done():
-		return u.session.exitCode
+	case <-u.session.Ctx.Done():
+		return u.session.ExitCode()
 	case <-time.After(timeout):
 		return WaitTimeoutError{timeout: timeout}
 	}

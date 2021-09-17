@@ -20,11 +20,11 @@ type RoundTripper interface {
 }
 
 type Client struct {
-	serverCtx    context.Context
 	conn         *websocket.Conn
 	seq          uint64
 	recv         chan *Response
-	exited       chan struct{}
+	Ctx          context.Context
+	exit         func()
 	exitCode     error
 	observable   *observe.Observable
 	RoundTripper RoundTripper
@@ -33,9 +33,9 @@ type Client struct {
 	Stderr       io.Writer
 }
 
-func (c *Client) Call(ctx context.Context, sessionID, method string, args, value interface{}) error {
+func (c *Client) Call(sessionCtx context.Context, sessionID, method string, args, value interface{}) error {
 	c.seq++
-	r, err := c.RoundTripper.RoundTrip(ctx, &Request{
+	r, err := c.RoundTripper.RoundTrip(sessionCtx, &Request{
 		ID:        c.seq,
 		SessionID: sessionID,
 		Method:    method,
@@ -58,7 +58,7 @@ func (c *Client) Unregister(val observe.Observer) {
 	c.observable.Unregister(val)
 }
 
-func (c *Client) RoundTrip(ctx context.Context, req *Request) (*Response, error) {
+func (c *Client) RoundTrip(sessionCtx context.Context, req *Request) (*Response, error) {
 	data, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -74,14 +74,15 @@ func (c *Client) RoundTrip(ctx context.Context, req *Request) (*Response, error)
 			return nil, r.Error
 		}
 		return r, nil
-	case <-c.exited:
-		return nil, c.exitCode
-	case <-ctx.Done():
-		return nil, ctx.Err()
+	case <-sessionCtx.Done():
+		return nil, sessionCtx.Err()
 	case <-time.After(c.Timeout):
 		return nil, ErrReceiveTimeout
-	case <-c.serverCtx.Done():
-		return nil, c.serverCtx.Err()
+	case <-c.Ctx.Done():
+		if c.exitCode != nil {
+			return nil, c.exitCode
+		}
+		return nil, c.Ctx.Err()
 	}
 }
 
@@ -91,15 +92,14 @@ func Connect(ctx context.Context, webSocketURL string) (*Client, error) {
 		return nil, err
 	}
 	c := &Client{
-		serverCtx:  ctx,
 		conn:       conn,
 		seq:        0,
 		recv:       make(chan *Response, 1),
-		exited:     make(chan struct{}, 1),
 		observable: observe.New(),
 		Timeout:    time.Minute,
 		Stderr:     os.Stderr,
 	}
+	c.Ctx, c.exit = context.WithCancel(ctx)
 	c.RoundTripper = c
 	go c.reader()
 	return c, nil
@@ -141,9 +141,7 @@ func (c *Client) read() error {
 }
 
 func (c *Client) reader() {
-	defer func() {
-		close(c.exited)
-	}()
+	defer c.exit()
 	for {
 		if err := c.read(); err != nil {
 			c.exitCode = err

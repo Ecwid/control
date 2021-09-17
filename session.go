@@ -27,7 +27,7 @@ type Session struct {
 	tid        target.TargetID
 	runtime    *dict
 	eventPool  chan observe.Value
-	context    context.Context
+	Ctx        context.Context
 	exit       func()
 	exitCode   error
 	observable *observe.Observable
@@ -40,10 +40,10 @@ type Session struct {
 
 func (s Session) Call(method string, send, recv interface{}) error {
 	select {
-	case <-s.context.Done():
-		return s.exitCode
+	case <-s.Ctx.Done():
+		return s.ExitCode()
 	default:
-		return s.transport.Call(s.context, string(s.id), method, send, recv)
+		return s.transport.Call(s.Ctx, string(s.id), method, send, recv)
 	}
 }
 
@@ -56,7 +56,7 @@ func New(t *transport.Client) *Session {
 		observable: observe.New(),
 		Timeout:    time.Second * 60,
 	}
-	s.context, s.exit = context.WithCancel(context.Background())
+	s.Ctx, s.exit = context.WithCancel(t.Ctx)
 	s.Input = Input{s: s}
 	s.Network = Network{s: s}
 	s.Emulation = Emulation{s: s}
@@ -223,7 +223,7 @@ func (s Session) Close() error {
 
 func (s Session) IsClosed() bool {
 	select {
-	case <-s.context.Done():
+	case <-s.Ctx.Done():
 		return true
 	default:
 		return false
@@ -231,7 +231,10 @@ func (s Session) IsClosed() bool {
 }
 
 func (s Session) ExitCode() error {
-	return s.exitCode
+	if s.exitCode != nil {
+		return s.exitCode
+	}
+	return s.Ctx.Err()
 }
 
 func (s *Session) NewTargetCreatedCondition(createdTargetID *target.TargetID) *Condition {
