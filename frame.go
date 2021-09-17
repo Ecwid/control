@@ -102,6 +102,9 @@ func safeSelector(v string) string {
 func (f Frame) IsExist(selector string) bool {
 	selector = safeSelector(selector)
 	val, _ := f.evaluate(`document.querySelector("`+selector+`") != null`, true, false)
+	if val == nil {
+		return false
+	}
 	b, _ := primitiveRemoteObject(*val).Bool()
 	return b
 }
