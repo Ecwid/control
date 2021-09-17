@@ -47,7 +47,7 @@ type RemoteObjectCastError struct {
 }
 
 func (r RemoteObjectCastError) Error() string {
-	return fmt.Sprintf("cast to %s failed for value %s", r.cast, r.object.Type)
+	return fmt.Sprintf("cast to `%s` failed for value `%s`", r.cast, r.object.Type)
 }
 
 type WaitTimeoutError struct {

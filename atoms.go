@@ -11,7 +11,7 @@ const (
 // Atom JS functions
 const (
 	functionClearText            = `function(){("INPUT"===this.nodeName||"TEXTAREA"===this.nodeName)?this.value="":this.innerText=""}`
-	functionGetText              = `function(){switch(this.tagName){case"INPUT":case"TEXTAREA":return this.value||this.placeholder;case"SELECT":return Array.from(this.selectedOptions).map(b=>b.innerText).join();case void 0:return this.textContent;default:return this.innerText;}}`
+	functionGetText              = `function(){switch(this.tagName){case"INPUT":case"TEXTAREA":return this.value;case"SELECT":return Array.from(this.selectedOptions).map(b=>b.innerText).join();case void 0:return this.textContent;default:return this.innerText;}}`
 	functionDispatchEvents       = `function(l){for(const e of l)this.dispatchEvent(new Event(e,{'bubbles':!0}))}`
 	functionPreventMissClick     = `function(){this._cc=!1,tt=this,z=function(b){for(var c=b;c;c=c.parentNode)if(c==tt)return!0;return!1},i=function(b){if (z(b.target)) {tt._cc=!0;} else {b.stopPropagation();b.preventDefault()}},document.addEventListener("click",i,{capture:!0,once:!0})}`
 	functionClickDone            = `function(){return this._cc}`
