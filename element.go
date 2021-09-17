@@ -69,7 +69,9 @@ func (e Element) dispatchEvents(events ...string) error {
 }
 
 func (e Element) ScrollIntoView() error {
-	return dom.ScrollIntoViewIfNeeded(e.frame, dom.ScrollIntoViewIfNeededArgs{ObjectId: e.runtime.ObjectId})
+	return dom.ScrollIntoViewIfNeeded(e.frame, dom.ScrollIntoViewIfNeededArgs{
+		BackendNodeId: e.node.BackendNodeId,
+	})
 }
 
 func (e Element) GetText() (string, error) {
@@ -147,7 +149,7 @@ func (e *Element) Type(text string, delay time.Duration) error {
 
 func (e Element) GetContentQuad(viewportCorrection bool) (Quad, error) {
 	val, err := dom.GetContentQuads(e.frame, dom.GetContentQuadsArgs{
-		ObjectId: e.runtime.ObjectId,
+		BackendNodeId: e.node.BackendNodeId,
 	})
 	if err != nil {
 		return nil, err
@@ -227,13 +229,13 @@ func (e Element) click(button input.MouseButton) error {
 }
 
 func (e Element) Focus() error {
-	return dom.Focus(e.frame, dom.FocusArgs{ObjectId: e.runtime.ObjectId})
+	return dom.Focus(e.frame, dom.FocusArgs{BackendNodeId: e.node.BackendNodeId})
 }
 
 func (e Element) Upload(files ...string) error {
 	return dom.SetFileInputFiles(e.frame, dom.SetFileInputFilesArgs{
-		Files:    files,
-		ObjectId: e.runtime.ObjectId,
+		Files:         files,
+		BackendNodeId: e.node.BackendNodeId,
 	})
 }
 
