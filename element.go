@@ -259,7 +259,11 @@ func (e Element) SetAttribute(attr string, value string) error {
 }
 
 func (e Element) GetAttribute(attr string) (string, error) {
-	return e.callFunctionStringValue(functionGetAttr, NewSingleCallArgument(attr))
+	v, err := e.CallFunction(functionGetAttr, true, false, NewSingleCallArgument(attr))
+	if err != nil {
+		return "", err
+	}
+	return primitiveRemoteObject(*v).String()
 }
 
 func (e Element) Checkbox(check bool) error {
@@ -292,7 +296,11 @@ func (e Element) GetRectangle() (*dom.Rect, error) {
 }
 
 func (e Element) GetComputedStyle(style string) (string, error) {
-	return e.callFunctionStringValue(functionGetComputedStyle, NewSingleCallArgument(style))
+	v, err := e.CallFunction(functionGetComputedStyle, true, false, NewSingleCallArgument(style))
+	if err != nil {
+		return "", err
+	}
+	return primitiveRemoteObject(*v).String()
 }
 
 func (e Element) SelectValues(values ...string) error {
@@ -307,26 +315,22 @@ func (e Element) SelectValues(values ...string) error {
 }
 
 func (e Element) GetSelectedValues() ([]string, error) {
-	return e.callFunctionStringArrayValue(functionGetSelectedValues)
-}
-
-func (e Element) GetSelectedText() ([]string, error) {
-	return e.callFunctionStringArrayValue(functionGetSelectedInnerText)
-}
-
-func (e Element) callFunctionStringValue(function string, args []*runtime.CallArgument) (string, error) {
-	v, err := e.CallFunction(function, true, false, args)
-	if err != nil {
-		return "", err
-	}
-	return primitiveRemoteObject(*v).String()
-}
-
-func (e Element) callFunctionStringArrayValue(function string) ([]string, error) {
-	v, err := e.CallFunction(function, true, false, nil)
+	v, err := e.CallFunction(functionGetSelectedValues, true, false, nil)
 	if err != nil {
 		return nil, err
 	}
+	return e.stringArray(v)
+}
+
+func (e Element) GetSelectedText() ([]string, error) {
+	v, err := e.CallFunction(functionGetSelectedInnerText, true, false, nil)
+	if err != nil {
+		return nil, err
+	}
+	return e.stringArray(v)
+}
+
+func (e Element) stringArray(v *runtime.RemoteObject) ([]string, error) {
 	descriptor, err := e.frame.getProperties(v.ObjectId, true, false)
 	if err != nil {
 		return nil, err

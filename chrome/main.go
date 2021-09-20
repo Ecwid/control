@@ -146,7 +146,6 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 		"--disable-background-networking",
 		"--disable-default-apps",
 		"--disable-extensions",
-		"--disable-browser-side-navigation",
 		"--disable-background-timer-throttling",
 		"--disable-backgrounding-occluded-windows",
 		"--disable-renderer-backgrounding",
@@ -157,7 +156,7 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 		"--disable-ipc-flooding-protection",
 		"--disable-prompt-on-repost",
 		"--metrics-recording-only",
-		"--disable-features=site-per-process,TranslateUI,BlinkGenPropertyTrees",
+		"--disable-features=site-per-process,Translate,BlinkGenPropertyTrees",
 		"--enable-features=NetworkService,NetworkServiceInProcess",
 		"--user-data-dir=" + userDataDir,
 	}
