@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ecwid/control/protocol/common"
 	"github.com/ecwid/control/protocol/page"
@@ -164,7 +165,7 @@ func (f Frame) Evaluate(expression string, await, returnByValue bool) (interface
 }
 
 func (f Frame) evaluate(expression string, await, returnByValue bool) (*runtime.RemoteObject, error) {
-	var cid = f.session.runtime.Load(f.id) //runtime.ExecutionContextId(atomic.LoadInt32(&f.contextID))
+	var cid = f.session.runtime.Load(f.id)
 	val, err := runtime.Evaluate(f, runtime.EvaluateArgs{
 		Expression:            expression,
 		IncludeCommandLineAPI: true,
@@ -206,4 +207,16 @@ func (f Frame) NavigateHistory(delta int) error {
 		})
 	}
 	return nil
+}
+
+func (f Frame) RequestDOMIdle(threshold, timeout time.Duration) error {
+	script := fmt.Sprintf(functionDOMIdle, threshold.Milliseconds(), timeout.Milliseconds())
+	_, err := f.Evaluate(script, true, false)
+	switch v := err.(type) {
+	case RuntimeError:
+		if val, _ := v.Exception.Value.(string); val == "timeout" {
+			return WaitTimeoutError{timeout: timeout}
+		}
+	}
+	return err
 }

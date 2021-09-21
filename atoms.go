@@ -23,4 +23,5 @@ const (
 	functionSelect               = `function(a){const b=Array.from(this.options);this.value=void 0;for(const c of b)if(c.selected=a.includes(c.value),c.selected&&!this.multiple)break}`
 	functionGetSelectedValues    = `function(){return Array.from(this.options).filter(a=>a.selected).map(a=>a.value)}`
 	functionGetSelectedInnerText = `function(){return Array.from(this.options).filter(a=>a.selected).map(a=>a.innerText)}`
+	functionDOMIdle              = `var d=function(e,t,n){var u,r=null;return function(){var i=this,o=arguments,s=n&&!r;return clearTimeout(r),r=setTimeout(function(){r=null,n||(u=e.apply(i,o))},t),s&&(u=e.apply(i,o)),u}};new Promise((e,t)=>{var n=d(function(){e()},%d);new MutationObserver(n).observe(document,{attributes:!0,childList:!0,subtree:!0}),n(),setTimeout(()=>t("timeout"),%d)});`
 )
