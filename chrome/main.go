@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -41,11 +40,12 @@ type BrowserVersion struct {
 
 // Browser ...
 type Browser struct {
-	ctx      context.Context
-	url      *url.URL
-	cmd      *exec.Cmd
-	client   *transport.Client
-	deadline time.Duration
+	ctx         context.Context
+	url         *url.URL
+	cmd         *exec.Cmd
+	client      *transport.Client
+	deadline    time.Duration
+	UserDataDir string
 }
 
 // GetTransport ...
@@ -106,7 +106,10 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 		ctx:      ctx,
 		deadline: 10 * time.Second,
 	}
-	var path string
+	var (
+		path string
+		err  error
+	)
 	bin := []string{
 		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 		"/usr/bin/google-chrome",
@@ -119,13 +122,13 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 		"google-chrome-unstable",
 	}
 	for _, c := range bin {
-		if _, err := exec.LookPath(c); err == nil {
+		if _, err = exec.LookPath(c); err == nil {
 			path = c
 			break
 		}
 	}
 
-	userDataDir, err := ioutil.TempDir("", "tmp")
+	browser.UserDataDir, err = os.MkdirTemp("", "chrome-control")
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +161,7 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 		"--metrics-recording-only",
 		"--disable-features=site-per-process,Translate,BlinkGenPropertyTrees",
 		"--enable-features=NetworkService,NetworkServiceInProcess",
-		"--user-data-dir=" + userDataDir,
+		"--user-data-dir=" + browser.UserDataDir,
 	}
 
 	flags = append(flags, userFlags...)
