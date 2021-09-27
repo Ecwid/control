@@ -1,5 +1,5 @@
 # ecwid-control
-**control** is a test automation tool written from scratch using golang on top of Chrome DevTools
+**control** is a automation tool written from scratch using golang on top of Chrome DevTools
 
 _Warning_ This is an experimental project, backward compatibility is not guaranteed!
 
@@ -55,4 +55,34 @@ func main() {
 	}
 
 }
+```
+
+You can call any CDP method implemented in protocol package using a session
+```go
+err = security.SetIgnoreCertificateErrors(sess, security.SetIgnoreCertificateErrorsArgs{
+    Ignore: true,
+})
+```
+
+or even call a custom method
+```go
+err = sess.Call("Security.setIgnoreCertificateErrors", sendStruct, receiveStruct)
+```
+
+Subscribe on domain event
+```go
+cancel := sess.Subscribe("Overlay.screenshotRequested", true /*async*/, func(e observe.Value) {
+    v := overlay.ScreenshotRequested{}
+    _= json.Unmarshal(e.Params, &v)
+    doSomething(v.Viewport.Height)
+})
+defer cancel()
+
+// Subscribe on all incoming events
+sess.Subscribe("*", false, func(e observe.Value) {
+    switch e.Method {
+        case "Overlay.screenshotRequested":
+    }
+})
+
 ```
