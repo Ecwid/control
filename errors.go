@@ -16,6 +16,7 @@ var (
 	ErrAlreadyNavigated       = errors.New("page already navigated to this address - nothing done")
 	ErrTargetDestroyed        = errors.New("this session was destroyed")
 	ErrDetachedFromTarget     = errors.New("detached from target")
+	ErrClickTimeout           = errors.New("no click registered")
 )
 
 type ErrTargetCrashed target.TargetCrashed

@@ -2,6 +2,7 @@ package control
 
 import (
 	"sync"
+	"time"
 
 	"github.com/ecwid/control/protocol/input"
 )
@@ -146,6 +147,7 @@ func (i Input) Click(button input.MouseButton, x, y float64) (err error) {
 	if err = i.MousePress(button, x, y); err != nil {
 		return err
 	}
+	time.Sleep(time.Millisecond * 150)
 	if err = i.MouseRelease(button, x, y); err != nil {
 		return err
 	}

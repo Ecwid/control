@@ -217,15 +217,16 @@ func (e Element) click(button input.MouseButton) error {
 	if err = e.frame.Session().Input.Click(button, x, y); err != nil {
 		return err
 	}
-	var timeout = time.NewTimer(e.frame.session.Timeout)
-	defer timeout.Stop()
+	const timeout = time.Millisecond * 1000
+	var deadline = time.NewTimer(timeout)
+	defer deadline.Stop()
 	select {
 	case v := <-clickValue:
 		if v != "1" {
 			return ClickTargetOverlappedError{outerHTML: v}
 		}
-	case <-timeout.C:
-		return WaitTimeoutError{timeout: e.frame.session.Timeout}
+	case <-deadline.C:
+		return ErrClickTimeout
 	}
 	return nil
 }
