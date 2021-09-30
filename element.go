@@ -201,11 +201,7 @@ func (e Element) click(button input.MouseButton) error {
 	if err := e.ScrollIntoView(); err != nil {
 		return err
 	}
-	x, y, err := e.clickablePoint()
-	if err != nil {
-		return err
-	}
-	if _, err = e.CallFunction(functionPreventMissClick, true, false, nil); err != nil {
+	if _, err := e.CallFunction(functionPreventMissClick, true, false, nil); err != nil {
 		return err
 	}
 	var clickValue = make(chan string, 1)
@@ -214,6 +210,10 @@ func (e Element) click(button input.MouseButton) error {
 		clickValue <- payload
 	})
 	defer cancel()
+	x, y, err := e.clickablePoint()
+	if err != nil {
+		return err
+	}
 	if err = e.frame.Session().Input.Click(button, x, y); err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func (e Element) click(button input.MouseButton) error {
 	select {
 	case v := <-clickValue:
 		if v != "1" {
-			return ErrElementMissClick
+			return ClickTargetOverlappedError{outerHTML: v}
 		}
 	case <-timeout.C:
 		return WaitTimeoutError{timeout: e.frame.session.Timeout}

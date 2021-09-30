@@ -13,7 +13,6 @@ import (
 var (
 	ErrElementInvisible       = errors.New("element not visible")
 	ErrElementIsOutOfViewport = errors.New("element is out of viewport")
-	ErrElementMissClick       = errors.New("element miss click")
 	ErrAlreadyNavigated       = errors.New("page already navigated to this address - nothing done")
 	ErrTargetDestroyed        = errors.New("this session was destroyed")
 	ErrDetachedFromTarget     = errors.New("detached from target")
@@ -56,4 +55,12 @@ type WaitTimeoutError struct {
 
 func (e WaitTimeoutError) Error() string {
 	return fmt.Sprintf("wait condition timeout reached out after %s", e.timeout)
+}
+
+type ClickTargetOverlappedError struct {
+	outerHTML string
+}
+
+func (e ClickTargetOverlappedError) Error() string {
+	return fmt.Sprintf("click target is overlapped by `%s`", e.outerHTML)
 }
