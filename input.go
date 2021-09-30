@@ -1,6 +1,10 @@
 package control
 
-import "github.com/ecwid/control/protocol/input"
+import (
+	"sync"
+
+	"github.com/ecwid/control/protocol/input"
+)
 
 const (
 	MouseNone    input.MouseButton = "none"
@@ -129,7 +133,23 @@ var keyDefinitions = map[rune]keyDefinition{
 }
 
 type Input struct {
-	s *Session
+	mx *sync.Mutex
+	s  *Session
+}
+
+func (i Input) Click(button input.MouseButton, x, y float64) (err error) {
+	i.mx.Lock()
+	defer i.mx.Unlock()
+	if err = i.MouseMove(MouseNone, x, y); err != nil {
+		return err
+	}
+	if err = i.MousePress(button, x, y); err != nil {
+		return err
+	}
+	if err = i.MouseRelease(button, x, y); err != nil {
+		return err
+	}
+	return
 }
 
 func (i Input) MouseMove(button input.MouseButton, x, y float64) error {

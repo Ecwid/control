@@ -13,16 +13,16 @@ type Point struct {
 }
 
 // Quad quad
-type Quad []*Point
+type Quad []Point
 
 func convertQuads(dq []dom.Quad) []Quad {
 	var p = make([]Quad, len(dq))
 	for n, q := range dq {
 		p[n] = Quad{
-			&Point{q[0], q[1]},
-			&Point{q[2], q[3]},
-			&Point{q[4], q[5]},
-			&Point{q[6], q[7]},
+			Point{q[0], q[1]},
+			Point{q[2], q[3]},
+			Point{q[4], q[5]},
+			Point{q[6], q[7]},
 		}
 	}
 	return p

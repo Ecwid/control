@@ -208,22 +208,24 @@ func (e Element) click(button input.MouseButton) error {
 	if _, err = e.CallFunction(functionPreventMissClick, true, false, nil); err != nil {
 		return err
 	}
-	var input = e.frame.Session().Input
-	if err = input.MouseMove(MouseNone, x, y); err != nil {
+	var clickValue = make(chan string, 1)
+	defer close(clickValue)
+	cancel := e.frame.session.onBindingCalled(bindClick, func(payload string) {
+		clickValue <- payload
+	})
+	defer cancel()
+	if err = e.frame.Session().Input.Click(button, x, y); err != nil {
 		return err
 	}
-	if err = input.MousePress(button, x, y); err != nil {
-		return err
-	}
-	if err = input.MouseRelease(button, x, y); err != nil {
-		return err
-	}
-	done, err := e.CallFunction(functionClickDone, true, false, nil)
-	if err != nil {
-		return nil // context was destroyed by navigate after click - it's ok
-	}
-	if clicked, _ := primitiveRemoteObject(*done).Bool(); !clicked {
-		return ErrElementMissClick
+	var timeout = time.NewTimer(e.frame.session.Timeout)
+	defer timeout.Stop()
+	select {
+	case v := <-clickValue:
+		if v != "1" {
+			return ErrElementMissClick
+		}
+	case <-timeout.C:
+		return WaitTimeoutError{timeout: e.frame.session.Timeout}
 	}
 	return nil
 }

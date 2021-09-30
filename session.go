@@ -19,6 +19,7 @@ import (
 
 const (
 	blankPage = "about:blank"
+	bindClick = "_control_click"
 )
 
 type Session struct {
@@ -57,7 +58,7 @@ func New(t *transport.Client) *Session {
 		Timeout:    time.Second * 60,
 	}
 	s.Ctx, s.exit = context.WithCancel(t.Ctx)
-	s.Input = Input{s: s}
+	s.Input = Input{s: s, mx: &sync.Mutex{}}
 	s.Network = Network{s: s}
 	s.Emulation = Emulation{s: s}
 	return s
@@ -102,6 +103,9 @@ func (s *Session) AttachToTarget(targetID target.TargetID) error {
 		return err
 	}
 	if err = runtime.Enable(s); err != nil {
+		return err
+	}
+	if err = runtime.AddBinding(s, runtime.AddBindingArgs{Name: bindClick}); err != nil {
 		return err
 	}
 	if err = page.SetLifecycleEventsEnabled(s, page.SetLifecycleEventsEnabledArgs{Enabled: true}); err != nil {
@@ -200,7 +204,17 @@ func (s *Session) lifecycle() {
 	}
 }
 
-func (s *Session) Subscribe(event string, async bool, v func(e observe.Value)) (unsubscribe func()) {
+func (s Session) onBindingCalled(name string, function func(string)) (cancel func()) {
+	return s.Subscribe("Runtime.bindingCalled", false, func(value observe.Value) {
+		bindingCalled := runtime.BindingCalled{}
+		_ = json.Unmarshal(value.Params, &bindingCalled)
+		if bindingCalled.Name == name {
+			function(bindingCalled.Payload)
+		}
+	})
+}
+
+func (s *Session) Subscribe(event string, async bool, v func(e observe.Value)) (cancel func()) {
 	var (
 		uid = atomic.AddUint64(&s.guid, 1)
 		val = observe.NewSimpleObserver(fmt.Sprintf("%d", uid), event, v)
