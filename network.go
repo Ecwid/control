@@ -9,9 +9,9 @@ import (
 	"github.com/ecwid/control/transport/observe"
 )
 
-func (s *Session) NewNetworkCondition(predicate func(request *network.Request) bool) *Condition {
+func (s *Session) NewNetworkCondition(predicate func(request *network.Request) bool) *Promise {
 	var requestID network.RequestId
-	return s.NewCondition(func(value observe.Value) (bool, error) {
+	return s.NewEventCondition("*", func(value observe.Value) (bool, error) {
 
 		switch value.Method {
 

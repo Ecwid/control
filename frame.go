@@ -45,20 +45,17 @@ func (f Frame) Call(method string, send, recv interface{}) error {
 	return f.Session().Call(method, send, recv)
 }
 
-func (f Frame) NewLifecycleEventCondition(event LifecycleEventType) *Condition {
+func (f Frame) NewLifecycleEventCondition(event LifecycleEventType) *Promise {
 	var isInit = false
-	return f.Session().NewCondition(func(value observe.Value) (bool, error) {
-		if value.Method == "Page.lifecycleEvent" {
-			var v = new(page.LifecycleEvent)
-			if err := json.Unmarshal(value.Params, v); err != nil {
-				return false, err
-			}
-			if v.FrameId == f.id && v.Name == "init" {
-				isInit = true
-			}
-			return isInit && v.FrameId == f.id && v.Name == string(event), nil
+	return f.Session().NewEventCondition("Page.lifecycleEvent", func(value observe.Value) (bool, error) {
+		var v = new(page.LifecycleEvent)
+		if err := json.Unmarshal(value.Params, v); err != nil {
+			return false, err
 		}
-		return false, nil
+		if v.FrameId == f.id && v.Name == "init" {
+			isInit = true
+		}
+		return isInit && v.FrameId == f.id && v.Name == string(event), nil
 	})
 }
 
@@ -80,7 +77,12 @@ func (f Frame) Navigate(url string, waitFor LifecycleEventType) error {
 		}
 		return nil
 	}
-	return f.NewLifecycleEventCondition(waitFor).Wait(navigate)
+	promise := f.NewLifecycleEventCondition(waitFor)
+	defer promise.Stop()
+	if err := navigate(); err != nil {
+		return err
+	}
+	return promise.WaitWithTimeout(f.Session().Timeout)
 }
 
 // Reload refresh current page
@@ -91,7 +93,12 @@ func (f Frame) Reload(ignoreCache bool, scriptToEvaluateOnLoad string, waitFor L
 			ScriptToEvaluateOnLoad: scriptToEvaluateOnLoad,
 		})
 	}
-	return f.NewLifecycleEventCondition(waitFor).Wait(reload)
+	promise := f.NewLifecycleEventCondition(waitFor)
+	defer promise.Stop()
+	if err := reload(); err != nil {
+		return err
+	}
+	return promise.WaitWithTimeout(f.Session().Timeout)
 }
 
 func safeSelector(v string) string {

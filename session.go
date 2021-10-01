@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -32,7 +33,7 @@ type Session struct {
 	exit       func()
 	exitCode   error
 	observable *observe.Observable
-	guid       uint64 // observers incremental id
+	guid       *uint64 // observers incremental id
 	Timeout    time.Duration
 	Network    Network
 	Input      Input
@@ -49,8 +50,9 @@ func (s Session) Call(method string, send, recv interface{}) error {
 }
 
 func New(t *transport.Client) *Session {
+	var uid uint64 = 0
 	var s = &Session{
-		guid:       0,
+		guid:       &uid,
 		id:         "",
 		transport:  t,
 		eventPool:  make(chan observe.Value, 1000),
@@ -214,17 +216,19 @@ func (s Session) onBindingCalled(name string, function func(string)) (cancel fun
 	})
 }
 
-func (s *Session) Subscribe(event string, async bool, v func(e observe.Value)) (cancel func()) {
+func (s Session) Subscribe(event string, async bool, v func(e observe.Value)) (cancel func()) {
 	var (
-		uid = atomic.AddUint64(&s.guid, 1)
+		uid = atomic.AddUint64(s.guid, 1)
 		val = observe.NewSimpleObserver(fmt.Sprintf("%d", uid), event, v)
 	)
+	log.Print("Register " + event + " = " + val.ID() + " " + s.ID())
 	if async {
 		s.observable.Register(observe.AsyncSimpleObserver(val))
 	} else {
 		s.observable.Register(val)
 	}
 	return func() {
+		log.Print("Unregister " + event + " = " + val.ID() + " " + s.ID())
 		s.observable.Unregister(val)
 	}
 }
@@ -256,19 +260,17 @@ func (s Session) ExitCode() error {
 	return s.Ctx.Err()
 }
 
-func (s *Session) NewTargetCreatedCondition(createdTargetID *target.TargetID) *Condition {
-	return s.NewCondition(func(value observe.Value) (bool, error) {
-		if value.Method == "Target.targetCreated" {
-			var v = new(target.TargetCreated)
-			if err := json.Unmarshal(value.Params, v); err != nil {
-				return false, err
+func (s Session) NewTargetCreatedCondition(createdTargetID *target.TargetID) *Promise {
+	return s.NewEventCondition("Target.targetCreated", func(value observe.Value) (bool, error) {
+		var v = new(target.TargetCreated)
+		if err := json.Unmarshal(value.Params, v); err != nil {
+			return false, err
+		}
+		if v.TargetInfo.Type == "page" && v.TargetInfo.OpenerId == s.tid {
+			if createdTargetID != nil {
+				*createdTargetID = v.TargetInfo.TargetId
 			}
-			if v.TargetInfo.Type == "page" && v.TargetInfo.OpenerId == s.tid {
-				if createdTargetID != nil {
-					*createdTargetID = v.TargetInfo.TargetId
-				}
-				return true, nil
-			}
+			return true, nil
 		}
 		return false, nil
 	})
