@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -221,14 +220,12 @@ func (s Session) Subscribe(event string, async bool, v func(e observe.Value)) (c
 		uid = atomic.AddUint64(s.guid, 1)
 		val = observe.NewSimpleObserver(fmt.Sprintf("%d", uid), event, v)
 	)
-	log.Print("Register " + event + " = " + val.ID() + " " + s.ID())
 	if async {
 		s.observable.Register(observe.AsyncSimpleObserver(val))
 	} else {
 		s.observable.Register(val)
 	}
 	return func() {
-		log.Print("Unregister " + event + " = " + val.ID() + " " + s.ID())
 		s.observable.Unregister(val)
 	}
 }
