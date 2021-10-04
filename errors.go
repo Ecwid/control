@@ -64,5 +64,5 @@ type ClickTargetOverlappedError struct {
 }
 
 func (e ClickTargetOverlappedError) Error() string {
-	return fmt.Sprintf("click at target (%f, %f) is overlapped by `%s`", e.X, e.Y, e.outerHTML)
+	return fmt.Sprintf("click at target is overlapped by `%s`", e.outerHTML)
 }
