@@ -59,9 +59,10 @@ func (e WaitTimeoutError) Error() string {
 }
 
 type ClickTargetOverlappedError struct {
+	X, Y      float64
 	outerHTML string
 }
 
 func (e ClickTargetOverlappedError) Error() string {
-	return fmt.Sprintf("click target is overlapped by `%s`", e.outerHTML)
+	return fmt.Sprintf("click at target (%f, %f) is overlapped by `%s`", e.X, e.Y, e.outerHTML)
 }

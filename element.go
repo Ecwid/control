@@ -226,7 +226,7 @@ func (e Element) ClickWith(button input.MouseButton, delayToRelease time.Duratio
 	select {
 	case v := <-clickValue:
 		if v != "1" {
-			return ClickTargetOverlappedError{outerHTML: v}
+			return ClickTargetOverlappedError{X: x, Y: y, outerHTML: v}
 		}
 	case <-deadline.C:
 		return ErrClickTimeout
