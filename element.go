@@ -92,10 +92,10 @@ func (e Element) InsertText(text string) error {
 	if err = e.ScrollIntoView(); err != nil {
 		return err
 	}
-	if err = e.Clear(); err != nil {
+	if err = e.Focus(); err != nil {
 		return err
 	}
-	if err = e.Focus(); err != nil {
+	if err = e.Clear(); err != nil {
 		return err
 	}
 	if err = e.frame.Session().Input.InsertText(text); err != nil {
