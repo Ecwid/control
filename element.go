@@ -156,7 +156,7 @@ func (e Element) GetContentQuad(viewportCorrection bool) (Quad, error) {
 	}
 	quads := convertQuads(val.Quads)
 	if len(quads) == 0 { // should be at least one
-		return nil, ErrElementInvisible
+		return nil, ErrNodeIsNotVisible
 	}
 	metric, err := e.frame.Session().GetLayoutMetrics()
 	if err != nil {
@@ -172,16 +172,16 @@ func (e Element) GetContentQuad(viewportCorrection bool) (Quad, error) {
 		|...............|
 		*/
 		if viewportCorrection {
-			for _, point := range quad {
-				point.X = math.Min(math.Max(point.X, 0), float64(metric.CssLayoutViewport.ClientWidth))
-				point.Y = math.Min(math.Max(point.Y, 0), float64(metric.CssLayoutViewport.ClientHeight))
+			for i := 0; i < len(quad); i++ {
+				quad[i].X = math.Min(math.Max(quad[i].X, 0), float64(metric.CssLayoutViewport.ClientWidth))
+				quad[i].Y = math.Min(math.Max(quad[i].Y, 0), float64(metric.CssLayoutViewport.ClientHeight))
 			}
 		}
 		if quad.Area() > 1 {
 			return quad, nil
 		}
 	}
-	return nil, ErrElementIsOutOfViewport
+	return nil, ErrNodeIsOutOfViewport
 }
 
 func (e Element) clickablePoint() (x float64, y float64, err error) {

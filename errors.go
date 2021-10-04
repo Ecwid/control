@@ -11,12 +11,12 @@ import (
 )
 
 var (
-	ErrElementInvisible       = errors.New("element not visible")
-	ErrElementIsOutOfViewport = errors.New("element is out of viewport")
-	ErrAlreadyNavigated       = errors.New("page already navigated to this address - nothing done")
-	ErrTargetDestroyed        = errors.New("this session was destroyed")
-	ErrDetachedFromTarget     = errors.New("detached from target")
-	ErrClickTimeout           = errors.New("no click registered")
+	ErrNodeIsNotVisible    = errors.New("node is not visible")
+	ErrNodeIsOutOfViewport = errors.New("node is out of viewport")
+	ErrAlreadyNavigated    = errors.New("page already navigated to this address - nothing done")
+	ErrTargetDestroyed     = errors.New("this session was destroyed")
+	ErrDetachedFromTarget  = errors.New("detached from target")
+	ErrClickTimeout        = errors.New("no click registered")
 )
 
 type ErrTargetCrashed target.TargetCrashed
