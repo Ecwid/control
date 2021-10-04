@@ -138,7 +138,7 @@ type Input struct {
 	s  *Session
 }
 
-func (i Input) Click(button input.MouseButton, x, y float64) (err error) {
+func (i Input) Click(button input.MouseButton, x, y float64, delay time.Duration) (err error) {
 	i.mx.Lock()
 	defer i.mx.Unlock()
 	if err = i.MouseMove(MouseNone, x, y); err != nil {
@@ -147,7 +147,7 @@ func (i Input) Click(button input.MouseButton, x, y float64) (err error) {
 	if err = i.MousePress(button, x, y); err != nil {
 		return err
 	}
-	time.Sleep(time.Millisecond * 150)
+	time.Sleep(delay)
 	if err = i.MouseRelease(button, x, y); err != nil {
 		return err
 	}

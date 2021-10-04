@@ -194,10 +194,10 @@ func (e Element) clickablePoint() (x float64, y float64, err error) {
 }
 
 func (e Element) Click() error {
-	return e.click(MouseLeft)
+	return e.ClickWith(MouseLeft, time.Millisecond*10)
 }
 
-func (e Element) click(button input.MouseButton) error {
+func (e Element) ClickWith(button input.MouseButton, delayToRelease time.Duration) error {
 	if err := e.ScrollIntoView(); err != nil {
 		return err
 	}
@@ -206,15 +206,18 @@ func (e Element) click(button input.MouseButton) error {
 	}
 	var clickValue = make(chan string, 1)
 	defer close(clickValue)
-	cancel := e.frame.session.onBindingCalled(bindClick, func(payload string) {
-		clickValue <- payload
+	cancel := e.frame.session.onBindingCalled(bindClick, func(p string) {
+		select {
+		case clickValue <- p:
+		default:
+		}
 	})
 	defer cancel()
 	x, y, err := e.clickablePoint()
 	if err != nil {
 		return err
 	}
-	if err = e.frame.Session().Input.Click(button, x, y); err != nil {
+	if err = e.frame.Session().Input.Click(button, x, y, delayToRelease); err != nil {
 		return err
 	}
 	const timeout = time.Millisecond * 1000
