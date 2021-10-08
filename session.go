@@ -19,7 +19,7 @@ import (
 
 const (
 	blankPage = "about:blank"
-	bindClick = "_control_click"
+	bindClick = "_on_click"
 )
 
 type Session struct {
