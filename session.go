@@ -135,7 +135,7 @@ func (s Session) Page() *Frame {
 }
 
 func (s Session) Frame(id common.FrameId) (*Frame, error) {
-	if s.runtime.Load(id) != 0 {
+	if s.runtime.Load(id) != -1 {
 		return &Frame{id: id, session: &s}, nil
 	}
 	return nil, NoSuchFrameError{id: id}
@@ -291,5 +291,8 @@ func (m *dict) Store(key common.FrameId, val runtime.ExecutionContextId) {
 func (m *dict) Load(key common.FrameId) runtime.ExecutionContextId {
 	m.Lock()
 	defer m.Unlock()
-	return m.values[key]
+	if val, ok := m.values[key]; ok {
+		return val
+	}
+	return -1
 }

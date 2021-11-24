@@ -58,7 +58,7 @@ func (c *Client) Unregister(val observe.Observer) {
 	c.observable.Unregister(val)
 }
 
-func (c *Client) RoundTrip(sessionCtx context.Context, req *Request) (*Response, error) {
+func (c *Client) RoundTrip(context context.Context, req *Request) (*Response, error) {
 	data, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -67,6 +67,8 @@ func (c *Client) RoundTrip(sessionCtx context.Context, req *Request) (*Response,
 	if err = c.conn.WriteMessage(websocket.TextMessage, data); err != nil {
 		return nil, err
 	}
+	timeout := time.NewTimer(c.Timeout)
+	defer timeout.Stop()
 	select {
 	case r := <-c.recv:
 		if r.isError() {
@@ -74,15 +76,13 @@ func (c *Client) RoundTrip(sessionCtx context.Context, req *Request) (*Response,
 			return nil, r.Error
 		}
 		return r, nil
-	case <-sessionCtx.Done():
-		return nil, sessionCtx.Err()
-	case <-time.After(c.Timeout):
-		return nil, ErrReceiveTimeout
-	case <-c.Ctx.Done():
+	case <-context.Done():
 		if c.exitCode != nil {
 			return nil, c.exitCode
 		}
-		return nil, c.Ctx.Err()
+		return nil, context.Err()
+	case <-timeout.C:
+		return nil, ErrReceiveTimeout
 	}
 }
 
