@@ -126,7 +126,7 @@ func (e *Element) Type(text string, delay time.Duration) error {
 	}
 	for _, c := range text {
 		if isKey(c) {
-			if err = e.frame.Session().Input.press(keyDefinitions[c]); err != nil {
+			if err = e.frame.Session().Input.Press(keyDefinitions[c]); err != nil {
 				return err
 			}
 		} else {

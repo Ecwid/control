@@ -16,16 +16,15 @@ const (
 	MouseForward input.MouseButton = "forward"
 )
 
-// Definition ...
-type keyDefinition struct {
-	keyCode      int
-	shiftKeyCode int
-	key          string
-	shiftKey     string
-	code         string
-	text         string
-	shiftText    string
-	location     int
+type KeyDefinition struct {
+	KeyCode      int
+	ShiftKeyCode int
+	Key          string
+	ShiftKey     string
+	Code         string
+	Text         string
+	ShiftText    string
+	Location     int
 }
 
 func isKey(r rune) bool {
@@ -33,104 +32,104 @@ func isKey(r rune) bool {
 	return ok
 }
 
-var keyDefinitions = map[rune]keyDefinition{
-	'0':  {keyCode: 48, key: "0", code: "Digit0"},
-	'1':  {keyCode: 49, key: "1", code: "Digit1"},
-	'2':  {keyCode: 50, key: "2", code: "Digit2"},
-	'3':  {keyCode: 51, key: "3", code: "Digit3"},
-	'4':  {keyCode: 52, key: "4", code: "Digit4"},
-	'5':  {keyCode: 53, key: "5", code: "Digit5"},
-	'6':  {keyCode: 54, key: "6", code: "Digit6"},
-	'7':  {keyCode: 55, key: "7", code: "Digit7"},
-	'8':  {keyCode: 56, key: "8", code: "Digit8"},
-	'9':  {keyCode: 57, key: "9", code: "Digit9"},
-	'\r': {keyCode: 13, code: "Enter", key: "Enter", text: "\r"},
-	'\n': {keyCode: 13, code: "Enter", key: "Enter", text: "\r"},
-	' ':  {keyCode: 32, key: " ", code: "Space"},
-	'a':  {keyCode: 65, key: "a", code: "KeyA"},
-	'b':  {keyCode: 66, key: "b", code: "KeyB"},
-	'c':  {keyCode: 67, key: "c", code: "KeyC"},
-	'd':  {keyCode: 68, key: "d", code: "KeyD"},
-	'e':  {keyCode: 69, key: "e", code: "KeyE"},
-	'f':  {keyCode: 70, key: "f", code: "KeyF"},
-	'g':  {keyCode: 71, key: "g", code: "KeyG"},
-	'h':  {keyCode: 72, key: "h", code: "KeyH"},
-	'i':  {keyCode: 73, key: "i", code: "KeyI"},
-	'j':  {keyCode: 74, key: "j", code: "KeyJ"},
-	'k':  {keyCode: 75, key: "k", code: "KeyK"},
-	'l':  {keyCode: 76, key: "l", code: "KeyL"},
-	'm':  {keyCode: 77, key: "m", code: "KeyM"},
-	'n':  {keyCode: 78, key: "n", code: "KeyN"},
-	'o':  {keyCode: 79, key: "o", code: "KeyO"},
-	'p':  {keyCode: 80, key: "p", code: "KeyP"},
-	'q':  {keyCode: 81, key: "q", code: "KeyQ"},
-	'r':  {keyCode: 82, key: "r", code: "KeyR"},
-	's':  {keyCode: 83, key: "s", code: "KeyS"},
-	't':  {keyCode: 84, key: "t", code: "KeyT"},
-	'u':  {keyCode: 85, key: "u", code: "KeyU"},
-	'v':  {keyCode: 86, key: "v", code: "KeyV"},
-	'w':  {keyCode: 87, key: "w", code: "KeyW"},
-	'x':  {keyCode: 88, key: "x", code: "KeyX"},
-	'y':  {keyCode: 89, key: "y", code: "KeyY"},
-	'z':  {keyCode: 90, key: "z", code: "KeyZ"},
-	'*':  {keyCode: 106, key: "*", code: "NumpadMultiply", location: 3},
-	'+':  {keyCode: 107, key: "+", code: "NumpadAdd", location: 3},
-	'-':  {keyCode: 109, key: "-", code: "NumpadSubtract", location: 3},
-	'/':  {keyCode: 111, key: "/", code: "NumpadDivide", location: 3},
-	';':  {keyCode: 186, key: ";", code: "Semicolon"},
-	'=':  {keyCode: 187, key: "=", code: "Equal"},
-	',':  {keyCode: 188, key: ",", code: "Comma"},
-	'.':  {keyCode: 190, key: ".", code: "Period"},
-	'`':  {keyCode: 192, key: "`", code: "Backquote"},
-	'[':  {keyCode: 219, key: "[", code: "BracketLeft"},
-	'\\': {keyCode: 220, key: "\\", code: "Backslash"},
-	']':  {keyCode: 221, key: "]", code: "BracketRight"},
-	'\'': {keyCode: 222, key: "'", code: "Quote"},
-	')':  {keyCode: 48, key: ")", code: "Digit0"},
-	'!':  {keyCode: 49, key: "!", code: "Digit1"},
-	'@':  {keyCode: 50, key: "@", code: "Digit2"},
-	'#':  {keyCode: 51, key: "#", code: "Digit3"},
-	'$':  {keyCode: 52, key: "$", code: "Digit4"},
-	'%':  {keyCode: 53, key: "%", code: "Digit5"},
-	'^':  {keyCode: 54, key: "^", code: "Digit6"},
-	'&':  {keyCode: 55, key: "&", code: "Digit7"},
-	'(':  {keyCode: 57, key: "(", code: "Digit9"},
-	'A':  {keyCode: 65, key: "A", code: "KeyA"},
-	'B':  {keyCode: 66, key: "B", code: "KeyB"},
-	'C':  {keyCode: 67, key: "C", code: "KeyC"},
-	'D':  {keyCode: 68, key: "D", code: "KeyD"},
-	'E':  {keyCode: 69, key: "E", code: "KeyE"},
-	'F':  {keyCode: 70, key: "F", code: "KeyF"},
-	'G':  {keyCode: 71, key: "G", code: "KeyG"},
-	'H':  {keyCode: 72, key: "H", code: "KeyH"},
-	'I':  {keyCode: 73, key: "I", code: "KeyI"},
-	'J':  {keyCode: 74, key: "J", code: "KeyJ"},
-	'K':  {keyCode: 75, key: "K", code: "KeyK"},
-	'L':  {keyCode: 76, key: "L", code: "KeyL"},
-	'M':  {keyCode: 77, key: "M", code: "KeyM"},
-	'N':  {keyCode: 78, key: "N", code: "KeyN"},
-	'O':  {keyCode: 79, key: "O", code: "KeyO"},
-	'P':  {keyCode: 80, key: "P", code: "KeyP"},
-	'Q':  {keyCode: 81, key: "Q", code: "KeyQ"},
-	'R':  {keyCode: 82, key: "R", code: "KeyR"},
-	'S':  {keyCode: 83, key: "S", code: "KeyS"},
-	'T':  {keyCode: 84, key: "T", code: "KeyT"},
-	'U':  {keyCode: 85, key: "U", code: "KeyU"},
-	'V':  {keyCode: 86, key: "V", code: "KeyV"},
-	'W':  {keyCode: 87, key: "W", code: "KeyW"},
-	'X':  {keyCode: 88, key: "X", code: "KeyX"},
-	'Y':  {keyCode: 89, key: "Y", code: "KeyY"},
-	'Z':  {keyCode: 90, key: "Z", code: "KeyZ"},
-	':':  {keyCode: 186, key: ":", code: "Semicolon"},
-	'<':  {keyCode: 188, key: "<", code: "Comma"},
-	'_':  {keyCode: 189, key: "_", code: "Minus"},
-	'>':  {keyCode: 190, key: ">", code: "Period"},
-	'?':  {keyCode: 191, key: "?", code: "Slash"},
-	'~':  {keyCode: 192, key: "~", code: "Backquote"},
-	'{':  {keyCode: 219, key: "{", code: "BracketLeft"},
-	'|':  {keyCode: 220, key: "|", code: "Backslash"},
-	'}':  {keyCode: 221, key: "}", code: "BracketRight"},
-	'"':  {keyCode: 222, key: "\"", code: "Quote"},
+var keyDefinitions = map[rune]KeyDefinition{
+	'0':  {KeyCode: 48, Key: "0", Code: "Digit0"},
+	'1':  {KeyCode: 49, Key: "1", Code: "Digit1"},
+	'2':  {KeyCode: 50, Key: "2", Code: "Digit2"},
+	'3':  {KeyCode: 51, Key: "3", Code: "Digit3"},
+	'4':  {KeyCode: 52, Key: "4", Code: "Digit4"},
+	'5':  {KeyCode: 53, Key: "5", Code: "Digit5"},
+	'6':  {KeyCode: 54, Key: "6", Code: "Digit6"},
+	'7':  {KeyCode: 55, Key: "7", Code: "Digit7"},
+	'8':  {KeyCode: 56, Key: "8", Code: "Digit8"},
+	'9':  {KeyCode: 57, Key: "9", Code: "Digit9"},
+	'\r': {KeyCode: 13, Code: "Enter", Key: "Enter", Text: "\r"},
+	'\n': {KeyCode: 13, Code: "Enter", Key: "Enter", Text: "\r"},
+	' ':  {KeyCode: 32, Key: " ", Code: "Space"},
+	'a':  {KeyCode: 65, Key: "a", Code: "KeyA"},
+	'b':  {KeyCode: 66, Key: "b", Code: "KeyB"},
+	'c':  {KeyCode: 67, Key: "c", Code: "KeyC"},
+	'd':  {KeyCode: 68, Key: "d", Code: "KeyD"},
+	'e':  {KeyCode: 69, Key: "e", Code: "KeyE"},
+	'f':  {KeyCode: 70, Key: "f", Code: "KeyF"},
+	'g':  {KeyCode: 71, Key: "g", Code: "KeyG"},
+	'h':  {KeyCode: 72, Key: "h", Code: "KeyH"},
+	'i':  {KeyCode: 73, Key: "i", Code: "KeyI"},
+	'j':  {KeyCode: 74, Key: "j", Code: "KeyJ"},
+	'k':  {KeyCode: 75, Key: "k", Code: "KeyK"},
+	'l':  {KeyCode: 76, Key: "l", Code: "KeyL"},
+	'm':  {KeyCode: 77, Key: "m", Code: "KeyM"},
+	'n':  {KeyCode: 78, Key: "n", Code: "KeyN"},
+	'o':  {KeyCode: 79, Key: "o", Code: "KeyO"},
+	'p':  {KeyCode: 80, Key: "p", Code: "KeyP"},
+	'q':  {KeyCode: 81, Key: "q", Code: "KeyQ"},
+	'r':  {KeyCode: 82, Key: "r", Code: "KeyR"},
+	's':  {KeyCode: 83, Key: "s", Code: "KeyS"},
+	't':  {KeyCode: 84, Key: "t", Code: "KeyT"},
+	'u':  {KeyCode: 85, Key: "u", Code: "KeyU"},
+	'v':  {KeyCode: 86, Key: "v", Code: "KeyV"},
+	'w':  {KeyCode: 87, Key: "w", Code: "KeyW"},
+	'x':  {KeyCode: 88, Key: "x", Code: "KeyX"},
+	'y':  {KeyCode: 89, Key: "y", Code: "KeyY"},
+	'z':  {KeyCode: 90, Key: "z", Code: "KeyZ"},
+	'*':  {KeyCode: 106, Key: "*", Code: "NumpadMultiply", Location: 3},
+	'+':  {KeyCode: 107, Key: "+", Code: "NumpadAdd", Location: 3},
+	'-':  {KeyCode: 109, Key: "-", Code: "NumpadSubtract", Location: 3},
+	'/':  {KeyCode: 111, Key: "/", Code: "NumpadDivide", Location: 3},
+	';':  {KeyCode: 186, Key: ";", Code: "Semicolon"},
+	'=':  {KeyCode: 187, Key: "=", Code: "Equal"},
+	',':  {KeyCode: 188, Key: ",", Code: "Comma"},
+	'.':  {KeyCode: 190, Key: ".", Code: "Period"},
+	'`':  {KeyCode: 192, Key: "`", Code: "Backquote"},
+	'[':  {KeyCode: 219, Key: "[", Code: "BracketLeft"},
+	'\\': {KeyCode: 220, Key: "\\", Code: "Backslash"},
+	']':  {KeyCode: 221, Key: "]", Code: "BracketRight"},
+	'\'': {KeyCode: 222, Key: "'", Code: "Quote"},
+	')':  {KeyCode: 48, Key: ")", Code: "Digit0"},
+	'!':  {KeyCode: 49, Key: "!", Code: "Digit1"},
+	'@':  {KeyCode: 50, Key: "@", Code: "Digit2"},
+	'#':  {KeyCode: 51, Key: "#", Code: "Digit3"},
+	'$':  {KeyCode: 52, Key: "$", Code: "Digit4"},
+	'%':  {KeyCode: 53, Key: "%", Code: "Digit5"},
+	'^':  {KeyCode: 54, Key: "^", Code: "Digit6"},
+	'&':  {KeyCode: 55, Key: "&", Code: "Digit7"},
+	'(':  {KeyCode: 57, Key: "(", Code: "Digit9"},
+	'A':  {KeyCode: 65, Key: "A", Code: "KeyA"},
+	'B':  {KeyCode: 66, Key: "B", Code: "KeyB"},
+	'C':  {KeyCode: 67, Key: "C", Code: "KeyC"},
+	'D':  {KeyCode: 68, Key: "D", Code: "KeyD"},
+	'E':  {KeyCode: 69, Key: "E", Code: "KeyE"},
+	'F':  {KeyCode: 70, Key: "F", Code: "KeyF"},
+	'G':  {KeyCode: 71, Key: "G", Code: "KeyG"},
+	'H':  {KeyCode: 72, Key: "H", Code: "KeyH"},
+	'I':  {KeyCode: 73, Key: "I", Code: "KeyI"},
+	'J':  {KeyCode: 74, Key: "J", Code: "KeyJ"},
+	'K':  {KeyCode: 75, Key: "K", Code: "KeyK"},
+	'L':  {KeyCode: 76, Key: "L", Code: "KeyL"},
+	'M':  {KeyCode: 77, Key: "M", Code: "KeyM"},
+	'N':  {KeyCode: 78, Key: "N", Code: "KeyN"},
+	'O':  {KeyCode: 79, Key: "O", Code: "KeyO"},
+	'P':  {KeyCode: 80, Key: "P", Code: "KeyP"},
+	'Q':  {KeyCode: 81, Key: "Q", Code: "KeyQ"},
+	'R':  {KeyCode: 82, Key: "R", Code: "KeyR"},
+	'S':  {KeyCode: 83, Key: "S", Code: "KeyS"},
+	'T':  {KeyCode: 84, Key: "T", Code: "KeyT"},
+	'U':  {KeyCode: 85, Key: "U", Code: "KeyU"},
+	'V':  {KeyCode: 86, Key: "V", Code: "KeyV"},
+	'W':  {KeyCode: 87, Key: "W", Code: "KeyW"},
+	'X':  {KeyCode: 88, Key: "X", Code: "KeyX"},
+	'Y':  {KeyCode: 89, Key: "Y", Code: "KeyY"},
+	'Z':  {KeyCode: 90, Key: "Z", Code: "KeyZ"},
+	':':  {KeyCode: 186, Key: ":", Code: "Semicolon"},
+	'<':  {KeyCode: 188, Key: "<", Code: "Comma"},
+	'_':  {KeyCode: 189, Key: "_", Code: "Minus"},
+	'>':  {KeyCode: 190, Key: ">", Code: "Period"},
+	'?':  {KeyCode: 191, Key: "?", Code: "Slash"},
+	'~':  {KeyCode: 192, Key: "~", Code: "Backquote"},
+	'{':  {KeyCode: 219, Key: "{", Code: "BracketLeft"},
+	'|':  {KeyCode: 220, Key: "|", Code: "Backslash"},
+	'}':  {KeyCode: 221, Key: "}", Code: "BracketRight"},
+	'"':  {KeyCode: 222, Key: "\"", Code: "Quote"},
 }
 
 type Input struct {
@@ -195,27 +194,27 @@ func (i Input) InsertText(text string) error {
 }
 
 func (i Input) PressKey(c rune) error {
-	return i.press(keyDefinition{keyCode: int(c), text: string(c)})
+	return i.Press(KeyDefinition{KeyCode: int(c), Text: string(c)})
 }
 
-func (i Input) press(key keyDefinition) error {
-	if key.text == "" {
-		key.text = key.key
+func (i Input) Press(key KeyDefinition) error {
+	if key.Text == "" {
+		key.Text = key.Key
 	}
 	err := input.DispatchKeyEvent(i.s, input.DispatchKeyEventArgs{
 		Type:                  dispatchKeyEventKeyDown,
-		Key:                   key.key,
-		Code:                  key.code,
-		WindowsVirtualKeyCode: key.keyCode,
-		Text:                  key.text,
+		Key:                   key.Key,
+		Code:                  key.Code,
+		WindowsVirtualKeyCode: key.KeyCode,
+		Text:                  key.Text,
 	})
 	if err != nil {
 		return err
 	}
 	return input.DispatchKeyEvent(i.s, input.DispatchKeyEventArgs{
 		Type: dispatchKeyEventKeyUp,
-		Key:  key.key,
-		Code: key.code,
-		Text: key.text,
+		Key:  key.Key,
+		Code: key.Code,
+		Text: key.Text,
 	})
 }
