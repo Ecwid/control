@@ -16,8 +16,8 @@ func (s *Session) NewNetworkCondition(predicate func(request *network.Request) b
 		switch value.Method {
 
 		case "Network.requestWillBeSent":
-			var sent = new(network.RequestWillBeSent)
-			if err := json.Unmarshal(value.Params, sent); err != nil {
+			var sent = network.RequestWillBeSent{}
+			if err := json.Unmarshal(value.Params, &sent); err != nil {
 				return false, err
 			}
 			if predicate(sent.Request) {
@@ -25,8 +25,8 @@ func (s *Session) NewNetworkCondition(predicate func(request *network.Request) b
 			}
 
 		case "Network.responseReceived":
-			var recv = new(network.ResponseReceived)
-			if err := json.Unmarshal(value.Params, recv); err != nil {
+			var recv = network.ResponseReceived{}
+			if err := json.Unmarshal(value.Params, &recv); err != nil {
 				return false, err
 			}
 			if recv.RequestId == requestID {
@@ -34,8 +34,8 @@ func (s *Session) NewNetworkCondition(predicate func(request *network.Request) b
 			}
 
 		case "Network.loadingFailed":
-			var fail = new(network.LoadingFailed)
-			if err := json.Unmarshal(value.Params, fail); err != nil {
+			var fail = network.LoadingFailed{}
+			if err := json.Unmarshal(value.Params, &fail); err != nil {
 				return false, err
 			}
 			if fail.RequestId == requestID {

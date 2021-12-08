@@ -52,6 +52,8 @@ func (u Promise) Stop() {
 
 func (u Promise) WaitWithTimeout(timeout time.Duration) error {
 	defer u.Stop()
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
 	select {
 	case <-u.done:
 		return nil
@@ -59,7 +61,7 @@ func (u Promise) WaitWithTimeout(timeout time.Duration) error {
 		return err
 	case <-u.ctx.Done():
 		return u.ctx.Err()
-	case <-time.After(timeout):
+	case <-timer.C:
 		return WaitTimeoutError{timeout: timeout}
 	}
 }

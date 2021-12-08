@@ -46,16 +46,16 @@ func (f Frame) Call(method string, send, recv interface{}) error {
 }
 
 func (f Frame) NewLifecycleEventCondition(event LifecycleEventType) *Promise {
-	var isInit = false
+	var initialized = false
 	return f.Session().NewEventCondition("Page.lifecycleEvent", func(value observe.Value) (bool, error) {
-		var v = new(page.LifecycleEvent)
-		if err := json.Unmarshal(value.Params, v); err != nil {
+		var v = page.LifecycleEvent{}
+		if err := json.Unmarshal(value.Params, &v); err != nil {
 			return false, err
 		}
 		if v.FrameId == f.id && v.Name == "init" {
-			isInit = true
+			initialized = true
 		}
-		return isInit && v.FrameId == f.id && v.Name == string(event), nil
+		return initialized && v.FrameId == f.id && v.Name == string(event), nil
 	})
 }
 
