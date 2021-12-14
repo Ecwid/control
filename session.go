@@ -215,15 +215,12 @@ func (s Session) onBindingCalled(name string, function func(string)) (cancel fun
 	})
 }
 
-/*
-	Warning: transport.Client is not yet thread safe, so do not make a CDP call inside an asynchronous callback when subscribing to events
-*/
-func (s Session) Subscribe(event string, async bool, v func(e observe.Value)) (cancel func()) {
+func (s Session) Subscribe(event string, inSeparateThread bool, v func(e observe.Value)) (cancel func()) {
 	var (
 		uid = atomic.AddUint64(s.guid, 1)
 		val = observe.NewSimpleObserver(fmt.Sprintf("%d", uid), event, v)
 	)
-	if async {
+	if inSeparateThread {
 		s.observable.Register(observe.AsyncSimpleObserver(val))
 	} else {
 		s.observable.Register(val)

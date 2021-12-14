@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ecwid/control/transport/observe"
@@ -21,8 +23,9 @@ type RoundTripper interface {
 
 type Client struct {
 	conn         *websocket.Conn
-	seq          uint64
+	sequence     uint64
 	recv         chan *Response
+	mx           *sync.Mutex
 	Ctx          context.Context
 	exit         func()
 	exitCode     error
@@ -34,9 +37,10 @@ type Client struct {
 }
 
 func (c *Client) Call(sessionCtx context.Context, sessionID, method string, args, value interface{}) error {
-	c.seq++
+	c.mx.Lock()
+	defer c.mx.Unlock()
 	r, err := c.RoundTripper.RoundTrip(sessionCtx, &Request{
-		ID:        c.seq,
+		ID:        atomic.AddUint64(&c.sequence, 1),
 		SessionID: sessionID,
 		Method:    method,
 		Params:    args,
@@ -93,11 +97,12 @@ func Connect(ctx context.Context, webSocketURL string) (*Client, error) {
 	}
 	c := &Client{
 		conn:       conn,
-		seq:        0,
+		sequence:   0,
 		recv:       make(chan *Response, 1),
 		observable: observe.New(),
 		Timeout:    time.Minute,
 		Stderr:     os.Stderr,
+		mx:         &sync.Mutex{},
 	}
 	c.Ctx, c.exit = context.WithCancel(ctx)
 	c.RoundTripper = c
@@ -126,7 +131,10 @@ func (c *Client) read() error {
 	if err = json.Unmarshal(body, r); err != nil {
 		return err
 	}
-	if r.ID == c.seq {
+	if r.ID == 0 {
+		c.stdout("\033[1;30mevent <- %s\033[0m", string(body))
+		c.observable.Notify(r.SessionID, observe.Value{Method: r.Method, Params: r.Params})
+	} else if r.ID == c.sequence {
 		if r.isError() {
 			c.stderr("\033[1;31mrecv_err <- %s\033[0m", string(body))
 		} else {
@@ -134,8 +142,7 @@ func (c *Client) read() error {
 		}
 		c.recv <- r
 	} else {
-		c.stdout("\033[1;30mevent <- %s\033[0m", string(body))
-		c.observable.Notify(r.SessionID, observe.Value{Method: r.Method, Params: r.Params})
+		return fmt.Errorf("message sequence race condition `%s`", string(body))
 	}
 	return nil
 }
