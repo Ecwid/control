@@ -28,10 +28,9 @@ func main() {
 		panic(err)
 	}
 	defer browser.Close()
-	browser.GetTransport().Stderr = os.Stderr // enabled by default
-	// browser.GetTransport().Stdout = os.Stdout // uncomment to get CDP logs
-	session := control.New(browser.GetTransport())
-	err = session.CreateTarget("") // create a new browser tab with a blank page
+	browser.GetClient().Stderr = os.Stderr // enabled by default
+	// browser.GetClient().Stdout = os.Stdout // uncomment to get CDP logs
+	session, err := control.New(browser.GetClient()).CreatePageTarget("")
 	if err != nil {
 		panic(err)
 	}
@@ -53,7 +52,6 @@ func main() {
 		}
 		log.Print(title)
 	}
-
 }
 ```
 

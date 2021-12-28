@@ -3,12 +3,9 @@ package chrome
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -17,82 +14,32 @@ import (
 	"github.com/ecwid/control/transport"
 )
 
-// BrowserTarget ...
-type BrowserTarget struct {
-	Description          string `json:"description"`
-	DevtoolsFrontendURL  string `json:"devtoolsFrontendUrl"`
-	ID                   string `json:"id"`
-	Title                string `json:"title"`
-	Type                 string `json:"type"`
-	URL                  string `json:"url"`
-	WebSocketDebuggerURL string `json:"webSocketDebuggerUrl"`
-}
-
-// BrowserVersion ...
-type BrowserVersion struct {
-	Browser              string `json:"Browser"`
-	ProtocolVersion      string `json:"Protocol-Version"`
-	UserAgent            string `json:"User-Agent"`
-	V8Version            string `json:"V8-Version"`
-	WebKitVersion        string `json:"WebKit-Version"`
-	WebSocketDebuggerURL string `json:"webSocketDebuggerUrl"`
-}
-
 // Browser ...
 type Browser struct {
-	ctx         context.Context
-	url         *url.URL
-	cmd         *exec.Cmd
-	client      *transport.Client
-	deadline    time.Duration
-	UserDataDir string
+	context      context.Context
+	webSocketURL string
+	cmd          *exec.Cmd
+	client       *transport.Client
+	UserDataDir  string
 }
 
-// GetTransport ...
-func (c Browser) GetTransport() *transport.Client {
+func (c Browser) GetClient() *transport.Client {
 	return c.client
-}
-
-// Crash ...
-func (c Browser) Crash() {
-	_ = c.client.Call(c.ctx, "", "Browser.crash", nil, nil)
-}
-
-func (c Browser) request(path string, response interface{}) error {
-	r, err := http.Get("http://" + c.url.Host + path)
-	if err != nil {
-		return err
-	}
-	return json.NewDecoder(r.Body).Decode(response)
-}
-
-// GetVersion ...
-func (c Browser) GetVersion() (BrowserVersion, error) {
-	var result = BrowserVersion{}
-	err := c.request("/json/version", &result)
-	return result, err
-}
-
-// GetTargets ...
-func (c Browser) GetTargets() ([]BrowserTarget, error) {
-	var result []BrowserTarget
-	err := c.request("/json", &result)
-	return result, err
 }
 
 // Close close browser
 func (c Browser) Close() error {
 	// Close close browser and websocket connection
-	exited := make(chan int)
+	exited := make(chan int, 1)
 	go func() {
 		state, _ := c.cmd.Process.Wait()
 		exited <- state.ExitCode()
 	}()
-	_ = c.client.Call(c.ctx, "", "Browser.close", nil, nil)
+	_ = c.client.Call(c.context, "", "Browser.close", nil, nil)
 	select {
 	case <-exited:
 		return nil
-	case <-time.After(c.deadline):
+	case <-time.After(time.Second * 10):
 		if err := c.cmd.Process.Kill(); err != nil {
 			return err
 		}
@@ -102,10 +49,7 @@ func (c Browser) Close() error {
 
 // Launch launch a new browser process
 func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
-	browser := &Browser{
-		ctx:      ctx,
-		deadline: 10 * time.Second,
-	}
+	browser := &Browser{context: ctx}
 	var (
 		path string
 		err  error
@@ -128,8 +72,7 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 		}
 	}
 
-	browser.UserDataDir, err = os.MkdirTemp("", "chrome-control")
-	if err != nil {
+	if browser.UserDataDir, err = os.MkdirTemp("", "chrome-control"); err != nil {
 		return nil, err
 	}
 
@@ -174,24 +117,18 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer stderr.Close()
 	if err = browser.cmd.Start(); err != nil {
 		return nil, err
 	}
-	webSocketURL, err := addrFromStderr(stderr)
+	browser.webSocketURL, err = addrFromStderr(stderr)
 	if err != nil {
 		return nil, err
 	}
-	browser.url, err = url.Parse(webSocketURL)
-	if err != nil {
-		return nil, err
-	}
-	browser.client, err = transport.Connect(ctx, webSocketURL)
+	browser.client, err = transport.Connect(ctx, browser.webSocketURL)
 	return browser, err
 }
 
 func addrFromStderr(rc io.ReadCloser) (string, error) {
-	defer rc.Close()
 	const prefix = "DevTools listening on"
 	var (
 		url     = ""

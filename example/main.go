@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log"
+	"os"
 
 	"github.com/ecwid/control"
 	"github.com/ecwid/control/chrome"
@@ -15,31 +17,45 @@ func Pretty(p interface{}) string {
 }
 
 func main() {
-	b, err := chrome.Launch(context.TODO(), "--disable-popup-blocking") //, "--no-startup-window")
+	browser, err := chrome.Launch(context.TODO(), "--disable-popup-blocking") // you can specify more startup parameters for chrome
 	if err != nil {
 		panic(err)
 	}
-	defer b.Close()
-	//b.GetTransport().Stdout = os.Stdout
-	sess := control.New(b.GetTransport())
-	err = sess.CreateTarget("")
+	defer browser.Close()
+	browser.GetClient().Stderr = os.Stderr // enabled by default
+	// browser.GetClient().Stdout = os.Stdout // uncomment to get CDP logs
+
+	cdp := control.New(browser.GetClient())
+	go func() {
+		s1, err := cdp.CreatePageTarget("")
+		if err != nil {
+			panic(err)
+		}
+		if err := s1.Page().Navigate("https://google.com/", control.LifecycleIdleNetwork); err != nil {
+			panic(err)
+		}
+	}()
+
+	session, err := cdp.CreatePageTarget("")
 	if err != nil {
 		panic(err)
 	}
 
-	var p = sess.Page()
-	err = p.Navigate("https://surfparadise.ecwid.com/", control.LifecycleIdleNetwork)
+	var page = session.Page() // main frame
+	err = page.Navigate("https://surfparadise.ecwid.com/", control.LifecycleIdleNetwork)
 	if err != nil {
 		panic(err)
 	}
-	app, err := p.QuerySelectorAll(".grid-product__title-inner")
+
+	items, err := page.QuerySelectorAll(".grid-product__title-inner")
 	if err != nil {
 		panic(err)
 	}
-	for _, i := range app {
-		_, err = i.GetText()
+	for _, i := range items {
+		title, err := i.GetText()
 		if err != nil {
 			panic(err)
 		}
+		log.Print(title)
 	}
 }

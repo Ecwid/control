@@ -9,11 +9,8 @@ import (
 	"time"
 
 	"github.com/ecwid/control/protocol/common"
-	"github.com/ecwid/control/protocol/network"
-	"github.com/ecwid/control/protocol/page"
 	"github.com/ecwid/control/protocol/runtime"
 	"github.com/ecwid/control/protocol/target"
-	"github.com/ecwid/control/transport"
 	"github.com/ecwid/control/transport/observe"
 )
 
@@ -23,7 +20,7 @@ const (
 )
 
 type Session struct {
-	transport  *transport.Client
+	browser    *BrowserContext
 	id         target.SessionID
 	tid        target.TargetID
 	runtime    *dict
@@ -44,82 +41,12 @@ func (s Session) Call(method string, send, recv interface{}) error {
 	case <-s.Ctx.Done():
 		return s.ExitCode()
 	default:
-		return s.transport.Call(s.Ctx, string(s.id), method, send, recv)
+		return s.browser.Client.Call(s.Ctx, string(s.id), method, send, recv)
 	}
 }
 
-func New(t *transport.Client) *Session {
-	var uid uint64 = 0
-	var s = &Session{
-		guid:       &uid,
-		id:         "",
-		transport:  t,
-		eventPool:  make(chan observe.Value, 1000),
-		observable: observe.New(),
-		Timeout:    time.Second * 60,
-	}
-	s.Ctx, s.exit = context.WithCancel(t.Ctx)
-	s.Input = Input{s: s, mx: &sync.Mutex{}}
-	s.Network = Network{s: s}
-	s.Emulation = Emulation{s: s}
-	return s
-}
-func (s Session) GetTransport() *transport.Client {
-	return s.transport
-}
-
-func (s *Session) CreateTarget(url string) error {
-	if url == "" {
-		url = blankPage // headless chrome crash when url is empty
-	}
-	r, err := target.CreateTarget(s, target.CreateTargetArgs{Url: url})
-	if err != nil {
-		return err
-	}
-	return s.AttachToTarget(r.TargetId)
-}
-
-func (s *Session) AttachToTarget(targetID target.TargetID) error {
-	if s.id != "" {
-		if err := target.DetachFromTarget(s, target.DetachFromTargetArgs{SessionId: s.id}); err != nil {
-			return err
-		}
-	}
-	val, err := target.AttachToTarget(s, target.AttachToTargetArgs{
-		TargetId: targetID,
-		Flatten:  true,
-	})
-	if err != nil {
-		return err
-	}
-
-	// run session lifecycle
-	s.tid = targetID
-	s.id = val.SessionId
-	s.runtime = newDict()
-	go s.lifecycle()
-	s.transport.Register(s)
-
-	if err = page.Enable(s); err != nil {
-		return err
-	}
-	if err = runtime.Enable(s); err != nil {
-		return err
-	}
-	if err = runtime.AddBinding(s, runtime.AddBindingArgs{Name: bindClick}); err != nil {
-		return err
-	}
-	if err = page.SetLifecycleEventsEnabled(s, page.SetLifecycleEventsEnabledArgs{Enabled: true}); err != nil {
-		return err
-	}
-	if err = target.SetDiscoverTargets(s, target.SetDiscoverTargetsArgs{Discover: true}); err != nil {
-		return err
-	}
-	// maxPostDataSize - Longest post body size (in bytes) that would be included in requestWillBeSent notification
-	if err = network.Enable(s, network.EnableArgs{MaxPostDataSize: 2 * 1024}); err != nil {
-		return err
-	}
-	return nil
+func (s Session) GetBrowserContext() *BrowserContext {
+	return s.browser
 }
 
 func (s Session) ID() string {
@@ -142,9 +69,7 @@ func (s Session) Frame(id common.FrameId) (*Frame, error) {
 }
 
 func (s Session) Activate() error {
-	return target.ActivateTarget(s, target.ActivateTargetArgs{
-		TargetId: s.tid,
-	})
+	return s.browser.ActivateTarget(s.tid)
 }
 
 func (s Session) Notify(val observe.Value) {
@@ -194,7 +119,7 @@ func (s *Session) handle(e observe.Value) error {
 
 func (s *Session) lifecycle() {
 	defer func() {
-		s.transport.Unregister(s)
+		s.browser.Client.Unregister(s)
 		s.exit()
 	}()
 	for e := range s.eventPool {
@@ -231,14 +156,7 @@ func (s Session) Subscribe(event string, inSeparateThread bool, v func(e observe
 }
 
 func (s Session) Close() error {
-	err := target.CloseTarget(s, target.CloseTargetArgs{
-		TargetId: s.tid,
-	})
-	/* Target.detachedFromTarget event may come before the response of CloseTarget call */
-	if err == context.Canceled {
-		return nil
-	}
-	return err
+	return s.browser.CloseTarget(s.tid)
 }
 
 func (s Session) IsClosed() bool {
@@ -259,8 +177,8 @@ func (s Session) ExitCode() error {
 
 func (s Session) NewTargetCreatedCondition(createdTargetID *target.TargetID) *Promise {
 	return s.NewEventCondition("Target.targetCreated", func(value observe.Value) (bool, error) {
-		var v = new(target.TargetCreated)
-		if err := json.Unmarshal(value.Params, v); err != nil {
+		var v = target.TargetCreated{}
+		if err := json.Unmarshal(value.Params, &v); err != nil {
 			return false, err
 		}
 		if v.TargetInfo.Type == "page" && v.TargetInfo.OpenerId == s.tid {
