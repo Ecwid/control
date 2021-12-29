@@ -16,21 +16,20 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 
 	"github.com/ecwid/control"
 	"github.com/ecwid/control/chrome"
 )
 
 func main() {
-	browser, err := chrome.Launch(context.TODO(), "--disable-popup-blocking") // you can specify more startup parameters for chrome
+	chromium, err := chrome.Launch(context.TODO(), "--disable-popup-blocking") // you can specify more startup parameters for chrome
 	if err != nil {
 		panic(err)
 	}
-	defer browser.Close()
-	browser.GetClient().Stderr = os.Stderr // enabled by default
-	// browser.GetClient().Stdout = os.Stdout // uncomment to get CDP logs
-	session, err := control.New(browser.GetClient()).CreatePageTarget("")
+	defer chromium.Close()
+	ctrl := control.New(chromium.GetClient())
+	
+	session, err := ctrl.CreatePageTarget("")
 	if err != nil {
 		panic(err)
 	}
