@@ -3,7 +3,6 @@ package transport
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,7 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var ErrReceiveTimeout = errors.New("websocket response timeout reached")
+var AnsiColor = true
 
 type RoundTripper interface {
 	RoundTrip(context.Context, *Request) (*Response, error)
@@ -67,7 +66,7 @@ func (c *Client) RoundTrip(context context.Context, req *Request) (*Response, er
 	if err != nil {
 		return nil, err
 	}
-	c.stdout("\033[1;36msend -> %s\033[0m", string(data))
+	c.log(c.Stdout, cyan, fmt.Sprintf("send -> %s", string(data)))
 	if err = c.conn.WriteMessage(websocket.TextMessage, data); err != nil {
 		return nil, err
 	}
@@ -86,7 +85,10 @@ func (c *Client) RoundTrip(context context.Context, req *Request) (*Response, er
 		}
 		return nil, context.Err()
 	case <-timeout.C:
-		return nil, ErrReceiveTimeout
+		return nil, ReceiveTimeoutError{
+			Value:   data,
+			Timeout: c.Timeout,
+		}
 	}
 }
 
@@ -110,19 +112,17 @@ func Connect(ctx context.Context, webSocketURL string) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) stdout(format string, v ...interface{}) {
-	if c.Stdout != nil {
-		_, _ = c.Stdout.Write([]byte(fmt.Sprintf(format, v...) + "\n"))
+func (c *Client) log(std io.Writer, color ansiColor, v interface{}) {
+	if std != nil {
+		val := fmt.Sprint(v)
+		if AnsiColor {
+			val = color + val + reset
+		}
+		_, _ = std.Write([]byte(val + "\n"))
 	}
 }
 
-func (c *Client) stderr(format string, v ...interface{}) {
-	if c.Stderr != nil {
-		_, _ = c.Stderr.Write([]byte(fmt.Sprintf(format, v...) + "\n"))
-	}
-}
-
-func (c *Client) read() error {
+func (c *Client) readNext() error {
 	_, body, err := c.conn.ReadMessage()
 	if err != nil {
 		return err
@@ -132,17 +132,15 @@ func (c *Client) read() error {
 		return err
 	}
 	if r.ID == 0 {
-		c.stdout("\033[1;30mevent <- %s\033[0m", string(body))
+		c.log(c.Stdout, black, fmt.Sprintf("event <- %s", string(body)))
 		c.observable.Notify(r.SessionID, observe.Value{Method: r.Method, Params: r.Params})
-	} else if r.ID == c.sequence {
+	} else if r.ID == atomic.LoadUint64(&c.sequence) {
 		if r.isError() {
-			c.stderr("\033[1;31mrecv_err <- %s\033[0m", string(body))
+			c.log(c.Stderr, red, fmt.Sprintf("recv-error <- %s", string(body)))
 		} else {
-			c.stdout("\033[1;34mrecv <- %s\033[0m", string(body))
+			c.log(c.Stdout, blue, fmt.Sprintf("recv <- %s", string(body)))
 		}
 		c.recv <- r
-	} else {
-		return fmt.Errorf("message sequence race condition `%s`", string(body))
 	}
 	return nil
 }
@@ -150,7 +148,7 @@ func (c *Client) read() error {
 func (c *Client) reader() {
 	defer c.exit()
 	for {
-		if err := c.read(); err != nil {
+		if err := c.readNext(); err != nil {
 			c.exitCode = err
 			return
 		}
