@@ -6,19 +6,19 @@ import (
 	"errors"
 
 	"github.com/ecwid/control/protocol/network"
-	"github.com/ecwid/control/transport/observe"
+	"github.com/ecwid/control/transport"
 )
 
-func (s *Session) NewNetworkCondition(predicate func(request *network.Request) bool) *Promise {
+func (s *Session) GetResponse(predicate func(request *network.Request) bool) Future {
 	var requestID network.RequestId
-	return s.NewEventCondition("*", func(value observe.Value) (bool, error) {
-
+	return s.Observe("*", func(value transport.Event, resolve func(interface{}), reject func(error)) {
 		switch value.Method {
 
 		case "Network.requestWillBeSent":
 			var sent = network.RequestWillBeSent{}
 			if err := json.Unmarshal(value.Params, &sent); err != nil {
-				return false, err
+				reject(err)
+				return
 			}
 			if predicate(sent.Request) {
 				requestID = sent.RequestId
@@ -27,23 +27,25 @@ func (s *Session) NewNetworkCondition(predicate func(request *network.Request) b
 		case "Network.responseReceived":
 			var recv = network.ResponseReceived{}
 			if err := json.Unmarshal(value.Params, &recv); err != nil {
-				return false, err
+				reject(err)
+				return
 			}
 			if recv.RequestId == requestID {
-				return true, nil
+				resolve(recv)
+				return
 			}
 
 		case "Network.loadingFailed":
 			var fail = network.LoadingFailed{}
 			if err := json.Unmarshal(value.Params, &fail); err != nil {
-				return false, err
+				reject(err)
+				return
 			}
 			if fail.RequestId == requestID {
-				return false, errors.New(fail.ErrorText)
+				reject(errors.New(fail.ErrorText))
+				return
 			}
 		}
-
-		return false, nil
 	})
 }
 

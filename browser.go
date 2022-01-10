@@ -3,14 +3,13 @@ package control
 import (
 	"context"
 	"sync"
-	"time"
 
+	"github.com/ecwid/control/protocol/browser"
 	"github.com/ecwid/control/protocol/network"
 	"github.com/ecwid/control/protocol/page"
 	"github.com/ecwid/control/protocol/runtime"
 	"github.com/ecwid/control/protocol/target"
 	"github.com/ecwid/control/transport"
-	"github.com/ecwid/control/transport/observe"
 )
 
 type BrowserContext struct {
@@ -24,15 +23,15 @@ func New(client *transport.Client) *BrowserContext {
 }
 
 func (b BrowserContext) Call(method string, send, recv interface{}) error {
-	return b.Client.Call(b.Client.Ctx, "", method, send, recv)
+	return b.Client.Call("", method, send, recv)
 }
 
 func (b BrowserContext) Crash() error {
-	return b.Call("Browser.crash", nil, nil)
+	return browser.Crash(b)
 }
 
 func (b BrowserContext) Close() error {
-	return b.Call("Browser.close", nil, nil)
+	return b.Client.Close()
 }
 
 func (b BrowserContext) SetDiscoverTargets(discover bool) error {
@@ -68,18 +67,17 @@ func (b *BrowserContext) runSession(targetID target.TargetID, sessionID target.S
 		id:         sessionID,
 		tid:        targetID,
 		browser:    b,
-		eventPool:  make(chan observe.Value, 1000),
-		observable: observe.New(),
-		Timeout:    time.Second * 60,
-		runtime:    newDict(),
+		eventPool:  make(chan transport.Event, 1000),
+		publisher:  transport.NewPublisher(),
+		executions: &sync.Map{},
 	}
-	session.Ctx, session.exit = context.WithCancel(b.Client.Ctx)
+	session.context, session.exit = context.WithCancel(context.TODO())
 	session.Input = Input{s: session, mx: &sync.Mutex{}}
 	session.Network = Network{s: session}
 	session.Emulation = Emulation{s: session}
 
 	go session.lifecycle()
-	b.Client.Register(session)
+	b.Client.Register(transport.NewSimpleObserver(string(sessionID), string(sessionID), session.Notify))
 
 	if err = page.Enable(session); err != nil {
 		return nil, err
@@ -125,7 +123,7 @@ func (b BrowserContext) ActivateTarget(id target.TargetID) error {
 func (b BrowserContext) CloseTarget(id target.TargetID) (err error) {
 	err = target.CloseTarget(b, target.CloseTargetArgs{TargetId: id})
 	/* Target.detachedFromTarget event may come before the response of CloseTarget call */
-	if err == context.Canceled {
+	if err == ErrDetachedFromTarget {
 		return nil
 	}
 	return err

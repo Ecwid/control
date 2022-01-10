@@ -35,7 +35,7 @@ func (c Browser) Close() error {
 		state, _ := c.cmd.Process.Wait()
 		exited <- state.ExitCode()
 	}()
-	_ = c.client.Call(c.context, "", "Browser.close", nil, nil)
+	_ = c.client.Close()
 	select {
 	case <-exited:
 		return nil
@@ -124,7 +124,7 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 	if err != nil {
 		return nil, err
 	}
-	browser.client, err = transport.Connect(ctx, browser.webSocketURL)
+	browser.client, err = transport.Dial(browser.webSocketURL)
 	return browser, err
 }
 

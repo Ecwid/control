@@ -16,6 +16,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/ecwid/control"
 	"github.com/ecwid/control/chrome"
@@ -35,7 +36,7 @@ func main() {
 	}
 
 	var page = session.Page() // main frame 
-	err = page.Navigate("https://surfparadise.ecwid.com/", control.LifecycleIdleNetwork)
+	err = page.Navigate("https://surfparadise.ecwid.com/", control.LifecycleIdleNetwork, time.Second*60)
 	if err != nil {
 		panic(err)
 	}
@@ -68,7 +69,7 @@ err = sess.Call("Security.setIgnoreCertificateErrors", sendStruct, receiveStruct
 
 Subscribe on domain event
 ```go
-cancel := sess.Subscribe("Overlay.screenshotRequested", true /*async*/, func(e observe.Value) {
+cancel := sess.Subscribe("Overlay.screenshotRequested", func(e observe.Value) {
     v := overlay.ScreenshotRequested{}
     _= json.Unmarshal(e.Params, &v)
     doSomething(v.Viewport.Height)
@@ -76,7 +77,7 @@ cancel := sess.Subscribe("Overlay.screenshotRequested", true /*async*/, func(e o
 defer cancel()
 
 // Subscribe on all incoming events
-sess.Subscribe("*", false, func(e observe.Value) {
+sess.Subscribe("*", func(e observe.Value) {
     switch e.Method {
         case "Overlay.screenshotRequested":
     }

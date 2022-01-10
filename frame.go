@@ -10,7 +10,7 @@ import (
 	"github.com/ecwid/control/protocol/common"
 	"github.com/ecwid/control/protocol/page"
 	"github.com/ecwid/control/protocol/runtime"
-	"github.com/ecwid/control/transport/observe"
+	"github.com/ecwid/control/transport"
 )
 
 type LifecycleEventType string
@@ -45,60 +45,58 @@ func (f Frame) Call(method string, send, recv interface{}) error {
 	return f.Session().Call(method, send, recv)
 }
 
-func (f Frame) NewLifecycleEventCondition(event LifecycleEventType) *Promise {
+func (f Frame) GetLifecycleEvent(event LifecycleEventType) Future {
 	var initialized = false
-	return f.Session().NewEventCondition("Page.lifecycleEvent", func(value observe.Value) (bool, error) {
+	return f.session.Observe("Page.lifecycleEvent", func(input transport.Event, resolve func(interface{}), reject func(error)) {
 		var v = page.LifecycleEvent{}
-		if err := json.Unmarshal(value.Params, &v); err != nil {
-			return false, err
+		if err := json.Unmarshal(input.Params, &v); err != nil {
+			reject(err)
+			return
 		}
 		if v.FrameId == f.id && v.Name == "init" {
 			initialized = true
 		}
-		return initialized && v.FrameId == f.id && v.Name == string(event), nil
+		if initialized && v.FrameId == f.id && v.Name == string(event) {
+			resolve(v)
+		}
 	})
 }
 
-func (f Frame) Navigate(url string, waitFor LifecycleEventType) error {
-	var navigate = func() error {
-		nav, err := page.Navigate(f, page.NavigateArgs{
-			Url:            url,
-			TransitionType: "typed",
-			FrameId:        f.id,
-		})
-		if err != nil {
-			return err
-		}
-		if nav.ErrorText != "" {
-			return errors.New(nav.ErrorText)
-		}
-		if nav.LoaderId == "" {
-			return ErrAlreadyNavigated
-		}
-		return nil
-	}
-	promise := f.NewLifecycleEventCondition(waitFor)
-	defer promise.Stop()
-	if err := navigate(); err != nil {
+func (f Frame) Navigate(url string, eventType LifecycleEventType, timeout time.Duration) error {
+	future := f.GetLifecycleEvent(eventType)
+	defer future.Cancel()
+	nav, err := page.Navigate(f, page.NavigateArgs{
+		Url:            url,
+		TransitionType: "typed",
+		FrameId:        f.id,
+	})
+	if err != nil {
 		return err
 	}
-	return promise.WaitWithTimeout(f.Session().Timeout)
+	if nav.ErrorText != "" {
+		return errors.New(nav.ErrorText)
+	}
+	if nav.LoaderId == "" {
+		return ErrAlreadyNavigated
+	}
+	_, err = future.Get(timeout)
+	return err
+
 }
 
 // Reload refresh current page
-func (f Frame) Reload(ignoreCache bool, scriptToEvaluateOnLoad string, waitFor LifecycleEventType) error {
-	var reload = func() error {
-		return page.Reload(f, page.ReloadArgs{
-			IgnoreCache:            ignoreCache,
-			ScriptToEvaluateOnLoad: scriptToEvaluateOnLoad,
-		})
-	}
-	promise := f.NewLifecycleEventCondition(waitFor)
-	defer promise.Stop()
-	if err := reload(); err != nil {
+func (f Frame) Reload(ignoreCache bool, scriptToEvaluateOnLoad string, eventType LifecycleEventType, timeout time.Duration) error {
+	future := f.GetLifecycleEvent(eventType)
+	defer future.Cancel()
+	err := page.Reload(f, page.ReloadArgs{
+		IgnoreCache:            ignoreCache,
+		ScriptToEvaluateOnLoad: scriptToEvaluateOnLoad,
+	})
+	if err != nil {
 		return err
 	}
-	return promise.WaitWithTimeout(f.Session().Timeout)
+	_, err = future.Get(timeout)
+	return err
 }
 
 func safeSelector(v string) string {
@@ -172,11 +170,14 @@ func (f Frame) Evaluate(expression string, await, returnByValue bool) (interface
 }
 
 func (f Frame) evaluate(expression string, await, returnByValue bool) (*runtime.RemoteObject, error) {
-	var cid = f.session.runtime.Load(f.id)
+	var cid, ok = f.session.executions.Load(f.id)
+	if !ok {
+		return nil, ErrExecutionContextDestroyed
+	}
 	val, err := runtime.Evaluate(f, runtime.EvaluateArgs{
 		Expression:            expression,
 		IncludeCommandLineAPI: true,
-		ContextId:             cid,
+		ContextId:             cid.(runtime.ExecutionContextId),
 		AwaitPromise:          await,
 		ReturnByValue:         returnByValue,
 	})
@@ -222,7 +223,7 @@ func (f Frame) RequestDOMIdle(threshold, timeout time.Duration) error {
 	switch v := err.(type) {
 	case RuntimeError:
 		if val, _ := v.Exception.Value.(string); val == "timeout" {
-			return WaitTimeoutError{timeout: timeout}
+			return FutureTimeoutError{timeout: timeout}
 		}
 	}
 	return err
