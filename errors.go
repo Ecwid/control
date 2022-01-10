@@ -11,12 +11,13 @@ import (
 )
 
 var (
-	ErrNodeIsNotVisible    = errors.New("node is not visible")
-	ErrNodeIsOutOfViewport = errors.New("node is out of viewport")
-	ErrAlreadyNavigated    = errors.New("page already navigated to this address - nothing done")
-	ErrTargetDestroyed     = errors.New("this session was destroyed")
-	ErrDetachedFromTarget  = errors.New("detached from target")
-	ErrClickTimeout        = errors.New("no click registered")
+	ErrNodeIsNotVisible          = errors.New("node is not visible")
+	ErrNodeIsOutOfViewport       = errors.New("node is out of viewport")
+	ErrAlreadyNavigated          = errors.New("page already navigated to this address - nothing done")
+	ErrTargetDestroyed           = errors.New("this session was destroyed")
+	ErrDetachedFromTarget        = errors.New("detached from target")
+	ErrClickTimeout              = errors.New("no click registered")
+	ErrExecutionContextDestroyed = errors.New("execution context was destroyed")
 )
 
 type ErrTargetCrashed target.TargetCrashed
@@ -50,11 +51,11 @@ func (r RemoteObjectCastError) Error() string {
 	return fmt.Sprintf("cast to `%s` failed for value `%s`", r.cast, r.object.Type)
 }
 
-type WaitTimeoutError struct {
+type FutureTimeoutError struct {
 	timeout time.Duration
 }
 
-func (e WaitTimeoutError) Error() string {
+func (e FutureTimeoutError) Error() string {
 	return fmt.Sprintf("wait condition timeout reached out after %s", e.timeout)
 }
 

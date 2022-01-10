@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 	"time"
 
 	"github.com/ecwid/control"
@@ -18,8 +17,7 @@ func main() {
 	}
 	defer chromium.Close()
 	ctrl := control.New(chromium.GetClient())
-	ctrl.Client.Stderr = os.Stderr // enabled by default
-	//ctrl.Client.Stdout = os.Stdout
+	//ctrl.Client.Logger = os.Stdout
 	ctrl.Client.Timeout = time.Second * 60
 
 	go func() {
@@ -27,7 +25,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		if err := s1.Page().Navigate("https://google.com/", control.LifecycleIdleNetwork); err != nil {
+		if err := s1.Page().Navigate("https://google.com/", control.LifecycleIdleNetwork, time.Second*60); err != nil {
 			panic(err)
 		}
 	}()
@@ -38,7 +36,7 @@ func main() {
 	}
 
 	var page = session.Page() // main frame
-	err = page.Navigate("https://surfparadise.ecwid.com/", control.LifecycleIdleNetwork)
+	err = page.Navigate("https://surfparadise.ecwid.com/", control.LifecycleIdleNetwork, time.Second*60)
 	if err != nil {
 		panic(err)
 	}

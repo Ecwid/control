@@ -3,15 +3,15 @@ package control
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/ecwid/control/protocol/common"
 	"github.com/ecwid/control/protocol/runtime"
 	"github.com/ecwid/control/protocol/target"
-	"github.com/ecwid/control/transport/observe"
+	"github.com/ecwid/control/transport"
 )
 
 const (
@@ -23,14 +23,13 @@ type Session struct {
 	browser    *BrowserContext
 	id         target.SessionID
 	tid        target.TargetID
-	runtime    *dict
-	eventPool  chan observe.Value
-	Ctx        context.Context
+	executions *sync.Map
+	eventPool  chan transport.Event
+	context    context.Context
 	exit       func()
 	exitCode   error
-	observable *observe.Observable
+	publisher  *transport.Publisher
 	guid       *uint64 // observers incremental id
-	Timeout    time.Duration
 	Network    Network
 	Input      Input
 	Emulation  Emulation
@@ -38,10 +37,10 @@ type Session struct {
 
 func (s Session) Call(method string, send, recv interface{}) error {
 	select {
-	case <-s.Ctx.Done():
+	case <-s.context.Done():
 		return s.ExitCode()
 	default:
-		return s.browser.Client.Call(s.Ctx, string(s.id), method, send, recv)
+		return s.browser.Client.Call(string(s.id), method, send, recv)
 	}
 }
 
@@ -49,12 +48,12 @@ func (s Session) GetBrowserContext() *BrowserContext {
 	return s.browser
 }
 
-func (s Session) ID() string {
-	return string(s.id)
+func (s Session) GetTargetID() target.TargetID {
+	return s.tid
 }
 
-func (s Session) Event() string {
-	return s.ID()
+func (s Session) ID() string {
+	return string(s.id)
 }
 
 func (s Session) Page() *Frame {
@@ -62,7 +61,7 @@ func (s Session) Page() *Frame {
 }
 
 func (s Session) Frame(id common.FrameId) (*Frame, error) {
-	if s.runtime.Load(id) != -1 {
+	if _, ok := s.executions.Load(id); ok {
 		return &Frame{id: id, session: &s}, nil
 	}
 	return nil, NoSuchFrameError{id: id}
@@ -72,11 +71,15 @@ func (s Session) Activate() error {
 	return s.browser.ActivateTarget(s.tid)
 }
 
-func (s Session) Notify(val observe.Value) {
-	s.eventPool <- val
+func (s Session) Notify(val transport.Event) {
+	select {
+	case s.eventPool <- val:
+	default:
+		s.exitCode = errors.New("event pool is full, some kind of subscription callback is blocking the parsing of the events queue")
+	}
 }
 
-func (s *Session) handle(e observe.Value) error {
+func (s *Session) handle(e transport.Event) error {
 	switch e.Method {
 
 	case "Runtime.executionContextCreated":
@@ -85,7 +88,7 @@ func (s *Session) handle(e observe.Value) error {
 			return err
 		}
 		frameID := common.FrameId((v.Context.AuxData.(map[string]interface{}))["frameId"].(string))
-		s.runtime.Store(frameID, v.Context.Id)
+		s.executions.Store(frameID, v.Context.Id)
 
 	case "Target.targetCrashed":
 		var v = target.TargetCrashed{}
@@ -113,13 +116,13 @@ func (s *Session) handle(e observe.Value) error {
 		}
 
 	}
-	s.observable.Notify(e.Method, e)
+	s.publisher.Notify(e.Method, e)
 	return nil
 }
 
 func (s *Session) lifecycle() {
 	defer func() {
-		s.browser.Client.Unregister(s)
+		s.browser.Client.Unregister(transport.NewSimpleObserver(s.ID(), s.ID(), s.Notify))
 		s.exit()
 	}()
 	for e := range s.eventPool {
@@ -131,7 +134,7 @@ func (s *Session) lifecycle() {
 }
 
 func (s Session) onBindingCalled(name string, function func(string)) (cancel func()) {
-	return s.Subscribe("Runtime.bindingCalled", false, func(value observe.Value) {
+	return s.Subscribe("Runtime.bindingCalled", func(value transport.Event) {
 		bindingCalled := runtime.BindingCalled{}
 		_ = json.Unmarshal(value.Params, &bindingCalled)
 		if bindingCalled.Name == name {
@@ -140,18 +143,14 @@ func (s Session) onBindingCalled(name string, function func(string)) (cancel fun
 	})
 }
 
-func (s Session) Subscribe(event string, inSeparateThread bool, v func(e observe.Value)) (cancel func()) {
+func (s Session) Subscribe(event string, v func(e transport.Event)) (cancel func()) {
 	var (
 		uid = atomic.AddUint64(s.guid, 1)
-		val = observe.NewSimpleObserver(fmt.Sprintf("%d", uid), event, v)
+		val = transport.NewSimpleObserver(fmt.Sprintf("%d", uid), event, v)
 	)
-	if inSeparateThread {
-		s.observable.Register(observe.AsyncSimpleObserver(val))
-	} else {
-		s.observable.Register(val)
-	}
+	s.publisher.Register(val)
 	return func() {
-		s.observable.Unregister(val)
+		s.publisher.Unregister(val)
 	}
 }
 
@@ -161,7 +160,7 @@ func (s Session) Close() error {
 
 func (s Session) IsClosed() bool {
 	select {
-	case <-s.Ctx.Done():
+	case <-s.context.Done():
 		return true
 	default:
 		return false
@@ -172,45 +171,5 @@ func (s Session) ExitCode() error {
 	if s.exitCode != nil {
 		return s.exitCode
 	}
-	return s.Ctx.Err()
-}
-
-func (s Session) NewTargetCreatedCondition(createdTargetID *target.TargetID) *Promise {
-	return s.NewEventCondition("Target.targetCreated", func(value observe.Value) (bool, error) {
-		var v = target.TargetCreated{}
-		if err := json.Unmarshal(value.Params, &v); err != nil {
-			return false, err
-		}
-		if v.TargetInfo.Type == "page" && v.TargetInfo.OpenerId == s.tid {
-			if createdTargetID != nil {
-				*createdTargetID = v.TargetInfo.TargetId
-			}
-			return true, nil
-		}
-		return false, nil
-	})
-}
-
-type dict struct {
-	sync.Mutex
-	values map[common.FrameId]runtime.ExecutionContextId
-}
-
-func newDict() *dict {
-	return &dict{values: map[common.FrameId]runtime.ExecutionContextId{}}
-}
-
-func (m *dict) Store(key common.FrameId, val runtime.ExecutionContextId) {
-	m.Lock()
-	defer m.Unlock()
-	m.values[key] = val
-}
-
-func (m *dict) Load(key common.FrameId) runtime.ExecutionContextId {
-	m.Lock()
-	defer m.Unlock()
-	if val, ok := m.values[key]; ok {
-		return val
-	}
-	return -1
+	return s.context.Err()
 }
