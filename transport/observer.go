@@ -12,13 +12,13 @@ type Observer interface {
 
 type Publisher struct {
 	mx        sync.Mutex
-	observers []Observer
+	observers map[string]Observer
 }
 
 func NewPublisher() *Publisher {
 	return &Publisher{
 		mx:        sync.Mutex{},
-		observers: make([]Observer, 0),
+		observers: map[string]Observer{},
 	}
 }
 
@@ -28,7 +28,7 @@ func (o *Publisher) Notify(event string, val Event) {
 	o.mx.Lock()
 	defer o.mx.Unlock()
 	for _, e := range o.observers {
-		if (e.Event() == "*" || event == "" || e.Event() == event) && e.Update != nil {
+		if e.Event() == "*" || event == "" || e.Event() == event {
 			e.Update(val)
 		}
 	}
@@ -37,20 +37,13 @@ func (o *Publisher) Notify(event string, val Event) {
 func (o *Publisher) Register(val Observer) {
 	o.mx.Lock()
 	defer o.mx.Unlock()
-	o.observers = append(o.observers, val)
+	o.observers[val.ID()] = val
 }
 
 func (o *Publisher) Unregister(val Observer) {
 	o.mx.Lock()
 	defer o.mx.Unlock()
-	for n, e := range o.observers {
-		if e.ID() == val.ID() {
-			tail := len(o.observers) - 1
-			o.observers[n] = o.observers[tail]
-			o.observers = o.observers[:tail]
-			return
-		}
-	}
+	delete(o.observers, val.ID())
 }
 
 func NewSimpleObserver(id, event string, update func(value Event)) SimpleObserver {

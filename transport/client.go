@@ -23,7 +23,7 @@ type Client struct {
 	seq       uint64
 	pending   map[uint64]*Call
 	mutex     sync.Mutex
-	close     bool
+	closed    bool
 	Timeout   time.Duration
 	Logger    io.Writer
 }
@@ -53,7 +53,7 @@ func (c *Client) Close() error {
 	if err := c.Call("", "Browser.close", nil, nil); err != nil {
 		return err
 	}
-	c.close = true
+	c.terminate(ErrShutdown)
 	return nil
 }
 
@@ -92,11 +92,11 @@ func (c *Client) send(call *Call) error {
 	c.sendMutex.Lock()
 	defer c.sendMutex.Unlock()
 
-	c.mutex.Lock()
-	if c.close {
-		c.mutex.Unlock()
+	if c.closed {
 		return ErrShutdown
 	}
+
+	c.mutex.Lock()
 	seq := c.seq
 	c.seq++
 	call.ID = seq
@@ -114,15 +114,14 @@ func (c *Client) send(call *Call) error {
 		c.mutex.Unlock()
 		return err
 	}
-	log(c.Logger, fmt.Sprintf("send -> %s", string(body)))
+	c.log(fmt.Sprintf("send -> %s", string(body)))
 	return nil
 }
 
 func (c *Client) terminate(err error) {
 	c.sendMutex.Lock()
 	c.mutex.Lock()
-	log(c.Logger, fmt.Sprintf("terminate -> %v", err))
-	c.close = true
+	c.closed = true
 	for _, call := range c.pending {
 		call.done(Reply{Error: &Error{Message: err.Error()}})
 	}
@@ -130,40 +129,43 @@ func (c *Client) terminate(err error) {
 	c.sendMutex.Unlock()
 }
 
-func (c *Client) reader() {
-	var (
-		reply Reply
-		body  []byte
-		err   error
-	)
-	for {
-		reply = Reply{}
-		if _, body, err = c.conn.ReadMessage(); err != nil {
-			break
-		}
-		log(c.Logger, fmt.Sprintf("recv <- %s", string(body)))
-		if err = json.Unmarshal(body, &reply); err != nil {
-			break
-		}
-		if reply.ID == 0 {
-			c.Notify(reply.SessionID, Event{Method: reply.Method, Params: reply.Params})
-		} else {
-			c.mutex.Lock()
-			call := c.pending[reply.ID]
-			delete(c.pending, reply.ID)
-			c.mutex.Unlock()
-			if call == nil {
-				err = errors.New("reading error body")
-				break
-			}
-			call.done(reply)
-		}
+func (c *Client) read() error {
+	reply := Reply{}
+	_, body, err := c.conn.ReadMessage()
+	if err != nil {
+		return err
 	}
-	c.terminate(err)
+	c.log(fmt.Sprintf("recv <- %s", string(body)))
+	if err = json.Unmarshal(body, &reply); err != nil {
+		return err
+	}
+	if reply.ID == 0 {
+		c.Notify(reply.SessionID, Event{Method: reply.Method, Params: reply.Params})
+	} else {
+		c.mutex.Lock()
+		call := c.pending[reply.ID]
+		delete(c.pending, reply.ID)
+		c.mutex.Unlock()
+		if call == nil {
+			return errors.New("reading error body")
+		}
+		call.done(reply)
+	}
+	return nil
 }
 
-func log(std io.Writer, v interface{}) {
-	if std != nil {
-		_, _ = std.Write([]byte(fmt.Sprint(v) + "\n"))
+func (c *Client) reader() {
+	var err error
+	for {
+		if err = c.read(); err != nil {
+			c.terminate(err)
+			return
+		}
+	}
+}
+
+func (c *Client) log(v interface{}) {
+	if c.Logger != nil {
+		_, _ = c.Logger.Write([]byte(fmt.Sprint(v) + "\n"))
 	}
 }
