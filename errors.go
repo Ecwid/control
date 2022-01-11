@@ -18,7 +18,6 @@ var (
 	ErrDetachedFromTarget        = errors.New("detached from target")
 	ErrClickTimeout              = errors.New("no click registered")
 	ErrExecutionContextDestroyed = errors.New("execution context was destroyed")
-	ErrEventPoolFull             = errors.New("event pool is full, some kind of subscription callback is blocking the parsing of the events queue")
 )
 
 type ErrTargetCrashed target.TargetCrashed

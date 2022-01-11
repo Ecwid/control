@@ -74,7 +74,7 @@ func (s Session) Notify(val transport.Event) {
 	select {
 	case s.eventPool <- val:
 	default:
-		s.exitCode = ErrEventPoolFull
+		fmt.Println("event pool is full, some kind of subscription callback is blocking the parsing of the events queue")
 	}
 }
 

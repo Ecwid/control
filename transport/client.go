@@ -11,6 +11,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	defaultReadBufferSize  = 32 * 1024
+	defaultWriteBufferSize = 32 * 1024
+)
+
 type Client struct {
 	*Publisher
 	conn      *websocket.Conn
@@ -24,7 +29,10 @@ type Client struct {
 }
 
 func Dial(url string) (*Client, error) {
-	var dialer = websocket.Dialer{}
+	var dialer = websocket.Dialer{
+		ReadBufferSize:  defaultReadBufferSize,
+		WriteBufferSize: defaultWriteBufferSize,
+	}
 	conn, _, err := dialer.Dial(url, nil)
 	if err != nil {
 		return nil, err
@@ -98,7 +106,6 @@ func (c *Client) send(call *Call) error {
 	if err != nil {
 		return err
 	}
-	log(c.Logger, fmt.Sprintf("send -> %s", string(body)))
 	err = c.conn.WriteMessage(websocket.TextMessage, body)
 	if err != nil {
 		c.mutex.Lock()
@@ -106,6 +113,7 @@ func (c *Client) send(call *Call) error {
 		c.mutex.Unlock()
 		return err
 	}
+	log(c.Logger, fmt.Sprintf("send -> %s", string(body)))
 	return nil
 }
 
