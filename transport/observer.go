@@ -76,5 +76,5 @@ func (o SimpleObserver) Event() string {
 }
 
 func (o SimpleObserver) Update(val Event) {
-	o.update(val)
+	go o.update(val)
 }
