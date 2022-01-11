@@ -7,6 +7,7 @@ import (
 
 	"github.com/ecwid/control"
 	"github.com/ecwid/control/chrome"
+	"github.com/ecwid/control/transport"
 )
 
 func main() {
@@ -25,7 +26,13 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		if err := s1.Page().Navigate("https://google.com/", control.LifecycleIdleNetwork, time.Second*60); err != nil {
+		cancel := s1.Subscribe("Page.domContentEventFired", func(e transport.Event) {
+			v, err1 := s1.Page().GetNavigationEntry()
+			log.Println(v)
+			log.Println(err1)
+		})
+		defer cancel()
+		if err = s1.Page().Navigate("https://google.com/", control.LifecycleIdleNetwork, time.Second*60); err != nil {
 			panic(err)
 		}
 	}()

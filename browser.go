@@ -77,7 +77,7 @@ func (b *BrowserContext) runSession(targetID target.TargetID, sessionID target.S
 	session.Emulation = Emulation{s: session}
 
 	go session.lifecycle()
-	b.Client.Register(transport.NewSimpleObserver(string(sessionID), string(sessionID), session.Notify))
+	b.Client.Register(session)
 
 	if err = page.Enable(session); err != nil {
 		return nil, err

@@ -55,6 +55,10 @@ func (s Session) ID() string {
 	return string(s.id)
 }
 
+func (s Session) Event() string {
+	return s.ID()
+}
+
 func (s Session) Page() *Frame {
 	return &Frame{id: common.FrameId(s.tid), session: &s}
 }
@@ -70,7 +74,7 @@ func (s Session) Activate() error {
 	return s.browser.ActivateTarget(s.tid)
 }
 
-func (s Session) Notify(val transport.Event) {
+func (s Session) Update(val transport.Event) {
 	select {
 	case s.eventPool <- val:
 	default:
@@ -121,7 +125,7 @@ func (s *Session) handle(e transport.Event) error {
 
 func (s *Session) lifecycle() {
 	defer func() {
-		s.browser.Client.Unregister(transport.NewSimpleObserver(s.ID(), s.ID(), s.Notify))
+		s.browser.Client.Unregister(s)
 		s.exit()
 	}()
 	for e := range s.eventPool {

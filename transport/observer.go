@@ -5,7 +5,7 @@ import (
 )
 
 type Observer interface {
-	Hash() string     // unique observer's id, attaching and detaching by this id
+	ID() string       // unique observer's id, attaching and detaching by this id
 	Event() string    // on what event it should notified
 	Update(val Event) // notification callback
 }
@@ -44,7 +44,7 @@ func (o *Publisher) Unregister(val Observer) {
 	o.mx.Lock()
 	defer o.mx.Unlock()
 	for n, e := range o.observers {
-		if e.Hash() == val.Hash() {
+		if e.ID() == val.ID() {
 			tail := len(o.observers) - 1
 			o.observers[n] = o.observers[tail]
 			o.observers = o.observers[:tail]
@@ -53,22 +53,22 @@ func (o *Publisher) Unregister(val Observer) {
 	}
 }
 
-func NewSimpleObserver(hash, event string, update func(value Event)) SimpleObserver {
+func NewSimpleObserver(id, event string, update func(value Event)) SimpleObserver {
 	return SimpleObserver{
-		hash:   hash,
+		id:     id,
 		event:  event,
 		update: update,
 	}
 }
 
 type SimpleObserver struct {
-	hash   string
+	id     string
 	event  string
 	update func(val Event)
 }
 
-func (o SimpleObserver) Hash() string {
-	return o.hash
+func (o SimpleObserver) ID() string {
+	return o.id
 }
 
 func (o SimpleObserver) Event() string {

@@ -126,8 +126,8 @@ func (c *Client) terminate(err error) {
 	for _, call := range c.pending {
 		call.done(Reply{Error: &Error{Message: err.Error()}})
 	}
-	c.sendMutex.Unlock()
 	c.mutex.Unlock()
+	c.sendMutex.Unlock()
 }
 
 func (c *Client) reader() {
