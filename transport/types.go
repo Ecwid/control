@@ -40,6 +40,14 @@ type Call struct {
 	Reply     chan Reply  `json:"-"`
 }
 
+func (call *Call) done(r Reply) {
+	select {
+	case call.Reply <- r:
+	default:
+		// We don't want to block here.
+	}
+}
+
 type CallTimeoutError struct {
 	Call    *Call
 	Timeout time.Duration

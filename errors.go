@@ -18,6 +18,7 @@ var (
 	ErrDetachedFromTarget        = errors.New("detached from target")
 	ErrClickTimeout              = errors.New("no click registered")
 	ErrExecutionContextDestroyed = errors.New("execution context was destroyed")
+	ErrEventPoolFull             = errors.New("event pool is full, some kind of subscription callback is blocking the parsing of the events queue")
 )
 
 type ErrTargetCrashed target.TargetCrashed
@@ -56,7 +57,7 @@ type FutureTimeoutError struct {
 }
 
 func (e FutureTimeoutError) Error() string {
-	return fmt.Sprintf("wait condition timeout reached out after %s", e.timeout)
+	return fmt.Sprintf("future timeout has expired (%s)", e.timeout)
 }
 
 type ClickTargetOverlappedError struct {
