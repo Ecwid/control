@@ -30,8 +30,9 @@ type Client struct {
 
 func Dial(url string) (*Client, error) {
 	var dialer = websocket.Dialer{
-		ReadBufferSize:  defaultReadBufferSize,
-		WriteBufferSize: defaultWriteBufferSize,
+		HandshakeTimeout: 45 * time.Second,
+		ReadBufferSize:   defaultReadBufferSize,
+		WriteBufferSize:  defaultWriteBufferSize,
 	}
 	conn, _, err := dialer.Dial(url, nil)
 	if err != nil {
