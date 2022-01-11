@@ -11,11 +11,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const (
-	defaultReadBufferSize  = 32 * 1024
-	defaultWriteBufferSize = 32 * 1024
-)
-
 type Client struct {
 	*Publisher
 	conn      *websocket.Conn
@@ -29,10 +24,7 @@ type Client struct {
 }
 
 func Dial(url string) (*Client, error) {
-	var dialer = websocket.Dialer{
-		ReadBufferSize:  defaultReadBufferSize,
-		WriteBufferSize: defaultWriteBufferSize,
-	}
+	var dialer = websocket.Dialer{}
 	conn, _, err := dialer.Dial(url, nil)
 	if err != nil {
 		return nil, err
