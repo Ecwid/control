@@ -5,15 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
-)
-
-const (
-	defaultReadBufferSize  = 32 * 1024
-	defaultWriteBufferSize = 32 * 1024
 )
 
 type Client struct {
@@ -31,8 +27,7 @@ type Client struct {
 func Dial(url string) (*Client, error) {
 	var dialer = websocket.Dialer{
 		HandshakeTimeout: 45 * time.Second,
-		ReadBufferSize:   defaultReadBufferSize,
-		WriteBufferSize:  defaultWriteBufferSize,
+		Proxy:            http.ProxyFromEnvironment,
 	}
 	conn, _, err := dialer.Dial(url, nil)
 	if err != nil {
