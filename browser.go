@@ -17,9 +17,7 @@ type BrowserContext struct {
 }
 
 func New(client *transport.Client) *BrowserContext {
-	val := &BrowserContext{Client: client}
-	_ = val.SetDiscoverTargets(true)
-	return val
+	return &BrowserContext{Client: client}
 }
 
 func (b BrowserContext) Call(method string, send, recv interface{}) error {
@@ -47,17 +45,6 @@ func (b BrowserContext) createTarget(url string) (target.TargetID, error) {
 		return "", err
 	}
 	return r.TargetId, nil
-}
-
-func (b BrowserContext) attachToTarget(id target.TargetID) (target.SessionID, error) {
-	val, err := target.AttachToTarget(b, target.AttachToTargetArgs{
-		TargetId: id,
-		Flatten:  true,
-	})
-	if err != nil {
-		return "", err
-	}
-	return val.SessionId, nil
 }
 
 func (b *BrowserContext) runSession(targetID target.TargetID, sessionID target.SessionID) (session *Session, err error) {
@@ -91,6 +78,9 @@ func (b *BrowserContext) runSession(targetID target.TargetID, sessionID target.S
 	if err = page.SetLifecycleEventsEnabled(session, page.SetLifecycleEventsEnabledArgs{Enabled: true}); err != nil {
 		return nil, err
 	}
+	if err = target.SetDiscoverTargets(session, target.SetDiscoverTargetsArgs{Discover: true}); err != nil {
+		return nil, err
+	}
 	// maxPostDataSize - Longest post body size (in bytes) that would be included in requestWillBeSent notification
 	if err = network.Enable(session, network.EnableArgs{MaxPostDataSize: 2 * 1024}); err != nil {
 		return nil, err
@@ -99,19 +89,25 @@ func (b *BrowserContext) runSession(targetID target.TargetID, sessionID target.S
 }
 
 func (b *BrowserContext) AttachPageTarget(id target.TargetID) (*Session, error) {
-	sid, err := b.attachToTarget(id)
+	val, err := target.AttachToTarget(b, target.AttachToTargetArgs{
+		TargetId: id,
+		Flatten:  true,
+	})
 	if err != nil {
 		return nil, err
 	}
-	return b.runSession(id, sid)
+	return b.runSession(id, val.SessionId)
 }
 
 func (b *BrowserContext) CreatePageTarget(url string) (*Session, error) {
-	tid, err := b.createTarget(url)
+	if url == "" {
+		url = blankPage // headless chrome crash when url is empty
+	}
+	r, err := target.CreateTarget(b, target.CreateTargetArgs{Url: url})
 	if err != nil {
 		return nil, err
 	}
-	return b.AttachPageTarget(tid)
+	return b.AttachPageTarget(r.TargetId)
 }
 
 func (b BrowserContext) ActivateTarget(id target.TargetID) error {
