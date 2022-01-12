@@ -18,7 +18,6 @@ func main() {
 	}
 	defer chromium.Close()
 	ctrl := control.New(chromium.GetClient())
-	//ctrl.Client.Logger = os.Stdout
 	ctrl.Client.Timeout = time.Second * 60
 
 	go func() {

@@ -91,9 +91,6 @@ func (b *BrowserContext) runSession(targetID target.TargetID, sessionID target.S
 	if err = page.SetLifecycleEventsEnabled(session, page.SetLifecycleEventsEnabledArgs{Enabled: true}); err != nil {
 		return nil, err
 	}
-	if err = target.SetDiscoverTargets(session, target.SetDiscoverTargetsArgs{Discover: true}); err != nil {
-		return nil, err
-	}
 	// maxPostDataSize - Longest post body size (in bytes) that would be included in requestWillBeSent notification
 	if err = network.Enable(session, network.EnableArgs{MaxPostDataSize: 2 * 1024}); err != nil {
 		return nil, err

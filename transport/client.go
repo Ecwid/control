@@ -3,8 +3,6 @@ package transport
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -21,7 +19,6 @@ type Client struct {
 	mutex     sync.Mutex
 	closed    bool
 	Timeout   time.Duration
-	Logger    io.Writer
 }
 
 func Dial(url string) (*Client, error) {
@@ -40,7 +37,7 @@ func Dial(url string) (*Client, error) {
 		pending:   map[uint64]*Call{},
 		Timeout:   time.Second * 60,
 	}
-	go client.reader()
+	go client.reading()
 	return client, nil
 }
 
@@ -48,6 +45,7 @@ func (c *Client) Close() error {
 	if err := c.Call("", "Browser.close", nil, nil); err != nil {
 		return err
 	}
+	c.conn.Close()
 	c.terminate(ErrShutdown)
 	return nil
 }
@@ -98,18 +96,12 @@ func (c *Client) send(call *Call) error {
 	c.pending[seq] = call
 	c.mutex.Unlock()
 
-	body, err := json.Marshal(call)
-	if err != nil {
-		return err
-	}
-	err = c.conn.WriteMessage(websocket.TextMessage, body)
-	if err != nil {
+	if err := c.conn.WriteJSON(call); err != nil {
 		c.mutex.Lock()
 		delete(c.pending, seq)
 		c.mutex.Unlock()
 		return err
 	}
-	c.log(fmt.Sprintf("send -> %s", string(body)))
 	return nil
 }
 
@@ -124,14 +116,9 @@ func (c *Client) terminate(err error) {
 	c.sendMutex.Unlock()
 }
 
-func (c *Client) read() error {
+func (c *Client) nextReply() error {
 	reply := Reply{}
-	_, body, err := c.conn.ReadMessage()
-	if err != nil {
-		return err
-	}
-	c.log(fmt.Sprintf("recv <- %s", string(body)))
-	if err = json.Unmarshal(body, &reply); err != nil {
+	if err := c.conn.ReadJSON(&reply); err != nil {
 		return err
 	}
 	if reply.ID == 0 {
@@ -149,18 +136,9 @@ func (c *Client) read() error {
 	return nil
 }
 
-func (c *Client) reader() {
+func (c *Client) reading() {
 	var err error
-	for {
-		if err = c.read(); err != nil {
-			c.terminate(err)
-			return
-		}
+	for ; err == nil; err = c.nextReply() {
 	}
-}
-
-func (c *Client) log(v interface{}) {
-	if c.Logger != nil {
-		_, _ = c.Logger.Write([]byte(fmt.Sprint(v) + "\n"))
-	}
+	c.terminate(err)
 }
