@@ -55,7 +55,7 @@ func (c *Client) Call(sessionID, method string, args, value interface{}) error {
 		SessionID: sessionID,
 		Method:    method,
 		Args:      args,
-		Reply:     make(chan Reply, 1),
+		reply:     make(chan Reply, 1),
 	}
 	if err := c.send(call); err != nil {
 		return err
@@ -65,7 +65,7 @@ func (c *Client) Call(sessionID, method string, args, value interface{}) error {
 
 	var r Reply
 	select {
-	case r = <-call.Reply:
+	case r = <-call.reply:
 		if r.Error != nil {
 			return r.Error
 		}

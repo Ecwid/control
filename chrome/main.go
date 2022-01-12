@@ -117,6 +117,7 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer stderr.Close()
 	if err = browser.cmd.Start(); err != nil {
 		return nil, err
 	}

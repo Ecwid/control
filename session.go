@@ -37,7 +37,10 @@ type Session struct {
 func (s Session) Call(method string, send, recv interface{}) error {
 	select {
 	case <-s.context.Done():
-		return s.ExitCode()
+		if s.exitCode != nil {
+			return s.exitCode
+		}
+		return s.context.Err()
 	default:
 		return s.browser.Client.Call(string(s.id), method, send, recv)
 	}
@@ -168,11 +171,4 @@ func (s Session) IsClosed() bool {
 	default:
 		return false
 	}
-}
-
-func (s Session) ExitCode() error {
-	if s.exitCode != nil {
-		return s.exitCode
-	}
-	return s.context.Err()
 }

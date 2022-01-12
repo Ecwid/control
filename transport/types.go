@@ -37,12 +37,12 @@ type Call struct {
 	SessionID string      `json:"sessionId,omitempty"`
 	Method    string      `json:"method"`           // The name of the service and method to call.
 	Args      interface{} `json:"params,omitempty"` // The argument to the function (*struct).
-	Reply     chan Reply  `json:"-"`
+	reply     chan Reply  `json:"-"`
 }
 
 func (call *Call) done(r Reply) {
 	select {
-	case call.Reply <- r:
+	case call.reply <- r:
 	default:
 		// We don't want to block here.
 	}
