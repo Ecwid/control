@@ -9,7 +9,7 @@ import (
 	"github.com/ecwid/control/transport"
 )
 
-func (s *Session) GetResponse(predicate func(request *network.Request) bool) Future {
+func (s *Session) GetFutureResponse(predicate func(request *network.Request) bool) Future {
 	var requestID network.RequestId
 	return s.Observe("*", func(value transport.Event, resolve func(interface{}), reject func(error)) {
 		switch value.Method {
@@ -31,7 +31,7 @@ func (s *Session) GetResponse(predicate func(request *network.Request) bool) Fut
 				return
 			}
 			if recv.RequestId == requestID {
-				resolve(recv)
+				resolve(recv.Response)
 				return
 			}
 

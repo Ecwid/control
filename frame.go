@@ -197,7 +197,7 @@ func (f Frame) GetNavigationEntry() (*page.NavigationEntry, error) {
 		return nil, err
 	}
 	if val.CurrentIndex == -1 {
-		return &page.NavigationEntry{Url: blankPage}, nil
+		return &page.NavigationEntry{Url: Blank}, nil
 	}
 	return val.Entries[val.CurrentIndex], nil
 }

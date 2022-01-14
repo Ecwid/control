@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	blankPage = "about:blank"
+	Blank     = "about:blank"
 	bindClick = "_on_click"
 )
 

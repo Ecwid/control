@@ -36,17 +36,6 @@ func (b BrowserContext) SetDiscoverTargets(discover bool) error {
 	return target.SetDiscoverTargets(b, target.SetDiscoverTargetsArgs{Discover: discover})
 }
 
-func (b BrowserContext) createTarget(url string) (target.TargetID, error) {
-	if url == "" {
-		url = blankPage // headless chrome crash when url is empty
-	}
-	r, err := target.CreateTarget(b, target.CreateTargetArgs{Url: url})
-	if err != nil {
-		return "", err
-	}
-	return r.TargetId, nil
-}
-
 func (b *BrowserContext) runSession(targetID target.TargetID, sessionID target.SessionID) (session *Session, err error) {
 	var uid uint64 = 0
 	session = &Session{
@@ -101,7 +90,7 @@ func (b *BrowserContext) AttachPageTarget(id target.TargetID) (*Session, error) 
 
 func (b *BrowserContext) CreatePageTarget(url string) (*Session, error) {
 	if url == "" {
-		url = blankPage // headless chrome crash when url is empty
+		url = Blank // headless chrome crash when url is empty
 	}
 	r, err := target.CreateTarget(b, target.CreateTargetArgs{Url: url})
 	if err != nil {

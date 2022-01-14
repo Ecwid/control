@@ -45,7 +45,7 @@ func (c *Client) Close() error {
 	if err := c.Call("", "Browser.close", nil, nil); err != nil {
 		return err
 	}
-	c.conn.Close()
+	_ = c.conn.Close()
 	c.terminate(ErrShutdown)
 	return nil
 }
@@ -116,7 +116,7 @@ func (c *Client) terminate(err error) {
 	c.sendMutex.Unlock()
 }
 
-func (c *Client) nextReply() error {
+func (c *Client) read() error {
 	reply := Reply{}
 	if err := c.conn.ReadJSON(&reply); err != nil {
 		return err
@@ -138,7 +138,7 @@ func (c *Client) nextReply() error {
 
 func (c *Client) reading() {
 	var err error
-	for ; err == nil; err = c.nextReply() {
+	for ; err == nil; err = c.read() {
 	}
 	c.terminate(err)
 }
