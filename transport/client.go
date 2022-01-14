@@ -23,6 +23,8 @@ type Client struct {
 
 func Dial(url string) (*Client, error) {
 	var dialer = websocket.Dialer{
+		ReadBufferSize:   8192,
+		WriteBufferSize:  8192,
 		HandshakeTimeout: 45 * time.Second,
 		Proxy:            http.ProxyFromEnvironment,
 	}
