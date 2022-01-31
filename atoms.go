@@ -11,7 +11,7 @@ const (
 // Atom JS functions
 const (
 	functionClearText            = `function(){("INPUT"===this.nodeName||"TEXTAREA"===this.nodeName)?this.value="":this.innerText=""}`
-	functionGetText              = `function(){switch(this.tagName){case"INPUT":case"TEXTAREA":return this.value;case"SELECT":return Array.from(this.selectedOptions).map(b=>b.innerText).join();default:return this.innerText||this.textContent;}}`
+	functionGetText              = `function(){switch(this.tagName){case"INPUT":case"TEXTAREA":return this.value;case"SELECT":return Array.from(this.selectedOptions).map(b=>b.innerText).join();default:return this.innerText||this.textContent.trim();}}`
 	functionDispatchEvents       = `function(l){for(const e of l)this.dispatchEvent(new Event(e,{'bubbles':!0}))}`
 	functionPreventMissClick     = `function(){let b=this,c={capture:!0,once:!1},d=c=>{for(let d=c;d;d=d.parentNode)if(d===b)return!0;return!1},f=b=>{b.isTrusted&&(d(b.target)?_on_click("1"):(b.stopPropagation(),b.preventDefault(),_on_click((b.target.outerHTML||"").substr(0,256))),document.removeEventListener("click",f,c))};document.addEventListener("click",f,c)}`
 	functionSetAttr              = `function(a,v){this.setAttribute(a,v)}`
