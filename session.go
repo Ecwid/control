@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 
@@ -35,15 +36,11 @@ type Session struct {
 }
 
 func (s Session) Call(method string, send, recv interface{}) error {
-	select {
-	case <-s.context.Done():
-		if s.exitCode != nil {
-			return s.exitCode
-		}
-		return s.context.Err()
-	default:
-		return s.browser.Client.Call(string(s.id), method, send, recv)
+	var err = s.browser.Client.CallWithContext(s.context, string(s.id), method, send, recv)
+	if err == context.Canceled && s.exitCode != nil {
+		return s.exitCode
 	}
+	return err
 }
 
 func (s Session) GetBrowserContext() *BrowserContext {
@@ -109,6 +106,7 @@ func (s *Session) handle(e transport.Event) error {
 			return err
 		}
 		if v.TargetId == s.tid {
+			log.Print("Target.targetDestroyed ", v.TargetId)
 			return ErrTargetDestroyed
 		}
 
@@ -118,6 +116,7 @@ func (s *Session) handle(e transport.Event) error {
 			return err
 		}
 		if v.SessionId == s.id {
+			log.Print("Target.detachedFromTarget ", v.SessionId)
 			return ErrDetachedFromTarget
 		}
 
@@ -133,6 +132,7 @@ func (s *Session) lifecycle() {
 	}()
 	for e := range s.eventPool {
 		if err := s.handle(e); err != nil {
+			log.Print("ERROR ", err.Error())
 			s.exitCode = err
 			return
 		}
@@ -165,6 +165,7 @@ func (s Session) Close() error {
 }
 
 func (s Session) IsClosed() bool {
+	log.Print("IsClosed")
 	select {
 	case <-s.context.Done():
 		return true
