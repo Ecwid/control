@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 	"sync/atomic"
 
@@ -106,7 +105,6 @@ func (s *Session) handle(e transport.Event) error {
 			return err
 		}
 		if v.TargetId == s.tid {
-			log.Print("Target.targetDestroyed ", v.TargetId)
 			return ErrTargetDestroyed
 		}
 
@@ -116,7 +114,6 @@ func (s *Session) handle(e transport.Event) error {
 			return err
 		}
 		if v.SessionId == s.id {
-			log.Print("Target.detachedFromTarget ", v.SessionId)
 			return ErrDetachedFromTarget
 		}
 
@@ -132,7 +129,6 @@ func (s *Session) lifecycle() {
 	}()
 	for e := range s.eventPool {
 		if err := s.handle(e); err != nil {
-			log.Print("ERROR ", err.Error())
 			s.exitCode = err
 			return
 		}
@@ -165,7 +161,6 @@ func (s Session) Close() error {
 }
 
 func (s Session) IsClosed() bool {
-	log.Print("IsClosed")
 	select {
 	case <-s.context.Done():
 		return true
