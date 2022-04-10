@@ -101,8 +101,9 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 		"--disable-component-extensions-with-background-pages",
 		"--disable-ipc-flooding-protection",
 		"--disable-prompt-on-repost",
+		"--disable-site-isolation-trials",
 		"--metrics-recording-only",
-		"--disable-features=site-per-process,Translate,BlinkGenPropertyTrees",
+		"--disable-features=site-per-process,Translate,BlinkGenPropertyTrees,BackForwardCache",
 		"--enable-features=NetworkService,NetworkServiceInProcess",
 		"--user-data-dir=" + browser.UserDataDir,
 	}
