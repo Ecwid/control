@@ -118,13 +118,12 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer stderr.Close()
 	if err = browser.cmd.Start(); err != nil {
 		return nil, err
 	}
 	browser.webSocketURL, err = addrFromStderr(stderr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %s", err.Error(), browser.cmd.ProcessState.String())
 	}
 	browser.client, err = transport.Dial(browser.webSocketURL)
 	return browser, err
