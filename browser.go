@@ -21,7 +21,7 @@ func New(client *transport.Client) *BrowserContext {
 }
 
 func (b BrowserContext) Call(method string, send, recv interface{}) error {
-	return b.Client.CallWithContext(context.TODO(), "", method, send, recv)
+	return b.Client.Call("", method, send, recv)
 }
 
 func (b BrowserContext) Crash() error {

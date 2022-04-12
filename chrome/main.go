@@ -1,6 +1,7 @@
 package chrome
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -100,7 +101,6 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 		"--disable-component-extensions-with-background-pages",
 		"--disable-ipc-flooding-protection",
 		"--disable-prompt-on-repost",
-		"--disable-site-isolation-trials",
 		"--metrics-recording-only",
 		"--disable-features=site-per-process,Translate,BlinkGenPropertyTrees",
 		"--enable-features=NetworkService,NetworkServiceInProcess",
@@ -117,6 +117,7 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer stderr.Close()
 	if err = browser.cmd.Start(); err != nil {
 		return nil, err
 	}
@@ -128,35 +129,26 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 	return browser, err
 }
 
-func addrFromStderr(rc io.ReadCloser) (url string, err error) {
-	const prefix = "\nDevTools listening on"
+func addrFromStderr(rc io.ReadCloser) (string, error) {
+	const prefix = "DevTools listening on"
 	var (
-		n       int
-		buf     = make([]byte, 256)
-		timeout = time.Second * 20
-		timer   = time.NewTimer(timeout)
-		stop    = make(chan struct{}, 1)
+		url     = ""
+		scanner = bufio.NewScanner(rc)
+		lines   []string
 	)
-	defer timer.Stop()
-	go func() {
-		for {
-			n, err = rc.Read(buf)
-			if err != nil {
-				break
-			} else {
-				line := string(buf[0:n])
-				if s := strings.TrimPrefix(line, prefix); s != line {
-					url = strings.TrimSpace(s)
-					break
-				}
-			}
+	for scanner.Scan() {
+		line := scanner.Text()
+		if s := strings.TrimPrefix(line, prefix); s != line {
+			url = strings.TrimSpace(s)
+			break
 		}
-		stop <- struct{}{}
-	}()
-	select {
-	case <-stop:
-		return url, err
-	case <-timer.C:
-		return "", fmt.Errorf("chrome did not start in %s: %s", timeout, string(buf))
+		lines = append(lines, line)
 	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+	if url == "" {
+		return "", fmt.Errorf("chrome stopped too early; stderr:\n%s", strings.Join(lines, "\n"))
+	}
+	return url, nil
 }
