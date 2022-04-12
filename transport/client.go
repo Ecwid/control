@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -44,7 +45,7 @@ func Dial(url string) (*Client, error) {
 }
 
 func (c *Client) Close() error {
-	if err := c.Call("", "Browser.close", nil, nil); err != nil {
+	if err := c.CallWithContext(context.TODO(), "", "Browser.close", nil, nil); err != nil {
 		return err
 	}
 	_ = c.conn.Close()
@@ -52,7 +53,7 @@ func (c *Client) Close() error {
 	return nil
 }
 
-func (c *Client) Call(sessionID, method string, args, value interface{}) error {
+func (c *Client) CallWithContext(context context.Context, sessionID, method string, args, value interface{}) error {
 	var call = &Call{
 		SessionID: sessionID,
 		Method:    method,
@@ -67,6 +68,8 @@ func (c *Client) Call(sessionID, method string, args, value interface{}) error {
 
 	var r Reply
 	select {
+	case <-context.Done():
+		return context.Err()
 	case r = <-call.reply:
 		if r.Error != nil {
 			return r.Error

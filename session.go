@@ -35,15 +35,11 @@ type Session struct {
 }
 
 func (s Session) Call(method string, send, recv interface{}) error {
-	select {
-	case <-s.context.Done():
-		if s.exitCode != nil {
-			return s.exitCode
-		}
-		return s.context.Err()
-	default:
-		return s.browser.Client.Call(string(s.id), method, send, recv)
+	var err = s.browser.Client.CallWithContext(s.context, string(s.id), method, send, recv)
+	if err == context.Canceled && s.exitCode != nil {
+		return s.exitCode
 	}
+	return err
 }
 
 func (s Session) GetBrowserContext() *BrowserContext {
