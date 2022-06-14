@@ -80,8 +80,7 @@ func (s Session) Activate() error {
 func (s Session) Update(val transport.Event) {
 	select {
 	case s.eventPool <- val:
-	default:
-		fmt.Println("event pool is full, some kind of subscription callback is blocking the parsing of the events queue")
+	case <-s.context.Done():
 	}
 }
 
