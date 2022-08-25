@@ -58,6 +58,7 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 		"/usr/bin/google-chrome",
 		"headless-shell",
+		"browser",
 		"chromium",
 		"chromium-browser",
 		"google-chrome",
