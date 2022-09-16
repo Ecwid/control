@@ -62,13 +62,12 @@ func (f Frame) GetLifecycleEvent(event LifecycleEventType) Future {
 	})
 }
 
-func (f Frame) Navigate(url string, eventType LifecycleEventType, timeout time.Duration) error {
-	future := f.GetLifecycleEvent(eventType)
+func (f Frame) Navigate(url string, waitEvent LifecycleEventType, timeout time.Duration) error {
+	future := f.GetLifecycleEvent(waitEvent)
 	defer future.Cancel()
 	nav, err := page.Navigate(f, page.NavigateArgs{
-		Url:            url,
-		TransitionType: "typed",
-		FrameId:        f.id,
+		Url:     url,
+		FrameId: f.id,
 	})
 	if err != nil {
 		return err

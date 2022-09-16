@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/ecwid/control/protocol/common"
-
 	"github.com/ecwid/control/protocol/target"
 )
 
