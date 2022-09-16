@@ -9,8 +9,9 @@ import (
 	"github.com/ecwid/control/transport"
 )
 
-func (s *Session) GetResponseReceived(predicate func(request *network.Request) bool) Future {
+func (s *Session) CaptureResponseReceived(condition func(request *network.Request) bool, rejectOnLoadingFailed bool) Future { // Future<network.ResponseReceived>
 	var requestID network.RequestId
+
 	return s.Observe("*", func(value transport.Event, resolve func(interface{}), reject func(error)) {
 		switch value.Method {
 
@@ -20,7 +21,7 @@ func (s *Session) GetResponseReceived(predicate func(request *network.Request) b
 				reject(err)
 				return
 			}
-			if predicate(sent.Request) {
+			if condition(sent.Request) {
 				requestID = sent.RequestId
 			}
 
@@ -36,14 +37,16 @@ func (s *Session) GetResponseReceived(predicate func(request *network.Request) b
 			}
 
 		case "Network.loadingFailed":
-			var fail = network.LoadingFailed{}
-			if err := json.Unmarshal(value.Params, &fail); err != nil {
-				reject(err)
-				return
-			}
-			if fail.RequestId == requestID {
-				reject(errors.New(fail.ErrorText))
-				return
+			if rejectOnLoadingFailed {
+				var fail = network.LoadingFailed{}
+				if err := json.Unmarshal(value.Params, &fail); err != nil {
+					reject(err)
+					return
+				}
+				if fail.RequestId == requestID {
+					reject(errors.New(fail.ErrorText))
+					return
+				}
 			}
 		}
 	})

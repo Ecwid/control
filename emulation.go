@@ -1,8 +1,6 @@
 package control
 
 import (
-	"math"
-
 	"github.com/ecwid/control/mobile"
 	"github.com/ecwid/control/protocol/common"
 	"github.com/ecwid/control/protocol/emulation"
@@ -60,18 +58,4 @@ func (e Emulation) Emulate(device *mobile.Device) error {
 		return err
 	}
 	return e.SetUserAgentOverride(device.UserAgent, "", "", nil)
-}
-
-func (e Emulation) FitZoomToWindow() error {
-	view, err := e.s.GetLayoutMetrics()
-	if err != nil {
-		return err
-	}
-
-	return e.SetDeviceMetricsOverride(emulation.SetDeviceMetricsOverrideArgs{
-		Width:             view.CssLayoutViewport.ClientWidth,
-		Height:            int(math.Ceil(view.CssContentSize.Height)),
-		DeviceScaleFactor: 1,
-		Mobile:            false,
-	})
 }
