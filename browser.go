@@ -43,7 +43,7 @@ func (b *BrowserContext) runSession(targetID target.TargetID, sessionID target.S
 		id:         sessionID,
 		tid:        targetID,
 		browser:    b,
-		eventPool:  make(chan transport.Event, 1000),
+		eventPool:  make(chan transport.Event, 20000),
 		publisher:  transport.NewPublisher(),
 		executions: &sync.Map{},
 	}
