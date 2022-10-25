@@ -3,16 +3,16 @@ package control
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/ecwid/control/transport"
 )
 
 const (
-	promisePending  = 0
-	promiseResolved = 1
-	promiseRejected = 2
+	pending = iota + 0
+	resolved
+	rejected
+	cancelled
 )
 
 // a read-only view of promise
@@ -21,38 +21,50 @@ type Future struct {
 }
 
 type promise struct {
-	once       *sync.Once
+	onDefer    *sync.Once
+	mutex      *sync.Mutex
 	context    context.Context
-	done       chan interface{}
-	err        chan error
 	cancelFunc func()
-	state      *int32
+	state      int32
+	done       chan struct{}
+	value      interface{}
+	error      error
 }
 
 func (u promise) resolve(val interface{}) {
-	select {
-	case u.done <- val:
-		atomic.StoreInt32(u.state, promiseResolved)
-	default:
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	if u.state == pending {
+		u.state = resolved
+		u.value = val
+		u.done <- struct{}{}
 	}
 }
 
 func (u promise) reject(err error) {
-	select {
-	case u.err <- err:
-		atomic.StoreInt32(u.state, promiseRejected)
-	default:
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	if u.state == pending {
+		u.state = rejected
+		u.error = err
+		u.done <- struct{}{}
 	}
 }
 
 func (u promise) isPending() bool {
-	return atomic.LoadInt32(u.state) == promisePending
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	return u.state == pending
 }
 
 func (u promise) cancel() {
-	u.once.Do(func() {
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	if u.state == pending {
+		u.state = cancelled
+	}
+	u.onDefer.Do(func() {
 		close(u.done)
-		close(u.err)
 		if u.cancelFunc != nil {
 			u.cancelFunc()
 		}
@@ -68,12 +80,8 @@ func (u Future) Get(timeout time.Duration) (interface{}, error) {
 	var timer = time.NewTimer(timeout)
 	defer timer.Stop()
 	select {
-	case val := <-u.promise.done:
-		u.promise.done <- val
-		return val, nil
-	case err := <-u.promise.err:
-		u.promise.err <- err
-		return nil, err
+	case <-u.promise.done:
+		return u.promise.value, u.promise.error
 	case <-u.promise.context.Done():
 		return nil, u.promise.context.Err()
 	case <-timer.C:
@@ -82,14 +90,16 @@ func (u Future) Get(timeout time.Duration) (interface{}, error) {
 }
 
 func (s Session) Observe(method string, condition func(transport.Event, func(interface{}), func(error))) Future {
-	var state int32 = promisePending
 	u := &promise{
 		context: s.context,
-		state:   &state,
-		once:    &sync.Once{},
-		done:    make(chan interface{}, 1),
-		err:     make(chan error, 1),
+		state:   pending,
+		onDefer: &sync.Once{},
+		mutex:   &sync.Mutex{},
+		done:    make(chan struct{}, 1),
+		value:   nil,
+		error:   nil,
 	}
+
 	u.cancelFunc = s.Subscribe(method, func(e transport.Event) {
 		if u.isPending() {
 			condition(e, u.resolve, u.reject)

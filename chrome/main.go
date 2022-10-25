@@ -14,36 +14,6 @@ import (
 	"github.com/ecwid/control/transport"
 )
 
-// https://github.com/GoogleChrome/chrome-launcher/blob/master/docs/chrome-flags-for-tools.md
-var DefaultFlags = []string{
-	"about:blank", // open url
-	"--no-first-run",
-	"--no-default-browser-check",
-	"--remote-debugging-port=0",
-	"--hide-scrollbars",
-	"--mute-audio",
-	"--password-store=basic",
-	"--use-mock-keychain",
-	"--enable-automation",
-	"--disable-gpu",
-	"--disable-sync",
-	"--disable-background-networking",
-	"--disable-default-apps",
-	"--disable-extensions",
-	"--disable-background-timer-throttling",
-	"--disable-backgrounding-occluded-windows",
-	"--disable-renderer-backgrounding",
-	"--disable-hang-monitor",
-	"--disable-breakpad",
-	"--disable-client-side-phishing-detection",
-	"--disable-component-extensions-with-background-pages",
-	"--disable-ipc-flooding-protection",
-	"--disable-prompt-on-repost",
-	"--metrics-recording-only",
-	"--disable-features=site-per-process,Translate,BlinkGenPropertyTrees",
-	"--enable-features=NetworkService,NetworkServiceInProcess",
-}
-
 // Browser ...
 type Browser struct {
 	context      context.Context
@@ -77,7 +47,7 @@ func (c Browser) Close() error {
 	}
 }
 
-// Launch launch a new browser process
+// Launch a new browser process
 func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 	browser := &Browser{context: ctx}
 	var (
@@ -107,12 +77,15 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 		return nil, err
 	}
 
-	flags := []string{"--user-data-dir=" + browser.UserDataDir}
-
-	if len(userFlags) == 0 {
-		userFlags = DefaultFlags
+	// https://github.com/GoogleChrome/chrome-launcher/blob/master/docs/chrome-flags-for-tools.md
+	flags := []string{
+		"--remote-debugging-port=0",
+		"--user-data-dir=" + browser.UserDataDir,
 	}
-	flags = append(flags, userFlags...)
+
+	if len(userFlags) > 0 {
+		flags = append(flags, userFlags...)
+	}
 	if os.Getuid() == 0 {
 		flags = append(flags, "--no-sandbox")
 	}
