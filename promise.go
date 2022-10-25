@@ -21,8 +21,8 @@ type Future struct {
 }
 
 type promise struct {
-	onDefer    *sync.Once
-	mutex      *sync.Mutex
+	onDefer    sync.Once
+	mutex      sync.Mutex
 	context    context.Context
 	cancelFunc func()
 	state      int32
@@ -31,7 +31,7 @@ type promise struct {
 	error      error
 }
 
-func (u promise) resolve(val interface{}) {
+func (u *promise) resolve(val interface{}) {
 	u.mutex.Lock()
 	defer u.mutex.Unlock()
 	if u.state == pending {
@@ -41,7 +41,7 @@ func (u promise) resolve(val interface{}) {
 	}
 }
 
-func (u promise) reject(err error) {
+func (u *promise) reject(err error) {
 	u.mutex.Lock()
 	defer u.mutex.Unlock()
 	if u.state == pending {
@@ -51,13 +51,13 @@ func (u promise) reject(err error) {
 	}
 }
 
-func (u promise) isPending() bool {
+func (u *promise) isPending() bool {
 	u.mutex.Lock()
 	defer u.mutex.Unlock()
 	return u.state == pending
 }
 
-func (u promise) cancel() {
+func (u *promise) cancel() {
 	u.mutex.Lock()
 	defer u.mutex.Unlock()
 	if u.state == pending {
@@ -93,8 +93,8 @@ func (s Session) Observe(method string, condition func(transport.Event, func(int
 	u := &promise{
 		context: s.context,
 		state:   pending,
-		onDefer: &sync.Once{},
-		mutex:   &sync.Mutex{},
+		onDefer: sync.Once{},
+		mutex:   sync.Mutex{},
 		done:    make(chan struct{}, 1),
 		value:   nil,
 		error:   nil,
