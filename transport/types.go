@@ -2,11 +2,10 @@ package transport
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 )
-
-var ErrShutdown = Error{Message: "connection is shut down"}
 
 type Error struct {
 	Code    int    `json:"code"`
@@ -23,7 +22,7 @@ type Event struct {
 	Params []byte
 }
 
-type Reply struct {
+type Response struct {
 	ID        uint64          `json:"id,omitempty"`
 	SessionID string          `json:"sessionId,omitempty"`
 	Method    string          `json:"method,omitempty"`
@@ -32,27 +31,29 @@ type Reply struct {
 	Error     *Error          `json:"error,omitempty"`
 }
 
-type Call struct {
+type Request struct {
 	ID        uint64      `json:"id"`
 	SessionID string      `json:"sessionId,omitempty"`
 	Method    string      `json:"method"`           // The name of the service and method to call.
 	Args      interface{} `json:"params,omitempty"` // The argument to the function (*struct).
-	reply     chan Reply  `json:"-"`
+	response  chan Response
 }
 
-func (call *Call) done(r Reply) {
+func (request *Request) received(r Response) error {
 	select {
-	case call.reply <- r:
+	case request.response <- r:
+		return nil
 	default:
-		// We don't want to block here.
+		return errors.New("the response received twice")
 	}
 }
 
-type CallTimeoutError struct {
-	Call    *Call
+type DeadlineExceededError struct {
+	Request *Request
 	Timeout time.Duration
 }
 
-func (r CallTimeoutError) Error() string {
-	return fmt.Sprintf("the reply to the request %+v not received in %s", r.Call, r.Timeout)
+func (r DeadlineExceededError) Error() string {
+	return fmt.Sprintf("the reply to the request [sessionID: %s, Method: %s, Args: %v] not received in %s",
+		r.Request.SessionID, r.Request.Method, r.Request.Args, r.Timeout)
 }

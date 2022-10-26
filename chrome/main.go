@@ -16,7 +16,6 @@ import (
 
 // Browser ...
 type Browser struct {
-	context      context.Context
 	webSocketURL string
 	cmd          *exec.Cmd
 	client       *transport.Client
@@ -49,7 +48,7 @@ func (c Browser) Close() error {
 
 // Launch a new browser process
 func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
-	browser := &Browser{context: ctx}
+	browser := &Browser{}
 	var (
 		path string
 		err  error
@@ -103,7 +102,7 @@ func Launch(ctx context.Context, userFlags ...string) (*Browser, error) {
 	if err != nil {
 		return nil, err
 	}
-	browser.client, err = transport.Dial(browser.webSocketURL)
+	browser.client, err = transport.Dial(ctx, browser.webSocketURL)
 	return browser, err
 }
 

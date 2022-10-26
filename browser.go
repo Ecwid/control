@@ -16,8 +16,8 @@ type BrowserContext struct {
 	Client *transport.Client
 }
 
-func New(client *transport.Client) *BrowserContext {
-	return &BrowserContext{Client: client}
+func New(client *transport.Client) BrowserContext {
+	return BrowserContext{Client: client}
 }
 
 func (b BrowserContext) Call(method string, send, recv interface{}) error {
@@ -36,7 +36,7 @@ func (b BrowserContext) SetDiscoverTargets(discover bool) error {
 	return target.SetDiscoverTargets(b, target.SetDiscoverTargetsArgs{Discover: discover})
 }
 
-func (b *BrowserContext) runSession(targetID target.TargetID, sessionID target.SessionID) (session *Session, err error) {
+func (b BrowserContext) runSession(targetID target.TargetID, sessionID target.SessionID) (session *Session, err error) {
 	var uid uint64 = 0
 	session = &Session{
 		guid:       &uid,
@@ -47,12 +47,12 @@ func (b *BrowserContext) runSession(targetID target.TargetID, sessionID target.S
 		publisher:  transport.NewPublisher(),
 		executions: &sync.Map{},
 	}
-	session.context, session.exit = context.WithCancel(context.TODO())
+	session.context, session.exit = context.WithCancel(b.Client.Context())
 	session.Input = Input{s: session, mx: &sync.Mutex{}}
 	session.Network = Network{s: session}
 	session.Emulation = Emulation{s: session}
 
-	go session.lifecycle()
+	go session.handleEventPool()
 	b.Client.Register(session)
 
 	if err = page.Enable(session); err != nil {
@@ -70,14 +70,14 @@ func (b *BrowserContext) runSession(targetID target.TargetID, sessionID target.S
 	if err = target.SetDiscoverTargets(session, target.SetDiscoverTargetsArgs{Discover: true}); err != nil {
 		return nil, err
 	}
-	// maxPostDataSize - Longest post body size (in bytes) that would be included in requestWillBeSent notification
+	// maxPostDataSize - The Longest post body size (in bytes) that would be included in requestWillBeSent notification
 	if err = network.Enable(session, network.EnableArgs{MaxPostDataSize: 10 * 1024}); err != nil {
 		return nil, err
 	}
 	return
 }
 
-func (b *BrowserContext) AttachPageTarget(id target.TargetID) (*Session, error) {
+func (b BrowserContext) AttachPageTarget(id target.TargetID) (*Session, error) {
 	val, err := target.AttachToTarget(b, target.AttachToTargetArgs{
 		TargetId: id,
 		Flatten:  true,
@@ -88,7 +88,7 @@ func (b *BrowserContext) AttachPageTarget(id target.TargetID) (*Session, error) 
 	return b.runSession(id, val.SessionId)
 }
 
-func (b *BrowserContext) CreatePageTarget(url string) (*Session, error) {
+func (b BrowserContext) CreatePageTarget(url string) (*Session, error) {
 	if url == "" {
 		url = Blank // headless chrome crash when url is empty
 	}

@@ -3,6 +3,7 @@ package control
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -19,7 +20,7 @@ const (
 )
 
 type Session struct {
-	browser    *BrowserContext
+	browser    BrowserContext
 	id         target.SessionID
 	tid        target.TargetID
 	executions *sync.Map
@@ -46,7 +47,7 @@ func (s Session) Call(method string, send, recv interface{}) error {
 	}
 }
 
-func (s Session) GetBrowserContext() *BrowserContext {
+func (s Session) GetBrowserContext() BrowserContext {
 	return s.browser
 }
 
@@ -77,11 +78,14 @@ func (s Session) Activate() error {
 	return s.browser.ActivateTarget(s.tid)
 }
 
-func (s Session) Update(val transport.Event) {
+func (s Session) Update(val transport.Event) error {
 	select {
 	case s.eventPool <- val:
 	case <-s.context.Done():
+	default:
+		return errors.New("eventPool is full")
 	}
+	return nil
 }
 
 func (s *Session) handle(e transport.Event) error {
@@ -121,11 +125,10 @@ func (s *Session) handle(e transport.Event) error {
 		}
 
 	}
-	s.publisher.Notify(e.Method, e)
-	return nil
+	return s.publisher.Notify(e.Method, e)
 }
 
-func (s *Session) lifecycle() {
+func (s *Session) handleEventPool() {
 	defer func() {
 		s.browser.Client.Unregister(s)
 		s.exit()
@@ -139,16 +142,20 @@ func (s *Session) lifecycle() {
 }
 
 func (s Session) onBindingCalled(name string, function func(string)) (cancel func()) {
-	return s.Subscribe("Runtime.bindingCalled", func(value transport.Event) {
+	return s.Subscribe("Runtime.bindingCalled", func(value transport.Event) error {
 		bindingCalled := runtime.BindingCalled{}
-		_ = json.Unmarshal(value.Params, &bindingCalled)
+		err := json.Unmarshal(value.Params, &bindingCalled)
+		if err != nil {
+			return err
+		}
 		if bindingCalled.Name == name {
 			function(bindingCalled.Payload)
 		}
+		return nil
 	})
 }
 
-func (s Session) Subscribe(event string, v func(e transport.Event)) (cancel func()) {
+func (s Session) Subscribe(event string, v func(e transport.Event) error) (cancel func()) {
 	var (
 		uid = atomic.AddUint64(s.guid, 1)
 		val = transport.NewSimpleObserver(fmt.Sprintf("%d", uid), event, v)

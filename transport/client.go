@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,16 +13,18 @@ import (
 
 type Client struct {
 	*Publisher
-	conn      *websocket.Conn
-	sendMutex sync.Mutex
-	seq       uint64
-	pending   map[uint64]*Call
-	mutex     sync.Mutex
-	closed    bool
-	Timeout   time.Duration
+	conn    *websocket.Conn
+	seq     uint64
+	queue   map[uint64]*Request
+	queueMu sync.Mutex
+	sendMu  sync.Mutex
+	context context.Context
+	Timeout time.Duration
+	err     error
+	cancel  func()
 }
 
-func Dial(url string) (*Client, error) {
+func Dial(ctx context.Context, url string) (*Client, error) {
 	var dialer = websocket.Dialer{
 		ReadBufferSize:   8192,
 		WriteBufferSize:  8192,
@@ -36,11 +39,16 @@ func Dial(url string) (*Client, error) {
 		Publisher: NewPublisher(),
 		conn:      conn,
 		seq:       1,
-		pending:   map[uint64]*Call{},
+		queue:     map[uint64]*Request{},
 		Timeout:   time.Second * 60,
 	}
+	client.context, client.cancel = context.WithCancel(ctx)
 	go client.reading()
 	return client, nil
+}
+
+func (c *Client) Context() context.Context {
+	return c.context
 }
 
 func (c *Client) Close() error {
@@ -48,34 +56,31 @@ func (c *Client) Close() error {
 		return err
 	}
 	_ = c.conn.Close()
-	c.terminate(ErrShutdown)
+	c.finalize(errors.New("connection is shut down"))
 	return nil
 }
 
 func (c *Client) Call(sessionID, method string, args, value interface{}) error {
-	var call = &Call{
+	var request = &Request{
 		SessionID: sessionID,
 		Method:    method,
 		Args:      args,
-		reply:     make(chan Reply, 1),
+		response:  make(chan Response, 1),
 	}
-	if err := c.send(call); err != nil {
+	if err := c.send(request); err != nil {
 		return err
 	}
-	var timeout = time.NewTimer(c.Timeout)
-	defer timeout.Stop()
+	var ctx, cancel = context.WithTimeout(c.context, c.Timeout)
+	defer cancel()
 
-	var r Reply
+	var r Response
 	select {
-	case r = <-call.reply:
+	case r = <-request.response:
 		if r.Error != nil {
 			return r.Error
 		}
-	case <-timeout.C:
-		return CallTimeoutError{
-			Call:    call,
-			Timeout: c.Timeout,
-		}
+	case <-ctx.Done():
+		return DeadlineExceededError{Request: request, Timeout: c.Timeout}
 	}
 	if value != nil {
 		return json.Unmarshal(r.Result, value)
@@ -83,64 +88,68 @@ func (c *Client) Call(sessionID, method string, args, value interface{}) error {
 	return nil
 }
 
-func (c *Client) send(call *Call) error {
-	c.sendMutex.Lock()
-	defer c.sendMutex.Unlock()
+func (c *Client) send(request *Request) error {
+	c.sendMu.Lock()
+	defer c.sendMu.Unlock()
 
-	if c.closed {
-		return ErrShutdown
+	select {
+	case <-c.context.Done():
+		return c.err
+	default:
 	}
 
-	c.mutex.Lock()
+	c.queueMu.Lock()
 	seq := c.seq
 	c.seq++
-	call.ID = seq
-	c.pending[seq] = call
-	c.mutex.Unlock()
+	request.ID = seq
+	c.queue[seq] = request
+	c.queueMu.Unlock()
 
-	if err := c.conn.WriteJSON(call); err != nil {
-		c.mutex.Lock()
-		delete(c.pending, seq)
-		c.mutex.Unlock()
+	if err := c.conn.WriteJSON(request); err != nil {
+		c.queueMu.Lock()
+		delete(c.queue, seq)
+		c.queueMu.Unlock()
 		return err
 	}
 	return nil
 }
 
-func (c *Client) terminate(err error) {
-	c.sendMutex.Lock()
-	c.mutex.Lock()
-	c.closed = true
-	for _, call := range c.pending {
-		call.done(Reply{Error: &Error{Message: err.Error()}})
+func (c *Client) finalize(err error) {
+	c.sendMu.Lock()
+	c.queueMu.Lock()
+	defer c.queueMu.Unlock()
+	defer c.sendMu.Unlock()
+	c.err = err
+	c.cancel()
+	for _, request := range c.queue {
+		_ = request.received(Response{Error: &Error{Message: err.Error()}})
 	}
-	c.mutex.Unlock()
-	c.sendMutex.Unlock()
 }
 
 func (c *Client) read() error {
-	reply := Reply{}
-	if err := c.conn.ReadJSON(&reply); err != nil {
+	response := Response{}
+	if err := c.conn.ReadJSON(&response); err != nil {
 		return err
 	}
-	if reply.ID == 0 {
-		c.Notify(reply.SessionID, Event{Method: reply.Method, Params: reply.Params})
-	} else {
-		c.mutex.Lock()
-		call := c.pending[reply.ID]
-		delete(c.pending, reply.ID)
-		c.mutex.Unlock()
-		if call == nil {
-			return errors.New("reading error body")
-		}
-		call.done(reply)
+	if response.ID == 0 {
+		return c.Notify(response.SessionID, Event{
+			Method: response.Method,
+			Params: response.Params,
+		})
 	}
-	return nil
+	c.queueMu.Lock()
+	request := c.queue[response.ID]
+	delete(c.queue, response.ID)
+	c.queueMu.Unlock()
+	if request == nil {
+		return errors.New("no request for response")
+	}
+	return request.received(response)
 }
 
 func (c *Client) reading() {
 	var err error
 	for ; err == nil; err = c.read() {
 	}
-	c.terminate(err)
+	c.finalize(err)
 }

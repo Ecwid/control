@@ -25,10 +25,11 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		cancel := s1.Subscribe("Page.domContentEventFired", func(e transport.Event) {
+		cancel := s1.Subscribe("Page.domContentEventFired", func(e transport.Event) error {
 			v, err1 := s1.Page().GetNavigationEntry()
 			log.Println(v)
 			log.Println(err1)
+			return err1
 		})
 		defer cancel()
 		if err = s1.Page().Navigate("https://google.com/", control.LifecycleIdleNetwork, time.Second*60); err != nil {

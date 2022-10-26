@@ -5,9 +5,9 @@ import (
 )
 
 type Observer interface {
-	ID() string       // unique observer's id, attaching and detaching by this id
-	Event() string    // on what event it should notified
-	Update(val Event) // notification callback
+	ID() string             // unique observer's id, attaching and detaching by this id
+	Event() string          // on what event it should notify
+	Update(val Event) error // notification callback
 }
 
 type Publisher struct {
@@ -24,14 +24,18 @@ func NewPublisher() *Publisher {
 
 // if event is empty then event broadcasting to all observers
 // if Observer.Event == '*' then this Observer handles any events
-func (o *Publisher) Notify(event string, val Event) {
+func (o *Publisher) Notify(event string, val Event) error {
 	o.mx.Lock()
 	defer o.mx.Unlock()
 	for _, e := range o.observers {
-		if e.Event() == "*" || event == "" || e.Event() == event {
-			e.Update(val)
+		switch e.Event() {
+		case "", "*", event:
+			if err := e.Update(val); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 func (o *Publisher) Register(val Observer) {
@@ -46,7 +50,7 @@ func (o *Publisher) Unregister(val Observer) {
 	delete(o.observers, val.ID())
 }
 
-func NewSimpleObserver(id, event string, update func(value Event)) SimpleObserver {
+func NewSimpleObserver(id, event string, update func(value Event) error) SimpleObserver {
 	return SimpleObserver{
 		id:     id,
 		event:  event,
@@ -57,7 +61,7 @@ func NewSimpleObserver(id, event string, update func(value Event)) SimpleObserve
 type SimpleObserver struct {
 	id     string
 	event  string
-	update func(val Event)
+	update func(val Event) error
 }
 
 func (o SimpleObserver) ID() string {
@@ -68,6 +72,6 @@ func (o SimpleObserver) Event() string {
 	return o.event
 }
 
-func (o SimpleObserver) Update(val Event) {
-	o.update(val)
+func (o SimpleObserver) Update(val Event) error {
+	return o.update(val)
 }
