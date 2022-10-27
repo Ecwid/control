@@ -131,11 +131,12 @@ func (c *Client) read() error {
 	if err := c.conn.ReadJSON(&response); err != nil {
 		return err
 	}
-	if response.ID == 0 {
-		return c.Notify(response.SessionID, Event{
-			Method: response.Method,
-			Params: response.Params,
-		})
+	if response.ID == 0 { // event, not message's response
+		var e = Event{Method: response.Method, Params: response.Params}
+		if response.SessionID != "" {
+			return c.Notify(response.SessionID, e)
+		}
+		return c.Broadcast(e)
 	}
 	c.queueMu.Lock()
 	request := c.queue[response.ID]

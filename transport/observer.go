@@ -2,34 +2,48 @@ package transport
 
 import (
 	"sync"
+	"sync/atomic"
 )
 
 type Observer interface {
-	ID() string             // unique observer's id, attaching and detaching by this id
-	Event() string          // on what event it should notify
+	Name() string           // on what event it should notify
 	Update(val Event) error // notification callback
 }
 
 type Publisher struct {
 	mx        sync.Mutex
-	observers map[string]Observer
+	guid      *uint64
+	observers map[uint64]Observer
 }
 
 func NewPublisher() *Publisher {
+	var uid uint64 = 0
 	return &Publisher{
+		guid:      &uid,
 		mx:        sync.Mutex{},
-		observers: map[string]Observer{},
+		observers: map[uint64]Observer{},
 	}
 }
 
 // if event is empty then event broadcasting to all observers
-// if Observer.Event == '*' then this Observer handles any events
-func (o *Publisher) Notify(event string, val Event) error {
+func (o *Publisher) Broadcast(val Event) error {
 	o.mx.Lock()
 	defer o.mx.Unlock()
 	for _, e := range o.observers {
-		switch e.Event() {
-		case "", "*", event:
+		if err := e.Update(val); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// if Observer.Event == '*' then this Observer handles any events
+func (o *Publisher) Notify(name string, val Event) error {
+	o.mx.Lock()
+	defer o.mx.Unlock()
+	for _, e := range o.observers {
+		switch e.Name() {
+		case "*", name:
 			if err := e.Update(val); err != nil {
 				return err
 			}
@@ -38,38 +52,32 @@ func (o *Publisher) Notify(event string, val Event) error {
 	return nil
 }
 
-func (o *Publisher) Register(val Observer) {
+func (o *Publisher) Register(val Observer) func() {
 	o.mx.Lock()
 	defer o.mx.Unlock()
-	o.observers[val.ID()] = val
+	var uid = atomic.AddUint64(o.guid, 1)
+	o.observers[uid] = val
+	return func() {
+		o.mx.Lock()
+		defer o.mx.Unlock()
+		delete(o.observers, uid)
+	}
 }
 
-func (o *Publisher) Unregister(val Observer) {
-	o.mx.Lock()
-	defer o.mx.Unlock()
-	delete(o.observers, val.ID())
-}
-
-func NewSimpleObserver(id, event string, update func(value Event) error) SimpleObserver {
+func NewSimpleObserver(name string, update func(value Event) error) SimpleObserver {
 	return SimpleObserver{
-		id:     id,
-		event:  event,
+		name:   name,
 		update: update,
 	}
 }
 
 type SimpleObserver struct {
-	id     string
-	event  string
+	name   string
 	update func(val Event) error
 }
 
-func (o SimpleObserver) ID() string {
-	return o.id
-}
-
-func (o SimpleObserver) Event() string {
-	return o.event
+func (o SimpleObserver) Name() string {
+	return o.name
 }
 
 func (o SimpleObserver) Update(val Event) error {

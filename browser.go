@@ -37,9 +37,7 @@ func (b BrowserContext) SetDiscoverTargets(discover bool) error {
 }
 
 func (b BrowserContext) runSession(targetID target.TargetID, sessionID target.SessionID) (session *Session, err error) {
-	var uid uint64 = 0
 	session = &Session{
-		guid:       &uid,
 		id:         sessionID,
 		tid:        targetID,
 		browser:    b,
@@ -47,13 +45,13 @@ func (b BrowserContext) runSession(targetID target.TargetID, sessionID target.Se
 		publisher:  transport.NewPublisher(),
 		executions: &sync.Map{},
 	}
-	session.context, session.exit = context.WithCancel(b.Client.Context())
+	session.context, session.cancelCtx = context.WithCancel(b.Client.Context())
 	session.Input = Input{s: session, mx: &sync.Mutex{}}
 	session.Network = Network{s: session}
 	session.Emulation = Emulation{s: session}
 
 	go session.handleEventPool()
-	b.Client.Register(session)
+	session.detach = b.Client.Register(session)
 
 	if err = page.Enable(session); err != nil {
 		return nil, err

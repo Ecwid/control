@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
-	"sync/atomic"
 
 	"github.com/ecwid/control/protocol/common"
 	"github.com/ecwid/control/protocol/runtime"
@@ -25,14 +23,15 @@ type Session struct {
 	tid        target.TargetID
 	executions *sync.Map
 	eventPool  chan transport.Event
-	context    context.Context
-	exit       func()
-	exitCode   error
 	publisher  *transport.Publisher
-	guid       *uint64 // observers incremental id
-	Network    Network
-	Input      Input
-	Emulation  Emulation
+	exitCode   error
+	context    context.Context
+	cancelCtx  func()
+	detach     func()
+
+	Network   Network
+	Input     Input
+	Emulation Emulation
 }
 
 func (s Session) Call(method string, send, recv interface{}) error {
@@ -59,7 +58,7 @@ func (s Session) ID() string {
 	return string(s.id)
 }
 
-func (s Session) Event() string {
+func (s Session) Name() string {
 	return s.ID()
 }
 
@@ -130,8 +129,8 @@ func (s *Session) handle(e transport.Event) error {
 
 func (s *Session) handleEventPool() {
 	defer func() {
-		s.browser.Client.Unregister(s)
-		s.exit()
+		s.detach() // detach from the transport updates
+		s.cancelCtx()
 	}()
 	for e := range s.eventPool {
 		if err := s.handle(e); err != nil {
@@ -156,14 +155,7 @@ func (s Session) onBindingCalled(name string, function func(string)) (cancel fun
 }
 
 func (s Session) Subscribe(event string, v func(e transport.Event) error) (cancel func()) {
-	var (
-		uid = atomic.AddUint64(s.guid, 1)
-		val = transport.NewSimpleObserver(fmt.Sprintf("%d", uid), event, v)
-	)
-	s.publisher.Register(val)
-	return func() {
-		s.publisher.Unregister(val)
-	}
+	return s.publisher.Register(transport.NewSimpleObserver(event, v))
 }
 
 func (s Session) Close() error {
