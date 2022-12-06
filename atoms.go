@@ -18,7 +18,7 @@ const (
 	functionGetAttr              = `function(a){return this.getAttribute(a)}`
 	functionCheckbox             = `function(v){this.checked=v}`
 	functionIsChecked            = `function(){return this.checked}`
-	functionGetComputedStyle     = `function(s){return getComputedStyle(this)[s]}`
+	functionGetComputedStyle     = `function(p,s){return getComputedStyle(this, p)[s]}`
 	functionSelect               = `function(a){const b=Array.from(this.options);this.value=void 0;for(const c of b)if(c.selected=a.includes(c.value),c.selected&&!this.multiple)break}`
 	functionGetSelectedValues    = `function(){return Array.from(this.options).filter(a=>a.selected).map(a=>a.value)}`
 	functionGetSelectedInnerText = `function(){return Array.from(this.options).filter(a=>a.selected).map(a=>a.innerText)}`
