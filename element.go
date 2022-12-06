@@ -301,7 +301,7 @@ func (e Element) GetRectangle() (*dom.Rect, error) {
 	return rect, nil
 }
 
-func (e Element) GetComputedStyle(pseudoElt *string, style string) (string, error) {
+func (e Element) GetComputedStyle(style string, pseudoElt *string) (string, error) {
 	v, err := e.CallFunction(functionGetComputedStyle, true, false, []*runtime.CallArgument{
 		{Value: pseudoElt},
 		{Value: style},
