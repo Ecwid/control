@@ -6,7 +6,7 @@ import (
 )
 
 /*
-	Animation instance.
+Animation instance.
 */
 type Animation struct {
 	Id           string           `json:"id"`
@@ -22,7 +22,7 @@ type Animation struct {
 }
 
 /*
-	AnimationEffect instance
+AnimationEffect instance
 */
 type AnimationEffect struct {
 	Delay          float64           `json:"delay"`
@@ -38,7 +38,7 @@ type AnimationEffect struct {
 }
 
 /*
-	Keyframes Rule
+Keyframes Rule
 */
 type KeyframesRule struct {
 	Name      string           `json:"name,omitempty"`
@@ -46,7 +46,7 @@ type KeyframesRule struct {
 }
 
 /*
-	Keyframe Style
+Keyframe Style
 */
 type KeyframeStyle struct {
 	Offset string `json:"offset"`

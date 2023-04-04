@@ -6,18 +6,19 @@ import (
 )
 
 /*
-	Unique DOM node identifier.
+Unique DOM node identifier.
 */
 type NodeId int
 
 /*
 	Unique DOM node identifier used to reference a node that may not have been pushed to the
+
 front-end.
 */
 type BackendNodeId int
 
 /*
-	Backend node with a friendly name.
+Backend node with a friendly name.
 */
 type BackendNode struct {
 	NodeType      int           `json:"nodeType"`
@@ -26,52 +27,70 @@ type BackendNode struct {
 }
 
 /*
-	Pseudo element type.
+Pseudo element type.
 */
 type PseudoType string
 
 /*
-	Shadow root type.
+Shadow root type.
 */
 type ShadowRootType string
 
 /*
+Document compatibility mode.
+*/
+type CompatibilityMode string
+
+/*
+ContainerSelector physical axes
+*/
+type PhysicalAxes string
+
+/*
+ContainerSelector logical axes
+*/
+type LogicalAxes string
+
+/*
 	DOM interaction is implemented in terms of mirror objects that represent the actual DOM nodes.
+
 DOMNode is a base node mirror type.
 */
 type Node struct {
-	NodeId           NodeId         `json:"nodeId"`
-	ParentId         NodeId         `json:"parentId,omitempty"`
-	BackendNodeId    BackendNodeId  `json:"backendNodeId"`
-	NodeType         int            `json:"nodeType"`
-	NodeName         string         `json:"nodeName"`
-	LocalName        string         `json:"localName"`
-	NodeValue        string         `json:"nodeValue"`
-	ChildNodeCount   int            `json:"childNodeCount,omitempty"`
-	Children         []*Node        `json:"children,omitempty"`
-	Attributes       []string       `json:"attributes,omitempty"`
-	DocumentURL      string         `json:"documentURL,omitempty"`
-	BaseURL          string         `json:"baseURL,omitempty"`
-	PublicId         string         `json:"publicId,omitempty"`
-	SystemId         string         `json:"systemId,omitempty"`
-	InternalSubset   string         `json:"internalSubset,omitempty"`
-	XmlVersion       string         `json:"xmlVersion,omitempty"`
-	Name             string         `json:"name,omitempty"`
-	Value            string         `json:"value,omitempty"`
-	PseudoType       PseudoType     `json:"pseudoType,omitempty"`
-	ShadowRootType   ShadowRootType `json:"shadowRootType,omitempty"`
-	FrameId          common.FrameId `json:"frameId,omitempty"`
-	ContentDocument  *Node          `json:"contentDocument,omitempty"`
-	ShadowRoots      []*Node        `json:"shadowRoots,omitempty"`
-	TemplateContent  *Node          `json:"templateContent,omitempty"`
-	PseudoElements   []*Node        `json:"pseudoElements,omitempty"`
-	ImportedDocument *Node          `json:"importedDocument,omitempty"`
-	DistributedNodes []*BackendNode `json:"distributedNodes,omitempty"`
-	IsSVG            bool           `json:"isSVG,omitempty"`
+	NodeId            NodeId            `json:"nodeId"`
+	ParentId          NodeId            `json:"parentId,omitempty"`
+	BackendNodeId     BackendNodeId     `json:"backendNodeId"`
+	NodeType          int               `json:"nodeType"`
+	NodeName          string            `json:"nodeName"`
+	LocalName         string            `json:"localName"`
+	NodeValue         string            `json:"nodeValue"`
+	ChildNodeCount    int               `json:"childNodeCount,omitempty"`
+	Children          []*Node           `json:"children,omitempty"`
+	Attributes        []string          `json:"attributes,omitempty"`
+	DocumentURL       string            `json:"documentURL,omitempty"`
+	BaseURL           string            `json:"baseURL,omitempty"`
+	PublicId          string            `json:"publicId,omitempty"`
+	SystemId          string            `json:"systemId,omitempty"`
+	InternalSubset    string            `json:"internalSubset,omitempty"`
+	XmlVersion        string            `json:"xmlVersion,omitempty"`
+	Name              string            `json:"name,omitempty"`
+	Value             string            `json:"value,omitempty"`
+	PseudoType        PseudoType        `json:"pseudoType,omitempty"`
+	PseudoIdentifier  string            `json:"pseudoIdentifier,omitempty"`
+	ShadowRootType    ShadowRootType    `json:"shadowRootType,omitempty"`
+	FrameId           common.FrameId    `json:"frameId,omitempty"`
+	ContentDocument   *Node             `json:"contentDocument,omitempty"`
+	ShadowRoots       []*Node           `json:"shadowRoots,omitempty"`
+	TemplateContent   *Node             `json:"templateContent,omitempty"`
+	PseudoElements    []*Node           `json:"pseudoElements,omitempty"`
+	DistributedNodes  []*BackendNode    `json:"distributedNodes,omitempty"`
+	IsSVG             bool              `json:"isSVG,omitempty"`
+	CompatibilityMode CompatibilityMode `json:"compatibilityMode,omitempty"`
+	AssignedSlot      *BackendNode      `json:"assignedSlot,omitempty"`
 }
 
 /*
-	A structure holding an RGBA color.
+A structure holding an RGBA color.
 */
 type RGBA struct {
 	R int     `json:"r"`
@@ -81,12 +100,12 @@ type RGBA struct {
 }
 
 /*
-	An array of quad vertices, x immediately followed by y for each point, points clock-wise.
+An array of quad vertices, x immediately followed by y for each point, points clock-wise.
 */
 type Quad []float64
 
 /*
-	Box model.
+Box model.
 */
 type BoxModel struct {
 	Content      Quad              `json:"content"`
@@ -99,7 +118,7 @@ type BoxModel struct {
 }
 
 /*
-	CSS Shape Outside details.
+CSS Shape Outside details.
 */
 type ShapeOutsideInfo struct {
 	Bounds      Quad          `json:"bounds"`
@@ -108,7 +127,7 @@ type ShapeOutsideInfo struct {
 }
 
 /*
-	Rectangle.
+Rectangle.
 */
 type Rect struct {
 	X      float64 `json:"x"`
@@ -118,7 +137,6 @@ type Rect struct {
 }
 
 /*
-
  */
 type CSSComputedStyleProperty struct {
 	Name  string `json:"name"`
@@ -164,6 +182,10 @@ type ScrollIntoViewIfNeededArgs struct {
 
 type DiscardSearchResultsArgs struct {
 	SearchId string `json:"searchId"`
+}
+
+type EnableArgs struct {
+	IncludeWhitespace string `json:"includeWhitespace,omitempty"`
 }
 
 type FocusArgs struct {
@@ -314,6 +336,10 @@ type QuerySelectorAllVal struct {
 	NodeIds []NodeId `json:"nodeIds"`
 }
 
+type GetTopLayerElementsVal struct {
+	NodeIds []NodeId `json:"nodeIds"`
+}
+
 type RemoveAttributeArgs struct {
 	NodeId NodeId `json:"nodeId"`
 	Name   string `json:"name"`
@@ -417,4 +443,23 @@ type GetFrameOwnerArgs struct {
 type GetFrameOwnerVal struct {
 	BackendNodeId BackendNodeId `json:"backendNodeId"`
 	NodeId        NodeId        `json:"nodeId,omitempty"`
+}
+
+type GetContainerForNodeArgs struct {
+	NodeId        NodeId       `json:"nodeId"`
+	ContainerName string       `json:"containerName,omitempty"`
+	PhysicalAxes  PhysicalAxes `json:"physicalAxes,omitempty"`
+	LogicalAxes   LogicalAxes  `json:"logicalAxes,omitempty"`
+}
+
+type GetContainerForNodeVal struct {
+	NodeId NodeId `json:"nodeId,omitempty"`
+}
+
+type GetQueryingDescendantsForContainerArgs struct {
+	NodeId NodeId `json:"nodeId"`
+}
+
+type GetQueryingDescendantsForContainerVal struct {
+	NodeIds []NodeId `json:"nodeIds"`
 }

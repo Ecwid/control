@@ -7,7 +7,7 @@ import (
 )
 
 /*
-	Configuration data for drawing the source order of an elements children.
+Configuration data for drawing the source order of an elements children.
 */
 type SourceOrderConfig struct {
 	ParentOutlineColor *dom.RGBA `json:"parentOutlineColor"`
@@ -15,7 +15,7 @@ type SourceOrderConfig struct {
 }
 
 /*
-	Configuration data for the highlighting of Grid elements.
+Configuration data for the highlighting of Grid elements.
 */
 type GridHighlightConfig struct {
 	ShowGridExtensionLines  bool      `json:"showGridExtensionLines,omitempty"`
@@ -39,7 +39,7 @@ type GridHighlightConfig struct {
 }
 
 /*
-	Configuration data for the highlighting of Flex container elements.
+Configuration data for the highlighting of Flex container elements.
 */
 type FlexContainerHighlightConfig struct {
 	ContainerBorder       *LineStyle `json:"containerBorder,omitempty"`
@@ -53,7 +53,7 @@ type FlexContainerHighlightConfig struct {
 }
 
 /*
-	Configuration data for the highlighting of Flex item elements.
+Configuration data for the highlighting of Flex item elements.
 */
 type FlexItemHighlightConfig struct {
 	BaseSizeBox      *BoxStyle  `json:"baseSizeBox,omitempty"`
@@ -62,7 +62,7 @@ type FlexItemHighlightConfig struct {
 }
 
 /*
-	Style information for drawing a line.
+Style information for drawing a line.
 */
 type LineStyle struct {
 	Color   *dom.RGBA `json:"color,omitempty"`
@@ -70,7 +70,7 @@ type LineStyle struct {
 }
 
 /*
-	Style information for drawing a box.
+Style information for drawing a box.
 */
 type BoxStyle struct {
 	FillColor  *dom.RGBA `json:"fillColor,omitempty"`
@@ -78,41 +78,40 @@ type BoxStyle struct {
 }
 
 /*
-
  */
 type ContrastAlgorithm string
 
 /*
-	Configuration data for the highlighting of page elements.
+Configuration data for the highlighting of page elements.
 */
 type HighlightConfig struct {
-	ShowInfo                     bool                          `json:"showInfo,omitempty"`
-	ShowStyles                   bool                          `json:"showStyles,omitempty"`
-	ShowRulers                   bool                          `json:"showRulers,omitempty"`
-	ShowAccessibilityInfo        bool                          `json:"showAccessibilityInfo,omitempty"`
-	ShowExtensionLines           bool                          `json:"showExtensionLines,omitempty"`
-	ContentColor                 *dom.RGBA                     `json:"contentColor,omitempty"`
-	PaddingColor                 *dom.RGBA                     `json:"paddingColor,omitempty"`
-	BorderColor                  *dom.RGBA                     `json:"borderColor,omitempty"`
-	MarginColor                  *dom.RGBA                     `json:"marginColor,omitempty"`
-	EventTargetColor             *dom.RGBA                     `json:"eventTargetColor,omitempty"`
-	ShapeColor                   *dom.RGBA                     `json:"shapeColor,omitempty"`
-	ShapeMarginColor             *dom.RGBA                     `json:"shapeMarginColor,omitempty"`
-	CssGridColor                 *dom.RGBA                     `json:"cssGridColor,omitempty"`
-	ColorFormat                  ColorFormat                   `json:"colorFormat,omitempty"`
-	GridHighlightConfig          *GridHighlightConfig          `json:"gridHighlightConfig,omitempty"`
-	FlexContainerHighlightConfig *FlexContainerHighlightConfig `json:"flexContainerHighlightConfig,omitempty"`
-	FlexItemHighlightConfig      *FlexItemHighlightConfig      `json:"flexItemHighlightConfig,omitempty"`
-	ContrastAlgorithm            ContrastAlgorithm             `json:"contrastAlgorithm,omitempty"`
+	ShowInfo                               bool                                    `json:"showInfo,omitempty"`
+	ShowStyles                             bool                                    `json:"showStyles,omitempty"`
+	ShowRulers                             bool                                    `json:"showRulers,omitempty"`
+	ShowAccessibilityInfo                  bool                                    `json:"showAccessibilityInfo,omitempty"`
+	ShowExtensionLines                     bool                                    `json:"showExtensionLines,omitempty"`
+	ContentColor                           *dom.RGBA                               `json:"contentColor,omitempty"`
+	PaddingColor                           *dom.RGBA                               `json:"paddingColor,omitempty"`
+	BorderColor                            *dom.RGBA                               `json:"borderColor,omitempty"`
+	MarginColor                            *dom.RGBA                               `json:"marginColor,omitempty"`
+	EventTargetColor                       *dom.RGBA                               `json:"eventTargetColor,omitempty"`
+	ShapeColor                             *dom.RGBA                               `json:"shapeColor,omitempty"`
+	ShapeMarginColor                       *dom.RGBA                               `json:"shapeMarginColor,omitempty"`
+	CssGridColor                           *dom.RGBA                               `json:"cssGridColor,omitempty"`
+	ColorFormat                            ColorFormat                             `json:"colorFormat,omitempty"`
+	GridHighlightConfig                    *GridHighlightConfig                    `json:"gridHighlightConfig,omitempty"`
+	FlexContainerHighlightConfig           *FlexContainerHighlightConfig           `json:"flexContainerHighlightConfig,omitempty"`
+	FlexItemHighlightConfig                *FlexItemHighlightConfig                `json:"flexItemHighlightConfig,omitempty"`
+	ContrastAlgorithm                      ContrastAlgorithm                       `json:"contrastAlgorithm,omitempty"`
+	ContainerQueryContainerHighlightConfig *ContainerQueryContainerHighlightConfig `json:"containerQueryContainerHighlightConfig,omitempty"`
 }
 
 /*
-
  */
 type ColorFormat string
 
 /*
-	Configurations for Persistent Grid Highlight
+Configurations for Persistent Grid Highlight
 */
 type GridNodeHighlightConfig struct {
 	GridHighlightConfig *GridHighlightConfig `json:"gridHighlightConfig"`
@@ -120,7 +119,6 @@ type GridNodeHighlightConfig struct {
 }
 
 /*
-
  */
 type FlexNodeHighlightConfig struct {
 	FlexContainerHighlightConfig *FlexContainerHighlightConfig `json:"flexContainerHighlightConfig"`
@@ -128,7 +126,6 @@ type FlexNodeHighlightConfig struct {
 }
 
 /*
-
  */
 type ScrollSnapContainerHighlightConfig struct {
 	SnapportBorder     *LineStyle `json:"snapportBorder,omitempty"`
@@ -138,7 +135,6 @@ type ScrollSnapContainerHighlightConfig struct {
 }
 
 /*
-
  */
 type ScrollSnapHighlightConfig struct {
 	ScrollSnapContainerHighlightConfig *ScrollSnapContainerHighlightConfig `json:"scrollSnapContainerHighlightConfig"`
@@ -146,7 +142,7 @@ type ScrollSnapHighlightConfig struct {
 }
 
 /*
-	Configuration for dual screen hinge
+Configuration for dual screen hinge
 */
 type HingeConfig struct {
 	Rect         *common.Rect `json:"rect"`
@@ -155,7 +151,35 @@ type HingeConfig struct {
 }
 
 /*
+ */
+type ContainerQueryHighlightConfig struct {
+	ContainerQueryContainerHighlightConfig *ContainerQueryContainerHighlightConfig `json:"containerQueryContainerHighlightConfig"`
+	NodeId                                 dom.NodeId                              `json:"nodeId"`
+}
 
+/*
+ */
+type ContainerQueryContainerHighlightConfig struct {
+	ContainerBorder  *LineStyle `json:"containerBorder,omitempty"`
+	DescendantBorder *LineStyle `json:"descendantBorder,omitempty"`
+}
+
+/*
+ */
+type IsolatedElementHighlightConfig struct {
+	IsolationModeHighlightConfig *IsolationModeHighlightConfig `json:"isolationModeHighlightConfig"`
+	NodeId                       dom.NodeId                    `json:"nodeId"`
+}
+
+/*
+ */
+type IsolationModeHighlightConfig struct {
+	ResizerColor       *dom.RGBA `json:"resizerColor,omitempty"`
+	ResizerHandleColor *dom.RGBA `json:"resizerHandleColor,omitempty"`
+	MaskColor          *dom.RGBA `json:"maskColor,omitempty"`
+}
+
+/*
  */
 type InspectMode string
 
@@ -185,12 +209,6 @@ type GetSourceOrderHighlightObjectForTestArgs struct {
 
 type GetSourceOrderHighlightObjectForTestVal struct {
 	Highlight interface{} `json:"highlight"`
-}
-
-type HighlightFrameArgs struct {
-	FrameId             common.FrameId `json:"frameId"`
-	ContentColor        *dom.RGBA      `json:"contentColor,omitempty"`
-	ContentOutlineColor *dom.RGBA      `json:"contentOutlineColor,omitempty"`
 }
 
 type HighlightNodeArgs struct {
@@ -256,6 +274,10 @@ type SetShowScrollSnapOverlaysArgs struct {
 	ScrollSnapHighlightConfigs []*ScrollSnapHighlightConfig `json:"scrollSnapHighlightConfigs"`
 }
 
+type SetShowContainerQueryOverlaysArgs struct {
+	ContainerQueryHighlightConfigs []*ContainerQueryHighlightConfig `json:"containerQueryHighlightConfigs"`
+}
+
 type SetShowPaintRectsArgs struct {
 	Result bool `json:"result"`
 }
@@ -265,10 +287,6 @@ type SetShowLayoutShiftRegionsArgs struct {
 }
 
 type SetShowScrollBottleneckRectsArgs struct {
-	Show bool `json:"show"`
-}
-
-type SetShowHitTestBordersArgs struct {
 	Show bool `json:"show"`
 }
 
@@ -282,4 +300,8 @@ type SetShowViewportSizeOnResizeArgs struct {
 
 type SetShowHingeArgs struct {
 	HingeConfig *HingeConfig `json:"hingeConfig,omitempty"`
+}
+
+type SetShowIsolatedElementsArgs struct {
+	IsolatedElementHighlightConfigs []*IsolatedElementHighlightConfig `json:"isolatedElementHighlightConfigs"`
 }

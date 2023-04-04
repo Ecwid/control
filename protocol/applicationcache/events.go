@@ -5,7 +5,6 @@ import (
 )
 
 /*
-
  */
 type ApplicationCacheStatusUpdated struct {
 	FrameId     common.FrameId `json:"frameId"`
@@ -14,7 +13,6 @@ type ApplicationCacheStatusUpdated struct {
 }
 
 /*
-
  */
 type NetworkStateUpdated struct {
 	IsNowOnline bool `json:"isNowOnline"`

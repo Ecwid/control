@@ -5,14 +5,14 @@ import (
 )
 
 /*
-	Disables inspector domain notifications.
+Disables inspector domain notifications.
 */
 func Disable(c protocol.Caller) error {
 	return c.Call("Inspector.disable", nil, nil)
 }
 
 /*
-	Enables inspector domain notifications.
+Enables inspector domain notifications.
 */
 func Enable(c protocol.Caller) error {
 	return c.Call("Inspector.enable", nil, nil)

@@ -1,47 +1,47 @@
 package webaudio
 
 /*
-	An unique ID for a graph object (AudioContext, AudioNode, AudioParam) in Web Audio API
+An unique ID for a graph object (AudioContext, AudioNode, AudioParam) in Web Audio API
 */
 type GraphObjectId string
 
 /*
-	Enum of BaseAudioContext types
+Enum of BaseAudioContext types
 */
 type ContextType string
 
 /*
-	Enum of AudioContextState from the spec
+Enum of AudioContextState from the spec
 */
 type ContextState string
 
 /*
-	Enum of AudioNode types
+Enum of AudioNode types
 */
 type NodeType string
 
 /*
-	Enum of AudioNode::ChannelCountMode from the spec
+Enum of AudioNode::ChannelCountMode from the spec
 */
 type ChannelCountMode string
 
 /*
-	Enum of AudioNode::ChannelInterpretation from the spec
+Enum of AudioNode::ChannelInterpretation from the spec
 */
 type ChannelInterpretation string
 
 /*
-	Enum of AudioParam types
+Enum of AudioParam types
 */
 type ParamType string
 
 /*
-	Enum of AudioParam::AutomationRate from the spec
+Enum of AudioParam::AutomationRate from the spec
 */
 type AutomationRate string
 
 /*
-	Fields in AudioContext that change in real-time.
+Fields in AudioContext that change in real-time.
 */
 type ContextRealtimeData struct {
 	CurrentTime              float64 `json:"currentTime"`
@@ -51,7 +51,7 @@ type ContextRealtimeData struct {
 }
 
 /*
-	Protocol object for BaseAudioContext
+Protocol object for BaseAudioContext
 */
 type BaseAudioContext struct {
 	ContextId             GraphObjectId        `json:"contextId"`
@@ -64,7 +64,7 @@ type BaseAudioContext struct {
 }
 
 /*
-	Protocol object for AudioListener
+Protocol object for AudioListener
 */
 type AudioListener struct {
 	ListenerId GraphObjectId `json:"listenerId"`
@@ -72,7 +72,7 @@ type AudioListener struct {
 }
 
 /*
-	Protocol object for AudioNode
+Protocol object for AudioNode
 */
 type AudioNode struct {
 	NodeId                GraphObjectId         `json:"nodeId"`
@@ -86,7 +86,7 @@ type AudioNode struct {
 }
 
 /*
-	Protocol object for AudioParam
+Protocol object for AudioParam
 */
 type AudioParam struct {
 	ParamId      GraphObjectId  `json:"paramId"`

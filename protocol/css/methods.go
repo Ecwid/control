@@ -6,6 +6,7 @@ import (
 
 /*
 	Inserts a new rule with the given `ruleText` in a stylesheet with given `styleSheetId`, at the
+
 position specified by `location`.
 */
 func AddRule(c protocol.Caller, args AddRuleArgs) (*AddRuleVal, error) {
@@ -14,7 +15,7 @@ func AddRule(c protocol.Caller, args AddRuleArgs) (*AddRuleVal, error) {
 }
 
 /*
-	Returns all class names from specified stylesheet.
+Returns all class names from specified stylesheet.
 */
 func CollectClassNames(c protocol.Caller, args CollectClassNamesArgs) (*CollectClassNamesVal, error) {
 	var val = &CollectClassNamesVal{}
@@ -22,7 +23,7 @@ func CollectClassNames(c protocol.Caller, args CollectClassNamesArgs) (*CollectC
 }
 
 /*
-	Creates a new special "via-inspector" stylesheet in the frame with given `frameId`.
+Creates a new special "via-inspector" stylesheet in the frame with given `frameId`.
 */
 func CreateStyleSheet(c protocol.Caller, args CreateStyleSheetArgs) (*CreateStyleSheetVal, error) {
 	var val = &CreateStyleSheetVal{}
@@ -30,7 +31,7 @@ func CreateStyleSheet(c protocol.Caller, args CreateStyleSheetArgs) (*CreateStyl
 }
 
 /*
-	Disables the CSS agent for the given page.
+Disables the CSS agent for the given page.
 */
 func Disable(c protocol.Caller) error {
 	return c.Call("CSS.disable", nil, nil)
@@ -38,6 +39,7 @@ func Disable(c protocol.Caller) error {
 
 /*
 	Enables the CSS agent for the given page. Clients should not assume that the CSS agent has been
+
 enabled until the result of this command is received.
 */
 func Enable(c protocol.Caller) error {
@@ -46,6 +48,7 @@ func Enable(c protocol.Caller) error {
 
 /*
 	Ensures that the given node will have specified pseudo-classes whenever its style is computed by
+
 the browser.
 */
 func ForcePseudoState(c protocol.Caller, args ForcePseudoStateArgs) error {
@@ -53,7 +56,6 @@ func ForcePseudoState(c protocol.Caller, args ForcePseudoStateArgs) error {
 }
 
 /*
-
  */
 func GetBackgroundColors(c protocol.Caller, args GetBackgroundColorsArgs) (*GetBackgroundColorsVal, error) {
 	var val = &GetBackgroundColorsVal{}
@@ -61,7 +63,7 @@ func GetBackgroundColors(c protocol.Caller, args GetBackgroundColorsArgs) (*GetB
 }
 
 /*
-	Returns the computed style for a DOM node identified by `nodeId`.
+Returns the computed style for a DOM node identified by `nodeId`.
 */
 func GetComputedStyleForNode(c protocol.Caller, args GetComputedStyleForNodeArgs) (*GetComputedStyleForNodeVal, error) {
 	var val = &GetComputedStyleForNodeVal{}
@@ -70,6 +72,7 @@ func GetComputedStyleForNode(c protocol.Caller, args GetComputedStyleForNodeArgs
 
 /*
 	Returns the styles defined inline (explicitly in the "style" attribute and implicitly, using DOM
+
 attributes) for a DOM node identified by `nodeId`.
 */
 func GetInlineStylesForNode(c protocol.Caller, args GetInlineStylesForNodeArgs) (*GetInlineStylesForNodeVal, error) {
@@ -78,7 +81,7 @@ func GetInlineStylesForNode(c protocol.Caller, args GetInlineStylesForNodeArgs) 
 }
 
 /*
-	Returns requested styles for a DOM node identified by `nodeId`.
+Returns requested styles for a DOM node identified by `nodeId`.
 */
 func GetMatchedStylesForNode(c protocol.Caller, args GetMatchedStylesForNodeArgs) (*GetMatchedStylesForNodeVal, error) {
 	var val = &GetMatchedStylesForNodeVal{}
@@ -86,7 +89,7 @@ func GetMatchedStylesForNode(c protocol.Caller, args GetMatchedStylesForNodeArgs
 }
 
 /*
-	Returns all media queries parsed by the rendering engine.
+Returns all media queries parsed by the rendering engine.
 */
 func GetMediaQueries(c protocol.Caller) (*GetMediaQueriesVal, error) {
 	var val = &GetMediaQueriesVal{}
@@ -95,6 +98,7 @@ func GetMediaQueries(c protocol.Caller) (*GetMediaQueriesVal, error) {
 
 /*
 	Requests information about platform fonts which we used to render child TextNodes in the given
+
 node.
 */
 func GetPlatformFontsForNode(c protocol.Caller, args GetPlatformFontsForNodeArgs) (*GetPlatformFontsForNodeVal, error) {
@@ -103,7 +107,7 @@ func GetPlatformFontsForNode(c protocol.Caller, args GetPlatformFontsForNodeArgs
 }
 
 /*
-	Returns the current textual content for a stylesheet.
+Returns the current textual content for a stylesheet.
 */
 func GetStyleSheetText(c protocol.Caller, args GetStyleSheetTextArgs) (*GetStyleSheetTextVal, error) {
 	var val = &GetStyleSheetTextVal{}
@@ -111,7 +115,20 @@ func GetStyleSheetText(c protocol.Caller, args GetStyleSheetTextArgs) (*GetStyle
 }
 
 /*
+	Returns all layers parsed by the rendering engine for the tree scope of a node.
+
+Given a DOM element identified by nodeId, getLayersForNode returns the root
+layer for the nearest ancestor document or shadow root. The layer root contains
+the full layer tree for the tree scope and their ordering.
+*/
+func GetLayersForNode(c protocol.Caller, args GetLayersForNodeArgs) (*GetLayersForNodeVal, error) {
+	var val = &GetLayersForNodeVal{}
+	return val, c.Call("CSS.getLayersForNode", args, val)
+}
+
+/*
 	Starts tracking the given computed styles for updates. The specified array of properties
+
 replaces the one previously specified. Pass empty array to disable tracking.
 Use takeComputedStyleUpdates to retrieve the list of nodes that had properties modified.
 The changes to computed style properties are only tracked for nodes pushed to the front-end
@@ -123,7 +140,7 @@ func TrackComputedStyleUpdates(c protocol.Caller, args TrackComputedStyleUpdates
 }
 
 /*
-	Polls the next batch of computed style updates.
+Polls the next batch of computed style updates.
 */
 func TakeComputedStyleUpdates(c protocol.Caller) (*TakeComputedStyleUpdatesVal, error) {
 	var val = &TakeComputedStyleUpdatesVal{}
@@ -132,6 +149,7 @@ func TakeComputedStyleUpdates(c protocol.Caller) (*TakeComputedStyleUpdatesVal, 
 
 /*
 	Find a rule with the given active property for the given node and set the new value for this
+
 property
 */
 func SetEffectivePropertyValueForNode(c protocol.Caller, args SetEffectivePropertyValueForNodeArgs) error {
@@ -139,7 +157,7 @@ func SetEffectivePropertyValueForNode(c protocol.Caller, args SetEffectiveProper
 }
 
 /*
-	Modifies the keyframe rule key text.
+Modifies the keyframe rule key text.
 */
 func SetKeyframeKey(c protocol.Caller, args SetKeyframeKeyArgs) (*SetKeyframeKeyVal, error) {
 	var val = &SetKeyframeKeyVal{}
@@ -147,7 +165,7 @@ func SetKeyframeKey(c protocol.Caller, args SetKeyframeKeyArgs) (*SetKeyframeKey
 }
 
 /*
-	Modifies the rule selector.
+Modifies the rule selector.
 */
 func SetMediaText(c protocol.Caller, args SetMediaTextArgs) (*SetMediaTextVal, error) {
 	var val = &SetMediaTextVal{}
@@ -155,7 +173,31 @@ func SetMediaText(c protocol.Caller, args SetMediaTextArgs) (*SetMediaTextVal, e
 }
 
 /*
-	Modifies the rule selector.
+Modifies the expression of a container query.
+*/
+func SetContainerQueryText(c protocol.Caller, args SetContainerQueryTextArgs) (*SetContainerQueryTextVal, error) {
+	var val = &SetContainerQueryTextVal{}
+	return val, c.Call("CSS.setContainerQueryText", args, val)
+}
+
+/*
+Modifies the expression of a supports at-rule.
+*/
+func SetSupportsText(c protocol.Caller, args SetSupportsTextArgs) (*SetSupportsTextVal, error) {
+	var val = &SetSupportsTextVal{}
+	return val, c.Call("CSS.setSupportsText", args, val)
+}
+
+/*
+Modifies the expression of a scope at-rule.
+*/
+func SetScopeText(c protocol.Caller, args SetScopeTextArgs) (*SetScopeTextVal, error) {
+	var val = &SetScopeTextVal{}
+	return val, c.Call("CSS.setScopeText", args, val)
+}
+
+/*
+Modifies the rule selector.
 */
 func SetRuleSelector(c protocol.Caller, args SetRuleSelectorArgs) (*SetRuleSelectorVal, error) {
 	var val = &SetRuleSelectorVal{}
@@ -163,7 +205,7 @@ func SetRuleSelector(c protocol.Caller, args SetRuleSelectorArgs) (*SetRuleSelec
 }
 
 /*
-	Sets the new stylesheet text.
+Sets the new stylesheet text.
 */
 func SetStyleSheetText(c protocol.Caller, args SetStyleSheetTextArgs) (*SetStyleSheetTextVal, error) {
 	var val = &SetStyleSheetTextVal{}
@@ -171,7 +213,7 @@ func SetStyleSheetText(c protocol.Caller, args SetStyleSheetTextArgs) (*SetStyle
 }
 
 /*
-	Applies specified style edits one after another in the given order.
+Applies specified style edits one after another in the given order.
 */
 func SetStyleTexts(c protocol.Caller, args SetStyleTextsArgs) (*SetStyleTextsVal, error) {
 	var val = &SetStyleTextsVal{}
@@ -179,7 +221,7 @@ func SetStyleTexts(c protocol.Caller, args SetStyleTextsArgs) (*SetStyleTextsVal
 }
 
 /*
-	Enables the selector recording.
+Enables the selector recording.
 */
 func StartRuleUsageTracking(c protocol.Caller) error {
 	return c.Call("CSS.startRuleUsageTracking", nil, nil)
@@ -187,6 +229,7 @@ func StartRuleUsageTracking(c protocol.Caller) error {
 
 /*
 	Stop tracking rule usage and return the list of rules that were used since last call to
+
 `takeCoverageDelta` (or since start of coverage instrumentation)
 */
 func StopRuleUsageTracking(c protocol.Caller) (*StopRuleUsageTrackingVal, error) {
@@ -196,6 +239,7 @@ func StopRuleUsageTracking(c protocol.Caller) (*StopRuleUsageTrackingVal, error)
 
 /*
 	Obtain list of rules that became used since last call to this method (or since start of coverage
+
 instrumentation)
 */
 func TakeCoverageDelta(c protocol.Caller) (*TakeCoverageDeltaVal, error) {
@@ -204,7 +248,7 @@ func TakeCoverageDelta(c protocol.Caller) (*TakeCoverageDeltaVal, error) {
 }
 
 /*
-	Enables/disables rendering of local CSS fonts (enabled by default).
+Enables/disables rendering of local CSS fonts (enabled by default).
 */
 func SetLocalFontsEnabled(c protocol.Caller, args SetLocalFontsEnabledArgs) error {
 	return c.Call("CSS.setLocalFontsEnabled", args, nil)

@@ -6,6 +6,7 @@ import (
 
 /*
 	Previously buffered events would be reported before method returns.
+
 See also: timelineEventAdded
 */
 func Enable(c protocol.Caller, args EnableArgs) error {

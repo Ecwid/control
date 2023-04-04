@@ -5,7 +5,7 @@ import (
 )
 
 /*
-	Detailed application cache resource information.
+Detailed application cache resource information.
 */
 type ApplicationCacheResource struct {
 	Url  string `json:"url"`
@@ -14,7 +14,7 @@ type ApplicationCacheResource struct {
 }
 
 /*
-	Detailed application cache information.
+Detailed application cache information.
 */
 type ApplicationCache struct {
 	ManifestURL  string                      `json:"manifestURL"`
@@ -25,7 +25,7 @@ type ApplicationCache struct {
 }
 
 /*
-	Frame identifier - manifest URL pair.
+Frame identifier - manifest URL pair.
 */
 type FrameWithManifest struct {
 	FrameId     common.FrameId `json:"frameId"`

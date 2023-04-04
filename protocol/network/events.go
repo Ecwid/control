@@ -5,7 +5,7 @@ import (
 )
 
 /*
-	Fired when data chunk was received over the network.
+Fired when data chunk was received over the network.
 */
 type DataReceived struct {
 	RequestId         RequestId     `json:"requestId"`
@@ -15,7 +15,7 @@ type DataReceived struct {
 }
 
 /*
-	Fired when EventSource message is received.
+Fired when EventSource message is received.
 */
 type EventSourceMessageReceived struct {
 	RequestId RequestId     `json:"requestId"`
@@ -26,7 +26,7 @@ type EventSourceMessageReceived struct {
 }
 
 /*
-	Fired when HTTP request has failed to load.
+Fired when HTTP request has failed to load.
 */
 type LoadingFailed struct {
 	RequestId       RequestId        `json:"requestId"`
@@ -39,7 +39,7 @@ type LoadingFailed struct {
 }
 
 /*
-	Fired when HTTP request has finished loading.
+Fired when HTTP request has finished loading.
 */
 type LoadingFinished struct {
 	RequestId                RequestId     `json:"requestId"`
@@ -49,31 +49,32 @@ type LoadingFinished struct {
 }
 
 /*
-	Fired if request ended up loading from cache.
+Fired if request ended up loading from cache.
 */
 type RequestServedFromCache struct {
 	RequestId RequestId `json:"requestId"`
 }
 
 /*
-	Fired when page is about to send HTTP request.
+Fired when page is about to send HTTP request.
 */
 type RequestWillBeSent struct {
-	RequestId        RequestId             `json:"requestId"`
-	LoaderId         LoaderId              `json:"loaderId"`
-	DocumentURL      string                `json:"documentURL"`
-	Request          *Request              `json:"request"`
-	Timestamp        MonotonicTime         `json:"timestamp"`
-	WallTime         common.TimeSinceEpoch `json:"wallTime"`
-	Initiator        *Initiator            `json:"initiator"`
-	RedirectResponse *Response             `json:"redirectResponse,omitempty"`
-	Type             ResourceType          `json:"type,omitempty"`
-	FrameId          common.FrameId        `json:"frameId,omitempty"`
-	HasUserGesture   bool                  `json:"hasUserGesture,omitempty"`
+	RequestId            RequestId             `json:"requestId"`
+	LoaderId             LoaderId              `json:"loaderId"`
+	DocumentURL          string                `json:"documentURL"`
+	Request              *Request              `json:"request"`
+	Timestamp            MonotonicTime         `json:"timestamp"`
+	WallTime             common.TimeSinceEpoch `json:"wallTime"`
+	Initiator            *Initiator            `json:"initiator"`
+	RedirectHasExtraInfo bool                  `json:"redirectHasExtraInfo"`
+	RedirectResponse     *Response             `json:"redirectResponse,omitempty"`
+	Type                 ResourceType          `json:"type,omitempty"`
+	FrameId              common.FrameId        `json:"frameId,omitempty"`
+	HasUserGesture       bool                  `json:"hasUserGesture,omitempty"`
 }
 
 /*
-	Fired when resource loading priority is changed
+Fired when resource loading priority is changed
 */
 type ResourceChangedPriority struct {
 	RequestId   RequestId        `json:"requestId"`
@@ -82,7 +83,7 @@ type ResourceChangedPriority struct {
 }
 
 /*
-	Fired when a signed exchange was received over the network
+Fired when a signed exchange was received over the network
 */
 type SignedExchangeReceived struct {
 	RequestId RequestId           `json:"requestId"`
@@ -90,19 +91,20 @@ type SignedExchangeReceived struct {
 }
 
 /*
-	Fired when HTTP response is available.
+Fired when HTTP response is available.
 */
 type ResponseReceived struct {
-	RequestId RequestId      `json:"requestId"`
-	LoaderId  LoaderId       `json:"loaderId"`
-	Timestamp MonotonicTime  `json:"timestamp"`
-	Type      ResourceType   `json:"type"`
-	Response  *Response      `json:"response"`
-	FrameId   common.FrameId `json:"frameId,omitempty"`
+	RequestId    RequestId      `json:"requestId"`
+	LoaderId     LoaderId       `json:"loaderId"`
+	Timestamp    MonotonicTime  `json:"timestamp"`
+	Type         ResourceType   `json:"type"`
+	Response     *Response      `json:"response"`
+	HasExtraInfo bool           `json:"hasExtraInfo"`
+	FrameId      common.FrameId `json:"frameId,omitempty"`
 }
 
 /*
-	Fired when WebSocket is closed.
+Fired when WebSocket is closed.
 */
 type WebSocketClosed struct {
 	RequestId RequestId     `json:"requestId"`
@@ -110,7 +112,7 @@ type WebSocketClosed struct {
 }
 
 /*
-	Fired upon WebSocket creation.
+Fired upon WebSocket creation.
 */
 type WebSocketCreated struct {
 	RequestId RequestId  `json:"requestId"`
@@ -119,7 +121,7 @@ type WebSocketCreated struct {
 }
 
 /*
-	Fired when WebSocket message error occurs.
+Fired when WebSocket message error occurs.
 */
 type WebSocketFrameError struct {
 	RequestId    RequestId     `json:"requestId"`
@@ -128,7 +130,7 @@ type WebSocketFrameError struct {
 }
 
 /*
-	Fired when WebSocket message is received.
+Fired when WebSocket message is received.
 */
 type WebSocketFrameReceived struct {
 	RequestId RequestId       `json:"requestId"`
@@ -137,7 +139,7 @@ type WebSocketFrameReceived struct {
 }
 
 /*
-	Fired when WebSocket message is sent.
+Fired when WebSocket message is sent.
 */
 type WebSocketFrameSent struct {
 	RequestId RequestId       `json:"requestId"`
@@ -146,7 +148,7 @@ type WebSocketFrameSent struct {
 }
 
 /*
-	Fired when WebSocket handshake response becomes available.
+Fired when WebSocket handshake response becomes available.
 */
 type WebSocketHandshakeResponseReceived struct {
 	RequestId RequestId          `json:"requestId"`
@@ -155,7 +157,7 @@ type WebSocketHandshakeResponseReceived struct {
 }
 
 /*
-	Fired when WebSocket is about to initiate handshake.
+Fired when WebSocket is about to initiate handshake.
 */
 type WebSocketWillSendHandshakeRequest struct {
 	RequestId RequestId             `json:"requestId"`
@@ -165,7 +167,7 @@ type WebSocketWillSendHandshakeRequest struct {
 }
 
 /*
-	Fired upon WebTransport creation.
+Fired upon WebTransport creation.
 */
 type WebTransportCreated struct {
 	TransportId RequestId     `json:"transportId"`
@@ -175,7 +177,7 @@ type WebTransportCreated struct {
 }
 
 /*
-	Fired when WebTransport handshake is finished.
+Fired when WebTransport handshake is finished.
 */
 type WebTransportConnectionEstablished struct {
 	TransportId RequestId     `json:"transportId"`
@@ -183,7 +185,7 @@ type WebTransportConnectionEstablished struct {
 }
 
 /*
-	Fired when WebTransport is disposed.
+Fired when WebTransport is disposed.
 */
 type WebTransportClosed struct {
 	TransportId RequestId     `json:"transportId"`
@@ -192,32 +194,40 @@ type WebTransportClosed struct {
 
 /*
 	Fired when additional information about a requestWillBeSent event is available from the
+
 network stack. Not every requestWillBeSent event will have an additional
 requestWillBeSentExtraInfo fired for it, and there is no guarantee whether requestWillBeSent
 or requestWillBeSentExtraInfo will be fired first for the same request.
 */
 type RequestWillBeSentExtraInfo struct {
-	RequestId           RequestId                  `json:"requestId"`
-	AssociatedCookies   []*BlockedCookieWithReason `json:"associatedCookies"`
-	Headers             *Headers                   `json:"headers"`
-	ClientSecurityState *ClientSecurityState       `json:"clientSecurityState,omitempty"`
+	RequestId                     RequestId                  `json:"requestId"`
+	AssociatedCookies             []*BlockedCookieWithReason `json:"associatedCookies"`
+	Headers                       *Headers                   `json:"headers"`
+	ConnectTiming                 *ConnectTiming             `json:"connectTiming"`
+	ClientSecurityState           *ClientSecurityState       `json:"clientSecurityState,omitempty"`
+	SiteHasCookieInOtherPartition bool                       `json:"siteHasCookieInOtherPartition,omitempty"`
 }
 
 /*
 	Fired when additional information about a responseReceived event is available from the network
+
 stack. Not every responseReceived event will have an additional responseReceivedExtraInfo for
 it, and responseReceivedExtraInfo may be fired before or after responseReceived.
 */
 type ResponseReceivedExtraInfo struct {
-	RequestId              RequestId                     `json:"requestId"`
-	BlockedCookies         []*BlockedSetCookieWithReason `json:"blockedCookies"`
-	Headers                *Headers                      `json:"headers"`
-	ResourceIPAddressSpace IPAddressSpace                `json:"resourceIPAddressSpace"`
-	HeadersText            string                        `json:"headersText,omitempty"`
+	RequestId                RequestId                     `json:"requestId"`
+	BlockedCookies           []*BlockedSetCookieWithReason `json:"blockedCookies"`
+	Headers                  *Headers                      `json:"headers"`
+	ResourceIPAddressSpace   IPAddressSpace                `json:"resourceIPAddressSpace"`
+	StatusCode               int                           `json:"statusCode"`
+	HeadersText              string                        `json:"headersText,omitempty"`
+	CookiePartitionKey       string                        `json:"cookiePartitionKey,omitempty"`
+	CookiePartitionKeyOpaque bool                          `json:"cookiePartitionKeyOpaque,omitempty"`
 }
 
 /*
 	Fired exactly once for each Trust Token operation. Depending on
+
 the type of the operation and whether the operation succeeded or
 failed, the event is fired before the corresponding request was sent
 or after the response was received.
@@ -229,4 +239,65 @@ type TrustTokenOperationDone struct {
 	TopLevelOrigin   string                  `json:"topLevelOrigin,omitempty"`
 	IssuerOrigin     string                  `json:"issuerOrigin,omitempty"`
 	IssuedTokenCount int                     `json:"issuedTokenCount,omitempty"`
+}
+
+/*
+	Fired once when parsing the .wbn file has succeeded.
+
+The event contains the information about the web bundle contents.
+*/
+type SubresourceWebBundleMetadataReceived struct {
+	RequestId RequestId `json:"requestId"`
+	Urls      []string  `json:"urls"`
+}
+
+/*
+Fired once when parsing the .wbn file has failed.
+*/
+type SubresourceWebBundleMetadataError struct {
+	RequestId    RequestId `json:"requestId"`
+	ErrorMessage string    `json:"errorMessage"`
+}
+
+/*
+	Fired when handling requests for resources within a .wbn file.
+
+Note: this will only be fired for resources that are requested by the webpage.
+*/
+type SubresourceWebBundleInnerResponseParsed struct {
+	InnerRequestId  RequestId `json:"innerRequestId"`
+	InnerRequestURL string    `json:"innerRequestURL"`
+	BundleRequestId RequestId `json:"bundleRequestId,omitempty"`
+}
+
+/*
+Fired when request for resources within a .wbn file failed.
+*/
+type SubresourceWebBundleInnerResponseError struct {
+	InnerRequestId  RequestId `json:"innerRequestId"`
+	InnerRequestURL string    `json:"innerRequestURL"`
+	ErrorMessage    string    `json:"errorMessage"`
+	BundleRequestId RequestId `json:"bundleRequestId,omitempty"`
+}
+
+/*
+	Is sent whenever a new report is added.
+
+And after 'enableReportingApi' for all existing reports.
+*/
+type ReportingApiReportAdded struct {
+	Report *ReportingApiReport `json:"report"`
+}
+
+/*
+ */
+type ReportingApiReportUpdated struct {
+	Report *ReportingApiReport `json:"report"`
+}
+
+/*
+ */
+type ReportingApiEndpointsChangedForOrigin struct {
+	Origin    string                  `json:"origin"`
+	Endpoints []*ReportingApiEndpoint `json:"endpoints"`
 }

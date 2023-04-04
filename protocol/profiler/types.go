@@ -5,7 +5,7 @@ import (
 )
 
 /*
-	Profile node. Holds callsite information, execution statistics and child nodes.
+Profile node. Holds callsite information, execution statistics and child nodes.
 */
 type ProfileNode struct {
 	Id            int                 `json:"id"`
@@ -17,7 +17,7 @@ type ProfileNode struct {
 }
 
 /*
-	Profile.
+Profile.
 */
 type Profile struct {
 	Nodes      []*ProfileNode `json:"nodes"`
@@ -28,7 +28,7 @@ type Profile struct {
 }
 
 /*
-	Specifies a number of samples attributed to a certain source position.
+Specifies a number of samples attributed to a certain source position.
 */
 type PositionTickInfo struct {
 	Line  int `json:"line"`
@@ -36,7 +36,7 @@ type PositionTickInfo struct {
 }
 
 /*
-	Coverage data for a source range.
+Coverage data for a source range.
 */
 type CoverageRange struct {
 	StartOffset int `json:"startOffset"`
@@ -45,7 +45,7 @@ type CoverageRange struct {
 }
 
 /*
-	Coverage data for a JavaScript function.
+Coverage data for a JavaScript function.
 */
 type FunctionCoverage struct {
 	FunctionName    string           `json:"functionName"`
@@ -54,53 +54,12 @@ type FunctionCoverage struct {
 }
 
 /*
-	Coverage data for a JavaScript script.
+Coverage data for a JavaScript script.
 */
 type ScriptCoverage struct {
 	ScriptId  runtime.ScriptId    `json:"scriptId"`
 	Url       string              `json:"url"`
 	Functions []*FunctionCoverage `json:"functions"`
-}
-
-/*
-	Describes a type collected during runtime.
-*/
-type TypeObject struct {
-	Name string `json:"name"`
-}
-
-/*
-	Source offset and types for a parameter or return value.
-*/
-type TypeProfileEntry struct {
-	Offset int           `json:"offset"`
-	Types  []*TypeObject `json:"types"`
-}
-
-/*
-	Type profile data collected during runtime for a JavaScript script.
-*/
-type ScriptTypeProfile struct {
-	ScriptId runtime.ScriptId    `json:"scriptId"`
-	Url      string              `json:"url"`
-	Entries  []*TypeProfileEntry `json:"entries"`
-}
-
-/*
-	Collected counter information.
-*/
-type CounterInfo struct {
-	Name  string `json:"name"`
-	Value int    `json:"value"`
-}
-
-/*
-	Runtime call counter information.
-*/
-type RuntimeCallCounterInfo struct {
-	Name  string  `json:"name"`
-	Value float64 `json:"value"`
-	Time  float64 `json:"time"`
 }
 
 type GetBestEffortCoverageVal struct {
@@ -128,16 +87,4 @@ type StopVal struct {
 type TakePreciseCoverageVal struct {
 	Result    []*ScriptCoverage `json:"result"`
 	Timestamp float64           `json:"timestamp"`
-}
-
-type TakeTypeProfileVal struct {
-	Result []*ScriptTypeProfile `json:"result"`
-}
-
-type GetCountersVal struct {
-	Result []*CounterInfo `json:"result"`
-}
-
-type GetRuntimeCallStatsVal struct {
-	Result []*RuntimeCallCounterInfo `json:"result"`
 }

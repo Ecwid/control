@@ -1,27 +1,22 @@
 package webauthn
 
 /*
-
  */
 type AuthenticatorId string
 
 /*
-
  */
 type AuthenticatorProtocol string
 
 /*
-
  */
 type Ctap2Version string
 
 /*
-
  */
 type AuthenticatorTransport string
 
 /*
-
  */
 type VirtualAuthenticatorOptions struct {
 	Protocol                    AuthenticatorProtocol  `json:"protocol"`
@@ -30,12 +25,14 @@ type VirtualAuthenticatorOptions struct {
 	HasResidentKey              bool                   `json:"hasResidentKey,omitempty"`
 	HasUserVerification         bool                   `json:"hasUserVerification,omitempty"`
 	HasLargeBlob                bool                   `json:"hasLargeBlob,omitempty"`
+	HasCredBlob                 bool                   `json:"hasCredBlob,omitempty"`
+	HasMinPinLength             bool                   `json:"hasMinPinLength,omitempty"`
+	HasPrf                      bool                   `json:"hasPrf,omitempty"`
 	AutomaticPresenceSimulation bool                   `json:"automaticPresenceSimulation,omitempty"`
 	IsUserVerified              bool                   `json:"isUserVerified,omitempty"`
 }
 
 /*
-
  */
 type Credential struct {
 	CredentialId         []byte `json:"credentialId"`
@@ -47,12 +44,23 @@ type Credential struct {
 	LargeBlob            []byte `json:"largeBlob,omitempty"`
 }
 
+type EnableArgs struct {
+	EnableUI bool `json:"enableUI,omitempty"`
+}
+
 type AddVirtualAuthenticatorArgs struct {
 	Options *VirtualAuthenticatorOptions `json:"options"`
 }
 
 type AddVirtualAuthenticatorVal struct {
 	AuthenticatorId AuthenticatorId `json:"authenticatorId"`
+}
+
+type SetResponseOverrideBitsArgs struct {
+	AuthenticatorId  AuthenticatorId `json:"authenticatorId"`
+	IsBogusSignature bool            `json:"isBogusSignature,omitempty"`
+	IsBadUV          bool            `json:"isBadUV,omitempty"`
+	IsBadUP          bool            `json:"isBadUP,omitempty"`
 }
 
 type RemoveVirtualAuthenticatorArgs struct {

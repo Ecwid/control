@@ -1,12 +1,11 @@
 package common
 
 /*
-
  */
 type BrowserContextID string
 
 /*
-	Rectangle.
+Rectangle.
 */
 type Rect struct {
 	X      float64 `json:"x"`
@@ -17,20 +16,23 @@ type Rect struct {
 
 /*
 	Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
+
 Missing optional values will be filled in by the target with what it would normally use.
 */
 type UserAgentMetadata struct {
 	Brands          []*UserAgentBrandVersion `json:"brands,omitempty"`
-	FullVersion     string                   `json:"fullVersion,omitempty"`
+	FullVersionList []*UserAgentBrandVersion `json:"fullVersionList,omitempty"`
 	Platform        string                   `json:"platform"`
 	PlatformVersion string                   `json:"platformVersion"`
 	Architecture    string                   `json:"architecture"`
 	Model           string                   `json:"model"`
 	Mobile          bool                     `json:"mobile"`
+	Bitness         string                   `json:"bitness,omitempty"`
+	Wow64           bool                     `json:"wow64,omitempty"`
 }
 
 /*
-	Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
+Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
 */
 type UserAgentBrandVersion struct {
 	Brand   string `json:"brand"`
@@ -38,11 +40,11 @@ type UserAgentBrandVersion struct {
 }
 
 /*
-	UTC time in seconds, counted from January 1, 1970.
+UTC time in seconds, counted from January 1, 1970.
 */
 type TimeSinceEpoch float64
 
 /*
-	Unique frame identifier.
+Unique frame identifier.
 */
 type FrameId string

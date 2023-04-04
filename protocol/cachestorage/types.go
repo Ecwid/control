@@ -1,17 +1,17 @@
 package cachestorage
 
 /*
-	Unique identifier of the Cache object.
+Unique identifier of the Cache object.
 */
 type CacheId string
 
 /*
-	type of HTTP response cached
+type of HTTP response cached
 */
 type CachedResponseType string
 
 /*
-	Data entry.
+Data entry.
 */
 type DataEntry struct {
 	RequestURL         string             `json:"requestURL"`
@@ -25,16 +25,16 @@ type DataEntry struct {
 }
 
 /*
-	Cache identifier.
+Cache identifier.
 */
 type Cache struct {
 	CacheId        CacheId `json:"cacheId"`
 	SecurityOrigin string  `json:"securityOrigin"`
+	StorageKey     string  `json:"storageKey"`
 	CacheName      string  `json:"cacheName"`
 }
 
 /*
-
  */
 type Header struct {
 	Name  string `json:"name"`
@@ -42,7 +42,7 @@ type Header struct {
 }
 
 /*
-	Cached response
+Cached response
 */
 type CachedResponse struct {
 	Body []byte `json:"body"`
@@ -58,7 +58,8 @@ type DeleteEntryArgs struct {
 }
 
 type RequestCacheNamesArgs struct {
-	SecurityOrigin string `json:"securityOrigin"`
+	SecurityOrigin string `json:"securityOrigin,omitempty"`
+	StorageKey     string `json:"storageKey,omitempty"`
 }
 
 type RequestCacheNamesVal struct {

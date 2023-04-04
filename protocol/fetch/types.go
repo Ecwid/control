@@ -6,19 +6,19 @@ import (
 )
 
 /*
-	Unique request identifier.
+Unique request identifier.
 */
 type RequestId string
 
 /*
 	Stages of the request to handle. Request will intercept before the request is
+
 sent. Response will intercept after the response is received (but before response
-body is received.
+body is received).
 */
 type RequestStage string
 
 /*
-
  */
 type RequestPattern struct {
 	UrlPattern   string               `json:"urlPattern,omitempty"`
@@ -27,7 +27,7 @@ type RequestPattern struct {
 }
 
 /*
-	Response HTTP header entry
+Response HTTP header entry
 */
 type HeaderEntry struct {
 	Name  string `json:"name"`
@@ -35,7 +35,7 @@ type HeaderEntry struct {
 }
 
 /*
-	Authorization challenge for HTTP status code 401 or 407.
+Authorization challenge for HTTP status code 401 or 407.
 */
 type AuthChallenge struct {
 	Source string `json:"source,omitempty"`
@@ -45,7 +45,7 @@ type AuthChallenge struct {
 }
 
 /*
-	Response to an AuthChallenge.
+Response to an AuthChallenge.
 */
 type AuthChallengeResponse struct {
 	Response string `json:"response"`
@@ -73,16 +73,25 @@ type FulfillRequestArgs struct {
 }
 
 type ContinueRequestArgs struct {
-	RequestId RequestId      `json:"requestId"`
-	Url       string         `json:"url,omitempty"`
-	Method    string         `json:"method,omitempty"`
-	PostData  []byte         `json:"postData,omitempty"`
-	Headers   []*HeaderEntry `json:"headers,omitempty"`
+	RequestId         RequestId      `json:"requestId"`
+	Url               string         `json:"url,omitempty"`
+	Method            string         `json:"method,omitempty"`
+	PostData          []byte         `json:"postData,omitempty"`
+	Headers           []*HeaderEntry `json:"headers,omitempty"`
+	InterceptResponse bool           `json:"interceptResponse,omitempty"`
 }
 
 type ContinueWithAuthArgs struct {
 	RequestId             RequestId              `json:"requestId"`
 	AuthChallengeResponse *AuthChallengeResponse `json:"authChallengeResponse"`
+}
+
+type ContinueResponseArgs struct {
+	RequestId             RequestId      `json:"requestId"`
+	ResponseCode          int            `json:"responseCode,omitempty"`
+	ResponsePhrase        string         `json:"responsePhrase,omitempty"`
+	ResponseHeaders       []*HeaderEntry `json:"responseHeaders,omitempty"`
+	BinaryResponseHeaders []byte         `json:"binaryResponseHeaders,omitempty"`
 }
 
 type GetResponseBodyArgs struct {

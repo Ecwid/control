@@ -8,23 +8,22 @@ import (
 )
 
 /*
-
  */
 type DomContentEventFired struct {
 	Timestamp network.MonotonicTime `json:"timestamp"`
 }
 
 /*
-	Emitted only when `page.interceptFileChooser` is enabled.
+Emitted only when `page.interceptFileChooser` is enabled.
 */
 type FileChooserOpened struct {
 	FrameId       common.FrameId    `json:"frameId"`
-	BackendNodeId dom.BackendNodeId `json:"backendNodeId"`
 	Mode          string            `json:"mode"`
+	BackendNodeId dom.BackendNodeId `json:"backendNodeId,omitempty"`
 }
 
 /*
-	Fired when frame has been attached to its parent.
+Fired when frame has been attached to its parent.
 */
 type FrameAttached struct {
 	FrameId       common.FrameId      `json:"frameId"`
@@ -33,7 +32,7 @@ type FrameAttached struct {
 }
 
 /*
-	Fired when frame has been detached from its parent.
+Fired when frame has been detached from its parent.
 */
 type FrameDetached struct {
 	FrameId common.FrameId `json:"frameId"`
@@ -41,26 +40,27 @@ type FrameDetached struct {
 }
 
 /*
-	Fired once navigation of the frame has completed. Frame is now associated with the new loader.
+Fired once navigation of the frame has completed. Frame is now associated with the new loader.
 */
 type FrameNavigated struct {
-	Frame *Frame `json:"frame"`
+	Frame *Frame         `json:"frame"`
+	Type  NavigationType `json:"type"`
 }
 
 /*
-	Fired when opening document to write to.
+Fired when opening document to write to.
 */
 type DocumentOpened struct {
 	Frame *Frame `json:"frame"`
 }
 
 /*
-
  */
 type FrameResized interface{}
 
 /*
 	Fired when a renderer-initiated navigation is requested.
+
 Navigation may still be cancelled after the event is issued.
 */
 type FrameRequestedNavigation struct {
@@ -71,31 +71,32 @@ type FrameRequestedNavigation struct {
 }
 
 /*
-	Fired when frame has started loading.
+Fired when frame has started loading.
 */
 type FrameStartedLoading struct {
 	FrameId common.FrameId `json:"frameId"`
 }
 
 /*
-	Fired when frame has stopped loading.
+Fired when frame has stopped loading.
 */
 type FrameStoppedLoading struct {
 	FrameId common.FrameId `json:"frameId"`
 }
 
 /*
-	Fired when interstitial page was hidden
+Fired when interstitial page was hidden
 */
 type InterstitialHidden interface{}
 
 /*
-	Fired when interstitial page was shown
+Fired when interstitial page was shown
 */
 type InterstitialShown interface{}
 
 /*
 	Fired when a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload) has been
+
 closed.
 */
 type JavascriptDialogClosed struct {
@@ -105,6 +106,7 @@ type JavascriptDialogClosed struct {
 
 /*
 	Fired when a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload) is about to
+
 open.
 */
 type JavascriptDialogOpening struct {
@@ -116,7 +118,7 @@ type JavascriptDialogOpening struct {
 }
 
 /*
-	Fired for top level page lifecycle events such as navigation, load, paint, etc.
+Fired for top level page lifecycle events such as navigation, load, paint, etc.
 */
 type LifecycleEvent struct {
 	FrameId   common.FrameId        `json:"frameId"`
@@ -126,14 +128,37 @@ type LifecycleEvent struct {
 }
 
 /*
+	Fired for failed bfcache history navigations if BackForwardCache feature is enabled. Do
 
+not assume any ordering with the Page.frameNavigated event. This event is fired only for
+main-frame history navigation where the document changes (non-same-document navigations),
+when bfcache navigation fails.
+*/
+type BackForwardCacheNotUsed struct {
+	LoaderId                    network.LoaderId                            `json:"loaderId"`
+	FrameId                     common.FrameId                              `json:"frameId"`
+	NotRestoredExplanations     []*BackForwardCacheNotRestoredExplanation   `json:"notRestoredExplanations"`
+	NotRestoredExplanationsTree *BackForwardCacheNotRestoredExplanationTree `json:"notRestoredExplanationsTree,omitempty"`
+}
+
+/*
+Fired when a prerender attempt is completed.
+*/
+type PrerenderAttemptCompleted struct {
+	InitiatingFrameId   common.FrameId       `json:"initiatingFrameId"`
+	PrerenderingUrl     string               `json:"prerenderingUrl"`
+	FinalStatus         PrerenderFinalStatus `json:"finalStatus"`
+	DisallowedApiMethod string               `json:"disallowedApiMethod,omitempty"`
+}
+
+/*
  */
 type LoadEventFired struct {
 	Timestamp network.MonotonicTime `json:"timestamp"`
 }
 
 /*
-	Fired when same-document navigation happens, e.g. due to history API usage or anchor navigation.
+Fired when same-document navigation happens, e.g. due to history API usage or anchor navigation.
 */
 type NavigatedWithinDocument struct {
 	FrameId common.FrameId `json:"frameId"`
@@ -141,7 +166,7 @@ type NavigatedWithinDocument struct {
 }
 
 /*
-	Compressed image data requested by the `startScreencast`.
+Compressed image data requested by the `startScreencast`.
 */
 type ScreencastFrame struct {
 	Data      []byte                   `json:"data"`
@@ -150,7 +175,7 @@ type ScreencastFrame struct {
 }
 
 /*
-	Fired when the page with currently enabled screencast was shown or hidden `.
+Fired when the page with currently enabled screencast was shown or hidden `.
 */
 type ScreencastVisibilityChanged struct {
 	Visible bool `json:"visible"`
@@ -158,6 +183,7 @@ type ScreencastVisibilityChanged struct {
 
 /*
 	Fired when a new window is going to be opened, via window.open(), link click, form submission,
+
 etc.
 */
 type WindowOpen struct {
@@ -169,6 +195,7 @@ type WindowOpen struct {
 
 /*
 	Issued for every compilation cache generated. Is only available
+
 if Page.setGenerateCompilationCache is enabled.
 */
 type CompilationCacheProduced struct {

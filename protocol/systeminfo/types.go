@@ -1,7 +1,7 @@
 package systeminfo
 
 /*
-	Describes a single graphics processor (GPU).
+Describes a single graphics processor (GPU).
 */
 type GPUDevice struct {
 	VendorId      float64 `json:"vendorId"`
@@ -15,7 +15,7 @@ type GPUDevice struct {
 }
 
 /*
-	Describes the width and height dimensions of an entity.
+Describes the width and height dimensions of an entity.
 */
 type Size struct {
 	Width  int `json:"width"`
@@ -24,6 +24,7 @@ type Size struct {
 
 /*
 	Describes a supported video decoding profile with its associated minimum and
+
 maximum resolutions.
 */
 type VideoDecodeAcceleratorCapability struct {
@@ -34,6 +35,7 @@ type VideoDecodeAcceleratorCapability struct {
 
 /*
 	Describes a supported video encoding profile with its associated maximum
+
 resolution and maximum framerate.
 */
 type VideoEncodeAcceleratorCapability struct {
@@ -44,17 +46,18 @@ type VideoEncodeAcceleratorCapability struct {
 }
 
 /*
-	YUV subsampling type of the pixels of a given image.
+YUV subsampling type of the pixels of a given image.
 */
 type SubsamplingFormat string
 
 /*
-	Image format of a given image.
+Image format of a given image.
 */
 type ImageType string
 
 /*
 	Describes a supported image decoding profile with its associated minimum and
+
 maximum resolutions and subsampling.
 */
 type ImageDecodeAcceleratorCapability struct {
@@ -65,7 +68,7 @@ type ImageDecodeAcceleratorCapability struct {
 }
 
 /*
-	Provides information about the GPU(s) on the system.
+Provides information about the GPU(s) on the system.
 */
 type GPUInfo struct {
 	Devices              []*GPUDevice                        `json:"devices"`
@@ -78,7 +81,7 @@ type GPUInfo struct {
 }
 
 /*
-	Represents process info.
+Represents process info.
 */
 type ProcessInfo struct {
 	Type    string  `json:"type"`
@@ -91,6 +94,14 @@ type GetInfoVal struct {
 	ModelName    string   `json:"modelName"`
 	ModelVersion string   `json:"modelVersion"`
 	CommandLine  string   `json:"commandLine"`
+}
+
+type GetFeatureStateArgs struct {
+	FeatureState string `json:"featureState"`
+}
+
+type GetFeatureStateVal struct {
+	FeatureEnabled bool `json:"featureEnabled"`
 }
 
 type GetProcessInfoVal struct {

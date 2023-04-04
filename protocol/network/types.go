@@ -9,71 +9,74 @@ import (
 )
 
 /*
-	Resource type as it was perceived by the rendering engine.
+Resource type as it was perceived by the rendering engine.
 */
 type ResourceType string
 
 /*
-	Unique loader identifier.
+Unique loader identifier.
 */
 type LoaderId string
 
 /*
-	Unique request identifier.
+Unique request identifier.
 */
 type RequestId string
 
 /*
-	Unique intercepted request identifier.
+Unique intercepted request identifier.
 */
 type InterceptionId string
 
 /*
-	Network level fetch failure reason.
+Network level fetch failure reason.
 */
 type ErrorReason string
 
 /*
-	UTC time in seconds, counted from January 1, 1970.
+UTC time in seconds, counted from January 1, 1970.
 */
 type TimeSinceEpoch float64
 
 /*
-	Monotonically increasing time in seconds since an arbitrary point in the past.
+Monotonically increasing time in seconds since an arbitrary point in the past.
 */
 type MonotonicTime float64
 
 /*
-	Request / response headers as keys / values of JSON object.
+Request / response headers as keys / values of JSON object.
 */
 type Headers interface{}
 
 /*
-	The underlying connection technology that the browser is supposedly using.
+The underlying connection technology that the browser is supposedly using.
 */
 type ConnectionType string
 
 /*
 	Represents the cookie's 'SameSite' status:
+
 https://tools.ietf.org/html/draft-west-first-party-cookies
 */
 type CookieSameSite string
 
 /*
 	Represents the cookie's 'Priority' status:
+
 https://tools.ietf.org/html/draft-west-cookie-priority-00
 */
 type CookiePriority string
 
 /*
 	Represents the source scheme of the origin that originally set the cookie.
+
 A value of "Unset" allows protocol clients to emulate legacy cookie scope for the scheme.
 This is a temporary ability and it will be removed in the future.
 */
 type CookieSourceScheme string
 
 /*
-	Timing information for the request.
+Timing information for the request.
 */
 type ResourceTiming struct {
 	RequestTime              float64 `json:"requestTime"`
@@ -97,19 +100,19 @@ type ResourceTiming struct {
 }
 
 /*
-	Loading priority of a resource request.
+Loading priority of a resource request.
 */
 type ResourcePriority string
 
 /*
-	Post data entry for HTTP request
+Post data entry for HTTP request
 */
 type PostDataEntry struct {
 	Bytes []byte `json:"bytes,omitempty"`
 }
 
 /*
-	HTTP request data.
+HTTP request data.
 */
 type Request struct {
 	Url              string                    `json:"url"`
@@ -124,24 +127,25 @@ type Request struct {
 	ReferrerPolicy   string                    `json:"referrerPolicy"`
 	IsLinkPreload    bool                      `json:"isLinkPreload,omitempty"`
 	TrustTokenParams *TrustTokenParams         `json:"trustTokenParams,omitempty"`
+	IsSameSite       bool                      `json:"isSameSite,omitempty"`
 }
 
 /*
-	Details of a signed certificate timestamp (SCT).
+Details of a signed certificate timestamp (SCT).
 */
 type SignedCertificateTimestamp struct {
-	Status             string                `json:"status"`
-	Origin             string                `json:"origin"`
-	LogDescription     string                `json:"logDescription"`
-	LogId              string                `json:"logId"`
-	Timestamp          common.TimeSinceEpoch `json:"timestamp"`
-	HashAlgorithm      string                `json:"hashAlgorithm"`
-	SignatureAlgorithm string                `json:"signatureAlgorithm"`
-	SignatureData      string                `json:"signatureData"`
+	Status             string  `json:"status"`
+	Origin             string  `json:"origin"`
+	LogDescription     string  `json:"logDescription"`
+	LogId              string  `json:"logId"`
+	Timestamp          float64 `json:"timestamp"`
+	HashAlgorithm      string  `json:"hashAlgorithm"`
+	SignatureAlgorithm string  `json:"signatureAlgorithm"`
+	SignatureData      string  `json:"signatureData"`
 }
 
 /*
-	Security details about a request.
+Security details about a request.
 */
 type SecurityDetails struct {
 	Protocol                          string                            `json:"protocol"`
@@ -157,25 +161,26 @@ type SecurityDetails struct {
 	ValidTo                           common.TimeSinceEpoch             `json:"validTo"`
 	SignedCertificateTimestampList    []*SignedCertificateTimestamp     `json:"signedCertificateTimestampList"`
 	CertificateTransparencyCompliance CertificateTransparencyCompliance `json:"certificateTransparencyCompliance"`
+	ServerSignatureAlgorithm          int                               `json:"serverSignatureAlgorithm,omitempty"`
+	EncryptedClientHello              bool                              `json:"encryptedClientHello"`
 }
 
 /*
-	Whether the request complied with Certificate Transparency policy.
+Whether the request complied with Certificate Transparency policy.
 */
 type CertificateTransparencyCompliance string
 
 /*
-	The reason why request was blocked.
+The reason why request was blocked.
 */
 type BlockedReason string
 
 /*
-	The reason why request was blocked.
+The reason why request was blocked.
 */
 type CorsError string
 
 /*
-
  */
 type CorsErrorStatus struct {
 	CorsError       CorsError `json:"corsError"`
@@ -183,38 +188,41 @@ type CorsErrorStatus struct {
 }
 
 /*
-	Source of serviceworker response.
+Source of serviceworker response.
 */
 type ServiceWorkerResponseSource string
 
 /*
 	Determines what type of Trust Token operation is executed and
+
 depending on the type, some additional parameters. The values
 are specified in third_party/blink/renderer/core/fetch/trust_token.idl.
 */
 type TrustTokenParams struct {
-	Type          TrustTokenOperationType `json:"type"`
+	Operation     TrustTokenOperationType `json:"operation"`
 	RefreshPolicy string                  `json:"refreshPolicy"`
 	Issuers       []string                `json:"issuers,omitempty"`
 }
 
 /*
-
  */
 type TrustTokenOperationType string
 
 /*
-	HTTP response data.
+The reason why Chrome uses a specific transport protocol for HTTP semantics.
+*/
+type AlternateProtocolUsage string
+
+/*
+HTTP response data.
 */
 type Response struct {
 	Url                         string                      `json:"url"`
 	Status                      int                         `json:"status"`
 	StatusText                  string                      `json:"statusText"`
 	Headers                     *Headers                    `json:"headers"`
-	HeadersText                 string                      `json:"headersText,omitempty"`
 	MimeType                    string                      `json:"mimeType"`
 	RequestHeaders              *Headers                    `json:"requestHeaders,omitempty"`
-	RequestHeadersText          string                      `json:"requestHeadersText,omitempty"`
 	ConnectionReused            bool                        `json:"connectionReused"`
 	ConnectionId                float64                     `json:"connectionId"`
 	RemoteIPAddress             string                      `json:"remoteIPAddress,omitempty"`
@@ -228,19 +236,20 @@ type Response struct {
 	ResponseTime                common.TimeSinceEpoch       `json:"responseTime,omitempty"`
 	CacheStorageCacheName       string                      `json:"cacheStorageCacheName,omitempty"`
 	Protocol                    string                      `json:"protocol,omitempty"`
+	AlternateProtocolUsage      AlternateProtocolUsage      `json:"alternateProtocolUsage,omitempty"`
 	SecurityState               security.SecurityState      `json:"securityState"`
 	SecurityDetails             *SecurityDetails            `json:"securityDetails,omitempty"`
 }
 
 /*
-	WebSocket request data.
+WebSocket request data.
 */
 type WebSocketRequest struct {
 	Headers *Headers `json:"headers"`
 }
 
 /*
-	WebSocket response data.
+WebSocket response data.
 */
 type WebSocketResponse struct {
 	Status             int      `json:"status"`
@@ -252,7 +261,7 @@ type WebSocketResponse struct {
 }
 
 /*
-	WebSocket message data. This represents an entire WebSocket message, not just a fragmented frame as the name suggests.
+WebSocket message data. This represents an entire WebSocket message, not just a fragmented frame as the name suggests.
 */
 type WebSocketFrame struct {
 	Opcode      float64 `json:"opcode"`
@@ -261,7 +270,7 @@ type WebSocketFrame struct {
 }
 
 /*
-	Information about the cached resource.
+Information about the cached resource.
 */
 type CachedResource struct {
 	Url      string       `json:"url"`
@@ -271,7 +280,7 @@ type CachedResource struct {
 }
 
 /*
-	Information about the request initiator.
+Information about the request initiator.
 */
 type Initiator struct {
 	Type         string              `json:"type"`
@@ -283,37 +292,39 @@ type Initiator struct {
 }
 
 /*
-	Cookie object
+Cookie object
 */
 type Cookie struct {
-	Name         string             `json:"name"`
-	Value        string             `json:"value"`
-	Domain       string             `json:"domain"`
-	Path         string             `json:"path"`
-	Expires      float64            `json:"expires"`
-	Size         int                `json:"size"`
-	HttpOnly     bool               `json:"httpOnly"`
-	Secure       bool               `json:"secure"`
-	Session      bool               `json:"session"`
-	SameSite     CookieSameSite     `json:"sameSite,omitempty"`
-	Priority     CookiePriority     `json:"priority"`
-	SameParty    bool               `json:"sameParty"`
-	SourceScheme CookieSourceScheme `json:"sourceScheme"`
-	SourcePort   int                `json:"sourcePort"`
+	Name               string             `json:"name"`
+	Value              string             `json:"value"`
+	Domain             string             `json:"domain"`
+	Path               string             `json:"path"`
+	Expires            float64            `json:"expires"`
+	Size               int                `json:"size"`
+	HttpOnly           bool               `json:"httpOnly"`
+	Secure             bool               `json:"secure"`
+	Session            bool               `json:"session"`
+	SameSite           CookieSameSite     `json:"sameSite,omitempty"`
+	Priority           CookiePriority     `json:"priority"`
+	SameParty          bool               `json:"sameParty"`
+	SourceScheme       CookieSourceScheme `json:"sourceScheme"`
+	SourcePort         int                `json:"sourcePort"`
+	PartitionKey       string             `json:"partitionKey,omitempty"`
+	PartitionKeyOpaque bool               `json:"partitionKeyOpaque,omitempty"`
 }
 
 /*
-	Types of reasons why a cookie may not be stored from a response.
+Types of reasons why a cookie may not be stored from a response.
 */
 type SetCookieBlockedReason string
 
 /*
-	Types of reasons why a cookie may not be sent with a request.
+Types of reasons why a cookie may not be sent with a request.
 */
 type CookieBlockedReason string
 
 /*
-	A cookie which was not stored from a response with the corresponding reason.
+A cookie which was not stored from a response with the corresponding reason.
 */
 type BlockedSetCookieWithReason struct {
 	BlockedReasons []SetCookieBlockedReason `json:"blockedReasons"`
@@ -322,7 +333,7 @@ type BlockedSetCookieWithReason struct {
 }
 
 /*
-	A cookie with was not sent with a request with the corresponding reason.
+A cookie with was not sent with a request with the corresponding reason.
 */
 type BlockedCookieWithReason struct {
 	BlockedReasons []CookieBlockedReason `json:"blockedReasons"`
@@ -330,7 +341,7 @@ type BlockedCookieWithReason struct {
 }
 
 /*
-	Cookie parameter object
+Cookie parameter object
 */
 type CookieParam struct {
 	Name         string                `json:"name"`
@@ -346,10 +357,11 @@ type CookieParam struct {
 	SameParty    bool                  `json:"sameParty,omitempty"`
 	SourceScheme CookieSourceScheme    `json:"sourceScheme,omitempty"`
 	SourcePort   int                   `json:"sourcePort,omitempty"`
+	PartitionKey string                `json:"partitionKey,omitempty"`
 }
 
 /*
-	Authorization challenge for HTTP status code 401 or 407.
+Authorization challenge for HTTP status code 401 or 407.
 */
 type AuthChallenge struct {
 	Source string `json:"source,omitempty"`
@@ -359,7 +371,7 @@ type AuthChallenge struct {
 }
 
 /*
-	Response to an AuthChallenge.
+Response to an AuthChallenge.
 */
 type AuthChallengeResponse struct {
 	Response string `json:"response"`
@@ -369,12 +381,13 @@ type AuthChallengeResponse struct {
 
 /*
 	Stages of the interception to begin intercepting. Request will intercept before the request is
+
 sent. Response will intercept after the response is received.
 */
 type InterceptionStage string
 
 /*
-	Request pattern for interception.
+Request pattern for interception.
 */
 type RequestPattern struct {
 	UrlPattern        string            `json:"urlPattern,omitempty"`
@@ -384,6 +397,7 @@ type RequestPattern struct {
 
 /*
 	Information about a signed exchange signature.
+
 https://wicg.github.io/webpackage/draft-yasskin-httpbis-origin-signed-exchanges-impl.html#rfc.section.3.1
 */
 type SignedExchangeSignature struct {
@@ -400,6 +414,7 @@ type SignedExchangeSignature struct {
 
 /*
 	Information about a signed exchange header.
+
 https://wicg.github.io/webpackage/draft-yasskin-httpbis-origin-signed-exchanges-impl.html#cbor-representation
 */
 type SignedExchangeHeader struct {
@@ -411,12 +426,12 @@ type SignedExchangeHeader struct {
 }
 
 /*
-	Field type for a signed exchange related error.
+Field type for a signed exchange related error.
 */
 type SignedExchangeErrorField string
 
 /*
-	Information about a signed exchange response.
+Information about a signed exchange response.
 */
 type SignedExchangeError struct {
 	Message        string                   `json:"message"`
@@ -425,7 +440,7 @@ type SignedExchangeError struct {
 }
 
 /*
-	Information about a signed exchange response.
+Information about a signed exchange response.
 */
 type SignedExchangeInfo struct {
 	OuterResponse   *Response              `json:"outerResponse"`
@@ -435,22 +450,25 @@ type SignedExchangeInfo struct {
 }
 
 /*
-	List of content encodings supported by the backend.
+List of content encodings supported by the backend.
 */
 type ContentEncoding string
 
 /*
-
  */
 type PrivateNetworkRequestPolicy string
 
 /*
-
  */
 type IPAddressSpace string
 
 /*
+ */
+type ConnectTiming struct {
+	RequestTime float64 `json:"requestTime"`
+}
 
+/*
  */
 type ClientSecurityState struct {
 	InitiatorIsSecureContext    bool                        `json:"initiatorIsSecureContext"`
@@ -459,12 +477,10 @@ type ClientSecurityState struct {
 }
 
 /*
-
  */
 type CrossOriginOpenerPolicyValue string
 
 /*
-
  */
 type CrossOriginOpenerPolicyStatus struct {
 	Value                       CrossOriginOpenerPolicyValue `json:"value"`
@@ -474,12 +490,10 @@ type CrossOriginOpenerPolicyStatus struct {
 }
 
 /*
-
  */
 type CrossOriginEmbedderPolicyValue string
 
 /*
-
  */
 type CrossOriginEmbedderPolicyStatus struct {
 	Value                       CrossOriginEmbedderPolicyValue `json:"value"`
@@ -489,7 +503,6 @@ type CrossOriginEmbedderPolicyStatus struct {
 }
 
 /*
-
  */
 type SecurityIsolationStatus struct {
 	Coop *CrossOriginOpenerPolicyStatus   `json:"coop,omitempty"`
@@ -497,7 +510,38 @@ type SecurityIsolationStatus struct {
 }
 
 /*
-	An object providing the result of a network resource load.
+The status of a Reporting API report.
+*/
+type ReportStatus string
+
+/*
+ */
+type ReportId string
+
+/*
+An object representing a report generated by the Reporting API.
+*/
+type ReportingApiReport struct {
+	Id                ReportId              `json:"id"`
+	InitiatorUrl      string                `json:"initiatorUrl"`
+	Destination       string                `json:"destination"`
+	Type              string                `json:"type"`
+	Timestamp         common.TimeSinceEpoch `json:"timestamp"`
+	Depth             int                   `json:"depth"`
+	CompletedAttempts int                   `json:"completedAttempts"`
+	Body              interface{}           `json:"body"`
+	Status            ReportStatus          `json:"status"`
+}
+
+/*
+ */
+type ReportingApiEndpoint struct {
+	Url       string `json:"url"`
+	GroupName string `json:"groupName"`
+}
+
+/*
+An object providing the result of a network resource load.
 */
 type LoadNetworkResourcePageResult struct {
 	Success        bool            `json:"success"`
@@ -510,6 +554,7 @@ type LoadNetworkResourcePageResult struct {
 
 /*
 	An options object that may be extended later to better support CORS,
+
 CORB and streaming.
 */
 type LoadNetworkResourceOptions struct {
@@ -540,10 +585,6 @@ type EnableArgs struct {
 	MaxTotalBufferSize    int `json:"maxTotalBufferSize,omitempty"`
 	MaxResourceBufferSize int `json:"maxResourceBufferSize,omitempty"`
 	MaxPostDataSize       int `json:"maxPostDataSize,omitempty"`
-}
-
-type GetAllCookiesVal struct {
-	Cookies []*Cookie `json:"cookies"`
 }
 
 type GetCertificateArgs struct {
@@ -637,15 +678,11 @@ type SetCookieArgs struct {
 	SameParty    bool                  `json:"sameParty,omitempty"`
 	SourceScheme CookieSourceScheme    `json:"sourceScheme,omitempty"`
 	SourcePort   int                   `json:"sourcePort,omitempty"`
+	PartitionKey string                `json:"partitionKey,omitempty"`
 }
 
 type SetCookiesArgs struct {
 	Cookies []*CookieParam `json:"cookies"`
-}
-
-type SetDataSizeLimitsForTestArgs struct {
-	MaxTotalSize    int `json:"maxTotalSize"`
-	MaxResourceSize int `json:"maxResourceSize"`
 }
 
 type SetExtraHTTPHeadersArgs struct {
@@ -671,8 +708,12 @@ type GetSecurityIsolationStatusVal struct {
 	Status *SecurityIsolationStatus `json:"status"`
 }
 
+type EnableReportingApiArgs struct {
+	Enable bool `json:"enable"`
+}
+
 type LoadNetworkResourceArgs struct {
-	FrameId common.FrameId              `json:"frameId"`
+	FrameId common.FrameId              `json:"frameId,omitempty"`
 	Url     string                      `json:"url"`
 	Options *LoadNetworkResourceOptions `json:"options"`
 }

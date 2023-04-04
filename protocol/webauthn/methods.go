@@ -6,21 +6,22 @@ import (
 
 /*
 	Enable the WebAuthn domain and start intercepting credential storage and
+
 retrieval with a virtual authenticator.
 */
-func Enable(c protocol.Caller) error {
-	return c.Call("WebAuthn.enable", nil, nil)
+func Enable(c protocol.Caller, args EnableArgs) error {
+	return c.Call("WebAuthn.enable", args, nil)
 }
 
 /*
-	Disable the WebAuthn domain.
+Disable the WebAuthn domain.
 */
 func Disable(c protocol.Caller) error {
 	return c.Call("WebAuthn.disable", nil, nil)
 }
 
 /*
-	Creates and adds a virtual authenticator.
+Creates and adds a virtual authenticator.
 */
 func AddVirtualAuthenticator(c protocol.Caller, args AddVirtualAuthenticatorArgs) (*AddVirtualAuthenticatorVal, error) {
 	var val = &AddVirtualAuthenticatorVal{}
@@ -28,14 +29,21 @@ func AddVirtualAuthenticator(c protocol.Caller, args AddVirtualAuthenticatorArgs
 }
 
 /*
-	Removes the given authenticator.
+Resets parameters isBogusSignature, isBadUV, isBadUP to false if they are not present.
+*/
+func SetResponseOverrideBits(c protocol.Caller, args SetResponseOverrideBitsArgs) error {
+	return c.Call("WebAuthn.setResponseOverrideBits", args, nil)
+}
+
+/*
+Removes the given authenticator.
 */
 func RemoveVirtualAuthenticator(c protocol.Caller, args RemoveVirtualAuthenticatorArgs) error {
 	return c.Call("WebAuthn.removeVirtualAuthenticator", args, nil)
 }
 
 /*
-	Adds the credential to the specified authenticator.
+Adds the credential to the specified authenticator.
 */
 func AddCredential(c protocol.Caller, args AddCredentialArgs) error {
 	return c.Call("WebAuthn.addCredential", args, nil)
@@ -43,6 +51,7 @@ func AddCredential(c protocol.Caller, args AddCredentialArgs) error {
 
 /*
 	Returns a single credential stored in the given virtual authenticator that
+
 matches the credential ID.
 */
 func GetCredential(c protocol.Caller, args GetCredentialArgs) (*GetCredentialVal, error) {
@@ -51,7 +60,7 @@ func GetCredential(c protocol.Caller, args GetCredentialArgs) (*GetCredentialVal
 }
 
 /*
-	Returns all the credentials stored in the given virtual authenticator.
+Returns all the credentials stored in the given virtual authenticator.
 */
 func GetCredentials(c protocol.Caller, args GetCredentialsArgs) (*GetCredentialsVal, error) {
 	var val = &GetCredentialsVal{}
@@ -59,14 +68,14 @@ func GetCredentials(c protocol.Caller, args GetCredentialsArgs) (*GetCredentials
 }
 
 /*
-	Removes a credential from the authenticator.
+Removes a credential from the authenticator.
 */
 func RemoveCredential(c protocol.Caller, args RemoveCredentialArgs) error {
 	return c.Call("WebAuthn.removeCredential", args, nil)
 }
 
 /*
-	Clears all the credentials from the specified device.
+Clears all the credentials from the specified device.
 */
 func ClearCredentials(c protocol.Caller, args ClearCredentialsArgs) error {
 	return c.Call("WebAuthn.clearCredentials", args, nil)
@@ -74,6 +83,7 @@ func ClearCredentials(c protocol.Caller, args ClearCredentialsArgs) error {
 
 /*
 	Sets whether User Verification succeeds or fails for an authenticator.
+
 The default is true.
 */
 func SetUserVerified(c protocol.Caller, args SetUserVerifiedArgs) error {
@@ -82,6 +92,7 @@ func SetUserVerified(c protocol.Caller, args SetUserVerifiedArgs) error {
 
 /*
 	Sets whether tests of user presence will succeed immediately (if true) or fail to resolve (if false) for an authenticator.
+
 The default is true.
 */
 func SetAutomaticPresenceSimulation(c protocol.Caller, args SetAutomaticPresenceSimulationArgs) error {

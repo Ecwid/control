@@ -5,12 +5,12 @@ import (
 )
 
 /*
-	Heap snapshot object id.
+Heap snapshot object id.
 */
 type HeapSnapshotObjectId string
 
 /*
-	Sampling Heap Profile node. Holds callsite information, allocation statistics and child nodes.
+Sampling Heap Profile node. Holds callsite information, allocation statistics and child nodes.
 */
 type SamplingHeapProfileNode struct {
 	CallFrame *runtime.CallFrame         `json:"callFrame"`
@@ -20,7 +20,7 @@ type SamplingHeapProfileNode struct {
 }
 
 /*
-	A single sample from a sampling profile.
+A single sample from a sampling profile.
 */
 type SamplingHeapProfileSample struct {
 	Size    float64 `json:"size"`
@@ -29,7 +29,7 @@ type SamplingHeapProfileSample struct {
 }
 
 /*
-	Sampling profile.
+Sampling profile.
 */
 type SamplingHeapProfile struct {
 	Head    *SamplingHeapProfileNode     `json:"head"`
@@ -62,7 +62,9 @@ type GetSamplingProfileVal struct {
 }
 
 type StartSamplingArgs struct {
-	SamplingInterval float64 `json:"samplingInterval,omitempty"`
+	SamplingInterval                 float64 `json:"samplingInterval,omitempty"`
+	IncludeObjectsCollectedByMajorGC bool    `json:"includeObjectsCollectedByMajorGC,omitempty"`
+	IncludeObjectsCollectedByMinorGC bool    `json:"includeObjectsCollectedByMinorGC,omitempty"`
 }
 
 type StartTrackingHeapObjectsArgs struct {
@@ -74,11 +76,13 @@ type StopSamplingVal struct {
 }
 
 type StopTrackingHeapObjectsArgs struct {
-	ReportProgress            bool `json:"reportProgress,omitempty"`
-	TreatGlobalObjectsAsRoots bool `json:"treatGlobalObjectsAsRoots,omitempty"`
+	ReportProgress      bool `json:"reportProgress,omitempty"`
+	CaptureNumericValue bool `json:"captureNumericValue,omitempty"`
+	ExposeInternals     bool `json:"exposeInternals,omitempty"`
 }
 
 type TakeHeapSnapshotArgs struct {
-	ReportProgress            bool `json:"reportProgress,omitempty"`
-	TreatGlobalObjectsAsRoots bool `json:"treatGlobalObjectsAsRoots,omitempty"`
+	ReportProgress      bool `json:"reportProgress,omitempty"`
+	CaptureNumericValue bool `json:"captureNumericValue,omitempty"`
+	ExposeInternals     bool `json:"exposeInternals,omitempty"`
 }

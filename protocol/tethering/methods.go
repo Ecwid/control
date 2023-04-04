@@ -5,14 +5,14 @@ import (
 )
 
 /*
-	Request browser port binding.
+Request browser port binding.
 */
 func Bind(c protocol.Caller, args BindArgs) error {
 	return c.Call("Tethering.bind", args, nil)
 }
 
 /*
-	Request browser port unbinding.
+Request browser port unbinding.
 */
 func Unbind(c protocol.Caller, args UnbindArgs) error {
 	return c.Call("Tethering.unbind", args, nil)

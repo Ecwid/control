@@ -7,7 +7,7 @@ import (
 )
 
 /*
-	Screen orientation.
+Screen orientation.
 */
 type ScreenOrientation struct {
 	Type  string `json:"type"`
@@ -15,7 +15,6 @@ type ScreenOrientation struct {
 }
 
 /*
-
  */
 type DisplayFeature struct {
 	Orientation string `json:"orientation"`
@@ -24,7 +23,6 @@ type DisplayFeature struct {
 }
 
 /*
-
  */
 type MediaFeature struct {
 	Name  string `json:"name"`
@@ -33,6 +31,7 @@ type MediaFeature struct {
 
 /*
 	advance: If the scheduler runs out of immediate work, the virtual time base may fast forward to
+
 allow the next delayed task (if any) to run; pause: The virtual time base may not advance;
 pauseIfNetworkFetchesPending: The virtual time base may not advance if there are any pending
 resource fetches.
@@ -40,7 +39,7 @@ resource fetches.
 type VirtualTimePolicy string
 
 /*
-	Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
+Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
 */
 type UserAgentBrandVersion struct {
 	Brand   string `json:"brand"`
@@ -49,20 +48,23 @@ type UserAgentBrandVersion struct {
 
 /*
 	Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
+
 Missing optional values will be filled in by the target with what it would normally use.
 */
 type UserAgentMetadata struct {
 	Brands          []*common.UserAgentBrandVersion `json:"brands,omitempty"`
-	FullVersion     string                          `json:"fullVersion,omitempty"`
+	FullVersionList []*common.UserAgentBrandVersion `json:"fullVersionList,omitempty"`
 	Platform        string                          `json:"platform"`
 	PlatformVersion string                          `json:"platformVersion"`
 	Architecture    string                          `json:"architecture"`
 	Model           string                          `json:"model"`
 	Mobile          bool                            `json:"mobile"`
+	Bitness         string                          `json:"bitness,omitempty"`
+	Wow64           bool                            `json:"wow64,omitempty"`
 }
 
 /*
-	Enum of image types that can be disabled.
+Enum of image types that can be disabled.
 */
 type DisabledImageType string
 
@@ -72,6 +74,10 @@ type CanEmulateVal struct {
 
 type SetFocusEmulationEnabledArgs struct {
 	Enabled bool `json:"enabled"`
+}
+
+type SetAutoDarkModeOverrideArgs struct {
+	Enabled bool `json:"enabled,omitempty"`
 }
 
 type SetCPUThrottlingRateArgs struct {
@@ -148,7 +154,6 @@ type SetVirtualTimePolicyArgs struct {
 	Policy                            VirtualTimePolicy     `json:"policy"`
 	Budget                            float64               `json:"budget,omitempty"`
 	MaxVirtualTimeTaskStarvationCount int                   `json:"maxVirtualTimeTaskStarvationCount,omitempty"`
-	WaitForNavigation                 bool                  `json:"waitForNavigation,omitempty"`
 	InitialVirtualTime                common.TimeSinceEpoch `json:"initialVirtualTime,omitempty"`
 }
 
@@ -168,9 +173,17 @@ type SetDisabledImageTypesArgs struct {
 	ImageTypes []DisabledImageType `json:"imageTypes"`
 }
 
+type SetHardwareConcurrencyOverrideArgs struct {
+	HardwareConcurrency int `json:"hardwareConcurrency"`
+}
+
 type SetUserAgentOverrideArgs struct {
 	UserAgent         string                    `json:"userAgent"`
 	AcceptLanguage    string                    `json:"acceptLanguage,omitempty"`
 	Platform          string                    `json:"platform,omitempty"`
 	UserAgentMetadata *common.UserAgentMetadata `json:"userAgentMetadata,omitempty"`
+}
+
+type SetAutomationOverrideArgs struct {
+	Enabled bool `json:"enabled"`
 }

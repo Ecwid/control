@@ -5,14 +5,14 @@ import (
 )
 
 /*
-	Clears the log.
+Clears the log.
 */
 func Clear(c protocol.Caller) error {
 	return c.Call("Log.clear", nil, nil)
 }
 
 /*
-	Disables log domain, prevents further log entries from being reported to the client.
+Disables log domain, prevents further log entries from being reported to the client.
 */
 func Disable(c protocol.Caller) error {
 	return c.Call("Log.disable", nil, nil)
@@ -20,6 +20,7 @@ func Disable(c protocol.Caller) error {
 
 /*
 	Enables log domain, sends the entries collected so far to the client by means of the
+
 `entryAdded` notification.
 */
 func Enable(c protocol.Caller) error {
@@ -27,14 +28,14 @@ func Enable(c protocol.Caller) error {
 }
 
 /*
-	start violation reporting.
+start violation reporting.
 */
 func StartViolationsReport(c protocol.Caller, args StartViolationsReportArgs) error {
 	return c.Call("Log.startViolationsReport", args, nil)
 }
 
 /*
-	Stop violation reporting.
+Stop violation reporting.
 */
 func StopViolationsReport(c protocol.Caller) error {
 	return c.Call("Log.stopViolationsReport", nil, nil)

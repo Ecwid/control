@@ -6,12 +6,13 @@ import (
 )
 
 /*
-	Log entry.
+Log entry.
 */
 type LogEntry struct {
 	Source           string                  `json:"source"`
 	Level            string                  `json:"level"`
 	Text             string                  `json:"text"`
+	Category         string                  `json:"category,omitempty"`
 	Timestamp        runtime.Timestamp       `json:"timestamp"`
 	Url              string                  `json:"url,omitempty"`
 	LineNumber       int                     `json:"lineNumber,omitempty"`
@@ -22,7 +23,7 @@ type LogEntry struct {
 }
 
 /*
-	Violation configuration setting.
+Violation configuration setting.
 */
 type ViolationSetting struct {
 	Name      string  `json:"name"`

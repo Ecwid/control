@@ -7,13 +7,14 @@ import (
 
 /*
 	The Background Service that will be associated with the commands/events.
+
 Every Background Service operates independently, but they share the same
 API.
 */
 type ServiceName string
 
 /*
-	A key-value pair for additional event information to pass along.
+A key-value pair for additional event information to pass along.
 */
 type EventMetadata struct {
 	Key   string `json:"key"`
@@ -21,7 +22,6 @@ type EventMetadata struct {
 }
 
 /*
-
  */
 type BackgroundServiceEvent struct {
 	Timestamp                   common.TimeSinceEpoch        `json:"timestamp"`
@@ -31,6 +31,7 @@ type BackgroundServiceEvent struct {
 	EventName                   string                       `json:"eventName"`
 	InstanceId                  string                       `json:"instanceId"`
 	EventMetadata               []*EventMetadata             `json:"eventMetadata"`
+	StorageKey                  string                       `json:"storageKey"`
 }
 
 type StartObservingArgs struct {

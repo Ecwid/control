@@ -1,12 +1,12 @@
 package database
 
 /*
-	Unique identifier of Database object.
+Unique identifier of Database object.
 */
 type DatabaseId string
 
 /*
-	Database object.
+Database object.
 */
 type Database struct {
 	Id      DatabaseId `json:"id"`
@@ -16,7 +16,7 @@ type Database struct {
 }
 
 /*
-	Database error.
+Database error.
 */
 type Error struct {
 	Message string `json:"message"`

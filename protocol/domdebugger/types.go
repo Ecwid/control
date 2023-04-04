@@ -6,17 +6,17 @@ import (
 )
 
 /*
-	DOM breakpoint type.
+DOM breakpoint type.
 */
 type DOMBreakpointType string
 
 /*
-	CSP Violation type.
+CSP Violation type.
 */
 type CSPViolationType string
 
 /*
-	Object event listener.
+Object event listener.
 */
 type EventListener struct {
 	Type            string                `json:"type"`

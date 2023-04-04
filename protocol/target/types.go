@@ -5,17 +5,15 @@ import (
 )
 
 /*
-
  */
 type TargetID string
 
 /*
-	Unique identifier of attached debugging session.
+Unique identifier of attached debugging session.
 */
 type SessionID string
 
 /*
-
  */
 type TargetInfo struct {
 	TargetId         TargetID                `json:"targetId"`
@@ -27,10 +25,29 @@ type TargetInfo struct {
 	CanAccessOpener  bool                    `json:"canAccessOpener"`
 	OpenerFrameId    common.FrameId          `json:"openerFrameId,omitempty"`
 	BrowserContextId common.BrowserContextID `json:"browserContextId,omitempty"`
+	Subtype          string                  `json:"subtype,omitempty"`
 }
 
 /*
+A filter used by target query/discovery/auto-attach operations.
+*/
+type FilterEntry struct {
+	Exclude bool   `json:"exclude,omitempty"`
+	Type    string `json:"type,omitempty"`
+}
 
+/*
+	The entries in TargetFilter are matched sequentially against targets and
+
+the first entry that matches determines if the target is included or not,
+depending on the value of `exclude` field in the entry.
+If filter is not specified, the one assumed is
+[{type: "browser", exclude: true}, {type: "tab", exclude: true}, {}]
+(i.e. include everything but `browser` and `tab`).
+*/
+type TargetFilter []*FilterEntry
+
+/*
  */
 type RemoteLocation struct {
 	Host string `json:"host"`
@@ -64,9 +81,10 @@ type ExposeDevToolsProtocolArgs struct {
 }
 
 type CreateBrowserContextArgs struct {
-	DisposeOnDetach bool   `json:"disposeOnDetach,omitempty"`
-	ProxyServer     string `json:"proxyServer,omitempty"`
-	ProxyBypassList string `json:"proxyBypassList,omitempty"`
+	DisposeOnDetach                   bool     `json:"disposeOnDetach,omitempty"`
+	ProxyServer                       string   `json:"proxyServer,omitempty"`
+	ProxyBypassList                   string   `json:"proxyBypassList,omitempty"`
+	OriginsWithUniversalNetworkAccess []string `json:"originsWithUniversalNetworkAccess,omitempty"`
 }
 
 type CreateBrowserContextVal struct {
@@ -85,6 +103,7 @@ type CreateTargetArgs struct {
 	EnableBeginFrameControl bool                    `json:"enableBeginFrameControl,omitempty"`
 	NewWindow               bool                    `json:"newWindow,omitempty"`
 	Background              bool                    `json:"background,omitempty"`
+	ForTab                  bool                    `json:"forTab,omitempty"`
 }
 
 type CreateTargetVal struct {
@@ -107,18 +126,30 @@ type GetTargetInfoVal struct {
 	TargetInfo *TargetInfo `json:"targetInfo"`
 }
 
+type GetTargetsArgs struct {
+	Filter TargetFilter `json:"filter,omitempty"`
+}
+
 type GetTargetsVal struct {
 	TargetInfos []*TargetInfo `json:"targetInfos"`
 }
 
 type SetAutoAttachArgs struct {
-	AutoAttach             bool `json:"autoAttach"`
-	WaitForDebuggerOnStart bool `json:"waitForDebuggerOnStart"`
-	Flatten                bool `json:"flatten,omitempty"`
+	AutoAttach             bool         `json:"autoAttach"`
+	WaitForDebuggerOnStart bool         `json:"waitForDebuggerOnStart"`
+	Flatten                bool         `json:"flatten,omitempty"`
+	Filter                 TargetFilter `json:"filter,omitempty"`
+}
+
+type AutoAttachRelatedArgs struct {
+	TargetId               TargetID     `json:"targetId"`
+	WaitForDebuggerOnStart bool         `json:"waitForDebuggerOnStart"`
+	Filter                 TargetFilter `json:"filter,omitempty"`
 }
 
 type SetDiscoverTargetsArgs struct {
-	Discover bool `json:"discover"`
+	Discover bool         `json:"discover"`
+	Filter   TargetFilter `json:"filter,omitempty"`
 }
 
 type SetRemoteLocationsArgs struct {

@@ -1,12 +1,12 @@
 package memory
 
 /*
-	Memory pressure level.
+Memory pressure level.
 */
 type PressureLevel string
 
 /*
-	Heap profile sample.
+Heap profile sample.
 */
 type SamplingProfileNode struct {
 	Size  float64  `json:"size"`
@@ -15,7 +15,7 @@ type SamplingProfileNode struct {
 }
 
 /*
-	Array of heap profile samples.
+Array of heap profile samples.
 */
 type SamplingProfile struct {
 	Samples []*SamplingProfileNode `json:"samples"`
@@ -23,7 +23,7 @@ type SamplingProfile struct {
 }
 
 /*
-	Executable module information
+Executable module information
 */
 type Module struct {
 	Name        string  `json:"name"`

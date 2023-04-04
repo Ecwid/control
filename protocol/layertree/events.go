@@ -5,7 +5,6 @@ import (
 )
 
 /*
-
  */
 type LayerPainted struct {
 	LayerId LayerId      `json:"layerId"`
@@ -13,7 +12,6 @@ type LayerPainted struct {
 }
 
 /*
-
  */
 type LayerTreeDidChange struct {
 	Layers []*Layer `json:"layers,omitempty"`

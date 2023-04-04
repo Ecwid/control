@@ -5,7 +5,7 @@ import (
 )
 
 /*
-	Fired when page is about to start a download.
+Fired when page is about to start a download.
 */
 type DownloadWillBegin struct {
 	FrameId           common.FrameId `json:"frameId"`
@@ -15,7 +15,7 @@ type DownloadWillBegin struct {
 }
 
 /*
-	Fired when download makes progress. Last call has |done| == true.
+Fired when download makes progress. Last call has |done| == true.
 */
 type DownloadProgress struct {
 	Guid          string  `json:"guid"`

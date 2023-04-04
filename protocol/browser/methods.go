@@ -5,63 +5,63 @@ import (
 )
 
 /*
-	Set permission settings for given origin.
+Set permission settings for given origin.
 */
 func SetPermission(c protocol.Caller, args SetPermissionArgs) error {
 	return c.Call("Browser.setPermission", args, nil)
 }
 
 /*
-	Grant specific permissions to the given origin and reject all others.
+Grant specific permissions to the given origin and reject all others.
 */
 func GrantPermissions(c protocol.Caller, args GrantPermissionsArgs) error {
 	return c.Call("Browser.grantPermissions", args, nil)
 }
 
 /*
-	Reset all permission management for all origins.
+Reset all permission management for all origins.
 */
 func ResetPermissions(c protocol.Caller, args ResetPermissionsArgs) error {
 	return c.Call("Browser.resetPermissions", args, nil)
 }
 
 /*
-	Set the behavior when downloading a file.
+Set the behavior when downloading a file.
 */
 func SetDownloadBehavior(c protocol.Caller, args SetDownloadBehaviorArgs) error {
 	return c.Call("Browser.setDownloadBehavior", args, nil)
 }
 
 /*
-	Cancel a download if in progress
+Cancel a download if in progress
 */
 func CancelDownload(c protocol.Caller, args CancelDownloadArgs) error {
 	return c.Call("Browser.cancelDownload", args, nil)
 }
 
 /*
-	Close browser gracefully.
+Close browser gracefully.
 */
 func Close(c protocol.Caller) error {
 	return c.Call("Browser.close", nil, nil)
 }
 
 /*
-	Crashes browser on the main thread.
+Crashes browser on the main thread.
 */
 func Crash(c protocol.Caller) error {
 	return c.Call("Browser.crash", nil, nil)
 }
 
 /*
-	Crashes GPU process.
+Crashes GPU process.
 */
 func CrashGpuProcess(c protocol.Caller) error {
 	return c.Call("Browser.crashGpuProcess", nil, nil)
 }
 
 /*
-	Returns version information.
+Returns version information.
 */
 func GetVersion(c protocol.Caller) (*GetVersionVal, error) {
 	var val = &GetVersionVal{}
@@ -70,6 +70,7 @@ func GetVersion(c protocol.Caller) (*GetVersionVal, error) {
 
 /*
 	Returns the command line switches for the browser process if, and only if
+
 --enable-automation is on the commandline.
 */
 func GetBrowserCommandLine(c protocol.Caller) (*GetBrowserCommandLineVal, error) {
@@ -78,7 +79,7 @@ func GetBrowserCommandLine(c protocol.Caller) (*GetBrowserCommandLineVal, error)
 }
 
 /*
-	Get Chrome histograms.
+Get Chrome histograms.
 */
 func GetHistograms(c protocol.Caller, args GetHistogramsArgs) (*GetHistogramsVal, error) {
 	var val = &GetHistogramsVal{}
@@ -86,7 +87,7 @@ func GetHistograms(c protocol.Caller, args GetHistogramsArgs) (*GetHistogramsVal
 }
 
 /*
-	Get a Chrome histogram by name.
+Get a Chrome histogram by name.
 */
 func GetHistogram(c protocol.Caller, args GetHistogramArgs) (*GetHistogramVal, error) {
 	var val = &GetHistogramVal{}
@@ -94,7 +95,7 @@ func GetHistogram(c protocol.Caller, args GetHistogramArgs) (*GetHistogramVal, e
 }
 
 /*
-	Get position and size of the browser window.
+Get position and size of the browser window.
 */
 func GetWindowBounds(c protocol.Caller, args GetWindowBoundsArgs) (*GetWindowBoundsVal, error) {
 	var val = &GetWindowBoundsVal{}
@@ -102,7 +103,7 @@ func GetWindowBounds(c protocol.Caller, args GetWindowBoundsArgs) (*GetWindowBou
 }
 
 /*
-	Get the browser window that contains the devtools target.
+Get the browser window that contains the devtools target.
 */
 func GetWindowForTarget(c protocol.Caller, args GetWindowForTargetArgs) (*GetWindowForTargetVal, error) {
 	var val = &GetWindowForTargetVal{}
@@ -110,21 +111,21 @@ func GetWindowForTarget(c protocol.Caller, args GetWindowForTargetArgs) (*GetWin
 }
 
 /*
-	Set position and/or size of the browser window.
+Set position and/or size of the browser window.
 */
 func SetWindowBounds(c protocol.Caller, args SetWindowBoundsArgs) error {
 	return c.Call("Browser.setWindowBounds", args, nil)
 }
 
 /*
-	Set dock tile details, platform-specific.
+Set dock tile details, platform-specific.
 */
 func SetDockTile(c protocol.Caller, args SetDockTileArgs) error {
 	return c.Call("Browser.setDockTile", args, nil)
 }
 
 /*
-	Invoke custom browser commands used by telemetry.
+Invoke custom browser commands used by telemetry.
 */
 func ExecuteBrowserCommand(c protocol.Caller, args ExecuteBrowserCommandArgs) error {
 	return c.Call("Browser.executeBrowserCommand", args, nil)

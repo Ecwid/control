@@ -1,7 +1,6 @@
 package domstorage
 
 /*
-
  */
 type DomStorageItemAdded struct {
 	StorageId *StorageId `json:"storageId"`
@@ -10,7 +9,6 @@ type DomStorageItemAdded struct {
 }
 
 /*
-
  */
 type DomStorageItemRemoved struct {
 	StorageId *StorageId `json:"storageId"`
@@ -18,7 +16,6 @@ type DomStorageItemRemoved struct {
 }
 
 /*
-
  */
 type DomStorageItemUpdated struct {
 	StorageId *StorageId `json:"storageId"`
@@ -28,7 +25,6 @@ type DomStorageItemUpdated struct {
 }
 
 /*
-
  */
 type DomStorageItemsCleared struct {
 	StorageId *StorageId `json:"storageId"`

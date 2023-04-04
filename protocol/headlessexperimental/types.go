@@ -1,11 +1,12 @@
 package headlessexperimental
 
 /*
-	Encoding options for a screenshot.
+Encoding options for a screenshot.
 */
 type ScreenshotParams struct {
-	Format  string `json:"format,omitempty"`
-	Quality int    `json:"quality,omitempty"`
+	Format           string `json:"format,omitempty"`
+	Quality          int    `json:"quality,omitempty"`
+	OptimizeForSpeed bool   `json:"optimizeForSpeed,omitempty"`
 }
 
 type BeginFrameArgs struct {

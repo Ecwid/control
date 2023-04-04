@@ -5,14 +5,14 @@ import (
 )
 
 /*
-	Stop trace events collection.
+Stop trace events collection.
 */
 func End(c protocol.Caller) error {
 	return c.Call("Tracing.end", nil, nil)
 }
 
 /*
-	Gets supported tracing categories.
+Gets supported tracing categories.
 */
 func GetCategories(c protocol.Caller) (*GetCategoriesVal, error) {
 	var val = &GetCategoriesVal{}
@@ -20,14 +20,14 @@ func GetCategories(c protocol.Caller) (*GetCategoriesVal, error) {
 }
 
 /*
-	Record a clock sync marker in the trace.
+Record a clock sync marker in the trace.
 */
 func RecordClockSyncMarker(c protocol.Caller, args RecordClockSyncMarkerArgs) error {
 	return c.Call("Tracing.recordClockSyncMarker", args, nil)
 }
 
 /*
-	Request a global memory dump.
+Request a global memory dump.
 */
 func RequestMemoryDump(c protocol.Caller, args RequestMemoryDumpArgs) (*RequestMemoryDumpVal, error) {
 	var val = &RequestMemoryDumpVal{}
@@ -35,7 +35,7 @@ func RequestMemoryDump(c protocol.Caller, args RequestMemoryDumpArgs) (*RequestM
 }
 
 /*
-	Start trace events collection.
+Start trace events collection.
 */
 func Start(c protocol.Caller, args StartArgs) error {
 	return c.Call("Tracing.start", args, nil)

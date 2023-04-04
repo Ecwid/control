@@ -5,7 +5,7 @@ import (
 )
 
 /*
-	Collects class names for the node with given id and all of it's child nodes.
+Collects class names for the node with given id and all of it's child nodes.
 */
 func CollectClassNamesFromSubtree(c protocol.Caller, args CollectClassNamesFromSubtreeArgs) (*CollectClassNamesFromSubtreeVal, error) {
 	var val = &CollectClassNamesFromSubtreeVal{}
@@ -14,6 +14,7 @@ func CollectClassNamesFromSubtree(c protocol.Caller, args CollectClassNamesFromS
 
 /*
 	Creates a deep copy of the specified node and places it into the target container before the
+
 given anchor.
 */
 func CopyTo(c protocol.Caller, args CopyToArgs) (*CopyToVal, error) {
@@ -23,6 +24,7 @@ func CopyTo(c protocol.Caller, args CopyToArgs) (*CopyToVal, error) {
 
 /*
 	Describes node given its id, does not require domain to be enabled. Does not start tracking any
+
 objects, can be used for automation.
 */
 func DescribeNode(c protocol.Caller, args DescribeNodeArgs) (*DescribeNodeVal, error) {
@@ -32,6 +34,7 @@ func DescribeNode(c protocol.Caller, args DescribeNodeArgs) (*DescribeNodeVal, e
 
 /*
 	Scrolls the specified rect of the given node into view if not already visible.
+
 Note: exactly one between nodeId, backendNodeId and objectId should be passed
 to identify the node.
 */
@@ -40,7 +43,7 @@ func ScrollIntoViewIfNeeded(c protocol.Caller, args ScrollIntoViewIfNeededArgs) 
 }
 
 /*
-	Disables DOM agent for the given page.
+Disables DOM agent for the given page.
 */
 func Disable(c protocol.Caller) error {
 	return c.Call("DOM.disable", nil, nil)
@@ -48,6 +51,7 @@ func Disable(c protocol.Caller) error {
 
 /*
 	Discards search results from the session with the given id. `getSearchResults` should no longer
+
 be called for that search.
 */
 func DiscardSearchResults(c protocol.Caller, args DiscardSearchResultsArgs) error {
@@ -55,21 +59,21 @@ func DiscardSearchResults(c protocol.Caller, args DiscardSearchResultsArgs) erro
 }
 
 /*
-	Enables DOM agent for the given page.
+Enables DOM agent for the given page.
 */
-func Enable(c protocol.Caller) error {
-	return c.Call("DOM.enable", nil, nil)
+func Enable(c protocol.Caller, args EnableArgs) error {
+	return c.Call("DOM.enable", args, nil)
 }
 
 /*
-	Focuses the given element.
+Focuses the given element.
 */
 func Focus(c protocol.Caller, args FocusArgs) error {
 	return c.Call("DOM.focus", args, nil)
 }
 
 /*
-	Returns attributes for the specified node.
+Returns attributes for the specified node.
 */
 func GetAttributes(c protocol.Caller, args GetAttributesArgs) (*GetAttributesVal, error) {
 	var val = &GetAttributesVal{}
@@ -77,7 +81,7 @@ func GetAttributes(c protocol.Caller, args GetAttributesArgs) (*GetAttributesVal
 }
 
 /*
-	Returns boxes for the given node.
+Returns boxes for the given node.
 */
 func GetBoxModel(c protocol.Caller, args GetBoxModelArgs) (*GetBoxModelVal, error) {
 	var val = &GetBoxModelVal{}
@@ -86,6 +90,7 @@ func GetBoxModel(c protocol.Caller, args GetBoxModelArgs) (*GetBoxModelVal, erro
 
 /*
 	Returns quads that describe node position on the page. This method
+
 might return multiple quads for inline nodes.
 */
 func GetContentQuads(c protocol.Caller, args GetContentQuadsArgs) (*GetContentQuadsVal, error) {
@@ -94,7 +99,7 @@ func GetContentQuads(c protocol.Caller, args GetContentQuadsArgs) (*GetContentQu
 }
 
 /*
-	Returns the root DOM node (and optionally the subtree) to the caller.
+Returns the root DOM node (and optionally the subtree) to the caller.
 */
 func GetDocument(c protocol.Caller, args GetDocumentArgs) (*GetDocumentVal, error) {
 	var val = &GetDocumentVal{}
@@ -102,7 +107,7 @@ func GetDocument(c protocol.Caller, args GetDocumentArgs) (*GetDocumentVal, erro
 }
 
 /*
-	Finds nodes with a given computed style in a subtree.
+Finds nodes with a given computed style in a subtree.
 */
 func GetNodesForSubtreeByStyle(c protocol.Caller, args GetNodesForSubtreeByStyleArgs) (*GetNodesForSubtreeByStyleVal, error) {
 	var val = &GetNodesForSubtreeByStyleVal{}
@@ -111,6 +116,7 @@ func GetNodesForSubtreeByStyle(c protocol.Caller, args GetNodesForSubtreeByStyle
 
 /*
 	Returns node id at given location. Depending on whether DOM domain is enabled, nodeId is
+
 either returned or not.
 */
 func GetNodeForLocation(c protocol.Caller, args GetNodeForLocationArgs) (*GetNodeForLocationVal, error) {
@@ -119,7 +125,7 @@ func GetNodeForLocation(c protocol.Caller, args GetNodeForLocationArgs) (*GetNod
 }
 
 /*
-	Returns node's HTML markup.
+Returns node's HTML markup.
 */
 func GetOuterHTML(c protocol.Caller, args GetOuterHTMLArgs) (*GetOuterHTMLVal, error) {
 	var val = &GetOuterHTMLVal{}
@@ -127,7 +133,7 @@ func GetOuterHTML(c protocol.Caller, args GetOuterHTMLArgs) (*GetOuterHTMLVal, e
 }
 
 /*
-	Returns the id of the nearest ancestor that is a relayout boundary.
+Returns the id of the nearest ancestor that is a relayout boundary.
 */
 func GetRelayoutBoundary(c protocol.Caller, args GetRelayoutBoundaryArgs) (*GetRelayoutBoundaryVal, error) {
 	var val = &GetRelayoutBoundaryVal{}
@@ -136,6 +142,7 @@ func GetRelayoutBoundary(c protocol.Caller, args GetRelayoutBoundaryArgs) (*GetR
 
 /*
 	Returns search results from given `fromIndex` to given `toIndex` from the search with the given
+
 identifier.
 */
 func GetSearchResults(c protocol.Caller, args GetSearchResultsArgs) (*GetSearchResultsVal, error) {
@@ -144,35 +151,35 @@ func GetSearchResults(c protocol.Caller, args GetSearchResultsArgs) (*GetSearchR
 }
 
 /*
-	Hides any highlight.
+Hides any highlight.
 */
 func HideHighlight(c protocol.Caller) error {
 	return c.Call("DOM.hideHighlight", nil, nil)
 }
 
 /*
-	Highlights DOM node.
+Highlights DOM node.
 */
 func HighlightNode(c protocol.Caller) error {
 	return c.Call("DOM.highlightNode", nil, nil)
 }
 
 /*
-	Highlights given rectangle.
+Highlights given rectangle.
 */
 func HighlightRect(c protocol.Caller) error {
 	return c.Call("DOM.highlightRect", nil, nil)
 }
 
 /*
-	Marks last undoable state.
+Marks last undoable state.
 */
 func MarkUndoableState(c protocol.Caller) error {
 	return c.Call("DOM.markUndoableState", nil, nil)
 }
 
 /*
-	Moves node into the new container, places it before the given anchor.
+Moves node into the new container, places it before the given anchor.
 */
 func MoveTo(c protocol.Caller, args MoveToArgs) (*MoveToVal, error) {
 	var val = &MoveToVal{}
@@ -181,6 +188,7 @@ func MoveTo(c protocol.Caller, args MoveToArgs) (*MoveToVal, error) {
 
 /*
 	Searches for a given string in the DOM tree. Use `getSearchResults` to access search results or
+
 `cancelSearch` to end this search session.
 */
 func PerformSearch(c protocol.Caller, args PerformSearchArgs) (*PerformSearchVal, error) {
@@ -189,7 +197,7 @@ func PerformSearch(c protocol.Caller, args PerformSearchArgs) (*PerformSearchVal
 }
 
 /*
-	Requests that the node is sent to the caller given its path. // FIXME, use XPath
+Requests that the node is sent to the caller given its path. // FIXME, use XPath
 */
 func PushNodeByPathToFrontend(c protocol.Caller, args PushNodeByPathToFrontendArgs) (*PushNodeByPathToFrontendVal, error) {
 	var val = &PushNodeByPathToFrontendVal{}
@@ -197,7 +205,7 @@ func PushNodeByPathToFrontend(c protocol.Caller, args PushNodeByPathToFrontendAr
 }
 
 /*
-	Requests that a batch of nodes is sent to the caller given their backend node ids.
+Requests that a batch of nodes is sent to the caller given their backend node ids.
 */
 func PushNodesByBackendIdsToFrontend(c protocol.Caller, args PushNodesByBackendIdsToFrontendArgs) (*PushNodesByBackendIdsToFrontendVal, error) {
 	var val = &PushNodesByBackendIdsToFrontendVal{}
@@ -205,7 +213,7 @@ func PushNodesByBackendIdsToFrontend(c protocol.Caller, args PushNodesByBackendI
 }
 
 /*
-	Executes `querySelector` on a given node.
+Executes `querySelector` on a given node.
 */
 func QuerySelector(c protocol.Caller, args QuerySelectorArgs) (*QuerySelectorVal, error) {
 	var val = &QuerySelectorVal{}
@@ -213,7 +221,7 @@ func QuerySelector(c protocol.Caller, args QuerySelectorArgs) (*QuerySelectorVal
 }
 
 /*
-	Executes `querySelectorAll` on a given node.
+Executes `querySelectorAll` on a given node.
 */
 func QuerySelectorAll(c protocol.Caller, args QuerySelectorAllArgs) (*QuerySelectorAllVal, error) {
 	var val = &QuerySelectorAllVal{}
@@ -221,21 +229,32 @@ func QuerySelectorAll(c protocol.Caller, args QuerySelectorAllArgs) (*QuerySelec
 }
 
 /*
-	Re-does the last undone action.
+	Returns NodeIds of current top layer elements.
+
+Top layer is rendered closest to the user within a viewport, therefore its elements always
+appear on top of all other content.
+*/
+func GetTopLayerElements(c protocol.Caller) (*GetTopLayerElementsVal, error) {
+	var val = &GetTopLayerElementsVal{}
+	return val, c.Call("DOM.getTopLayerElements", nil, val)
+}
+
+/*
+Re-does the last undone action.
 */
 func Redo(c protocol.Caller) error {
 	return c.Call("DOM.redo", nil, nil)
 }
 
 /*
-	Removes attribute with given name from an element with given id.
+Removes attribute with given name from an element with given id.
 */
 func RemoveAttribute(c protocol.Caller, args RemoveAttributeArgs) error {
 	return c.Call("DOM.removeAttribute", args, nil)
 }
 
 /*
-	Removes node with given id.
+Removes node with given id.
 */
 func RemoveNode(c protocol.Caller, args RemoveNodeArgs) error {
 	return c.Call("DOM.removeNode", args, nil)
@@ -243,6 +262,7 @@ func RemoveNode(c protocol.Caller, args RemoveNodeArgs) error {
 
 /*
 	Requests that children of the node with given id are returned to the caller in form of
+
 `setChildNodes` events where not only immediate children are retrieved, but all children down to
 the specified depth.
 */
@@ -252,6 +272,7 @@ func RequestChildNodes(c protocol.Caller, args RequestChildNodesArgs) error {
 
 /*
 	Requests that the node is sent to the caller given the JavaScript node object reference. All
+
 nodes that form the path from the node to the root are also sent to the client as a series of
 `setChildNodes` notifications.
 */
@@ -261,7 +282,7 @@ func RequestNode(c protocol.Caller, args RequestNodeArgs) (*RequestNodeVal, erro
 }
 
 /*
-	Resolves the JavaScript node object for a given NodeId or BackendNodeId.
+Resolves the JavaScript node object for a given NodeId or BackendNodeId.
 */
 func ResolveNode(c protocol.Caller, args ResolveNodeArgs) (*ResolveNodeVal, error) {
 	var val = &ResolveNodeVal{}
@@ -269,7 +290,7 @@ func ResolveNode(c protocol.Caller, args ResolveNodeArgs) (*ResolveNodeVal, erro
 }
 
 /*
-	Sets attribute for an element with given id.
+Sets attribute for an element with given id.
 */
 func SetAttributeValue(c protocol.Caller, args SetAttributeValueArgs) error {
 	return c.Call("DOM.setAttributeValue", args, nil)
@@ -277,6 +298,7 @@ func SetAttributeValue(c protocol.Caller, args SetAttributeValueArgs) error {
 
 /*
 	Sets attributes on element with given id. This method is useful when user edits some existing
+
 attribute value and types in several attribute name/value pairs.
 */
 func SetAttributesAsText(c protocol.Caller, args SetAttributesAsTextArgs) error {
@@ -284,21 +306,21 @@ func SetAttributesAsText(c protocol.Caller, args SetAttributesAsTextArgs) error 
 }
 
 /*
-	Sets files for the given file input element.
+Sets files for the given file input element.
 */
 func SetFileInputFiles(c protocol.Caller, args SetFileInputFilesArgs) error {
 	return c.Call("DOM.setFileInputFiles", args, nil)
 }
 
 /*
-	Sets if stack traces should be captured for Nodes. See `Node.getNodeStackTraces`. Default is disabled.
+Sets if stack traces should be captured for Nodes. See `Node.getNodeStackTraces`. Default is disabled.
 */
 func SetNodeStackTracesEnabled(c protocol.Caller, args SetNodeStackTracesEnabledArgs) error {
 	return c.Call("DOM.setNodeStackTracesEnabled", args, nil)
 }
 
 /*
-	Gets stack traces associated with a Node. As of now, only provides stack trace for Node creation.
+Gets stack traces associated with a Node. As of now, only provides stack trace for Node creation.
 */
 func GetNodeStackTraces(c protocol.Caller, args GetNodeStackTracesArgs) (*GetNodeStackTracesVal, error) {
 	var val = &GetNodeStackTracesVal{}
@@ -307,6 +329,7 @@ func GetNodeStackTraces(c protocol.Caller, args GetNodeStackTracesArgs) (*GetNod
 
 /*
 	Returns file information for the given
+
 File wrapper.
 */
 func GetFileInfo(c protocol.Caller, args GetFileInfoArgs) (*GetFileInfoVal, error) {
@@ -316,6 +339,7 @@ func GetFileInfo(c protocol.Caller, args GetFileInfoArgs) (*GetFileInfoVal, erro
 
 /*
 	Enables console to refer to the node with given id via $x (see Command Line API for more details
+
 $x functions).
 */
 func SetInspectedNode(c protocol.Caller, args SetInspectedNodeArgs) error {
@@ -323,7 +347,7 @@ func SetInspectedNode(c protocol.Caller, args SetInspectedNodeArgs) error {
 }
 
 /*
-	Sets node name for a node with given id.
+Sets node name for a node with given id.
 */
 func SetNodeName(c protocol.Caller, args SetNodeNameArgs) (*SetNodeNameVal, error) {
 	var val = &SetNodeNameVal{}
@@ -331,30 +355,52 @@ func SetNodeName(c protocol.Caller, args SetNodeNameArgs) (*SetNodeNameVal, erro
 }
 
 /*
-	Sets node value for a node with given id.
+Sets node value for a node with given id.
 */
 func SetNodeValue(c protocol.Caller, args SetNodeValueArgs) error {
 	return c.Call("DOM.setNodeValue", args, nil)
 }
 
 /*
-	Sets node HTML markup, returns new node id.
+Sets node HTML markup, returns new node id.
 */
 func SetOuterHTML(c protocol.Caller, args SetOuterHTMLArgs) error {
 	return c.Call("DOM.setOuterHTML", args, nil)
 }
 
 /*
-	Undoes the last performed action.
+Undoes the last performed action.
 */
 func Undo(c protocol.Caller) error {
 	return c.Call("DOM.undo", nil, nil)
 }
 
 /*
-	Returns iframe node that owns iframe with the given domain.
+Returns iframe node that owns iframe with the given domain.
 */
 func GetFrameOwner(c protocol.Caller, args GetFrameOwnerArgs) (*GetFrameOwnerVal, error) {
 	var val = &GetFrameOwnerVal{}
 	return val, c.Call("DOM.getFrameOwner", args, val)
+}
+
+/*
+	Returns the query container of the given node based on container query
+
+conditions: containerName, physical, and logical axes. If no axes are
+provided, the style container is returned, which is the direct parent or the
+closest element with a matching container-name.
+*/
+func GetContainerForNode(c protocol.Caller, args GetContainerForNodeArgs) (*GetContainerForNodeVal, error) {
+	var val = &GetContainerForNodeVal{}
+	return val, c.Call("DOM.getContainerForNode", args, val)
+}
+
+/*
+	Returns the descendants of a container query container that have
+
+container queries against this container.
+*/
+func GetQueryingDescendantsForContainer(c protocol.Caller, args GetQueryingDescendantsForContainerArgs) (*GetQueryingDescendantsForContainerVal, error) {
+	var val = &GetQueryingDescendantsForContainerVal{}
+	return val, c.Call("DOM.getQueryingDescendantsForContainer", args, val)
 }

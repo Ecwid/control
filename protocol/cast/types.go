@@ -1,7 +1,6 @@
 package cast
 
 /*
-
  */
 type Sink struct {
 	Name    string `json:"name"`
@@ -14,6 +13,10 @@ type EnableArgs struct {
 }
 
 type SetSinkToUseArgs struct {
+	SinkName string `json:"sinkName"`
+}
+
+type StartDesktopMirroringArgs struct {
 	SinkName string `json:"sinkName"`
 }
 

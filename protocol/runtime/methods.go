@@ -5,7 +5,7 @@ import (
 )
 
 /*
-	Add handler to promise with given promise object id.
+Add handler to promise with given promise object id.
 */
 func AwaitPromise(c protocol.Caller, args AwaitPromiseArgs) (*AwaitPromiseVal, error) {
 	var val = &AwaitPromiseVal{}
@@ -14,6 +14,7 @@ func AwaitPromise(c protocol.Caller, args AwaitPromiseArgs) (*AwaitPromiseVal, e
 
 /*
 	Calls function with given declaration on the given object. Object group of the result is
+
 inherited from the target object.
 */
 func CallFunctionOn(c protocol.Caller, args CallFunctionOnArgs) (*CallFunctionOnVal, error) {
@@ -22,7 +23,7 @@ func CallFunctionOn(c protocol.Caller, args CallFunctionOnArgs) (*CallFunctionOn
 }
 
 /*
-	Compiles expression.
+Compiles expression.
 */
 func CompileScript(c protocol.Caller, args CompileScriptArgs) (*CompileScriptVal, error) {
 	var val = &CompileScriptVal{}
@@ -30,14 +31,14 @@ func CompileScript(c protocol.Caller, args CompileScriptArgs) (*CompileScriptVal
 }
 
 /*
-	Disables reporting of execution contexts creation.
+Disables reporting of execution contexts creation.
 */
 func Disable(c protocol.Caller) error {
 	return c.Call("Runtime.disable", nil, nil)
 }
 
 /*
-	Discards collected exceptions and console API calls.
+Discards collected exceptions and console API calls.
 */
 func DiscardConsoleEntries(c protocol.Caller) error {
 	return c.Call("Runtime.discardConsoleEntries", nil, nil)
@@ -45,6 +46,7 @@ func DiscardConsoleEntries(c protocol.Caller) error {
 
 /*
 	Enables reporting of execution contexts creation by means of `executionContextCreated` event.
+
 When the reporting gets enabled the event will be sent immediately for each existing execution
 context.
 */
@@ -53,7 +55,7 @@ func Enable(c protocol.Caller) error {
 }
 
 /*
-	Evaluates expression on global object.
+Evaluates expression on global object.
 */
 func Evaluate(c protocol.Caller, args EvaluateArgs) (*EvaluateVal, error) {
 	var val = &EvaluateVal{}
@@ -61,7 +63,7 @@ func Evaluate(c protocol.Caller, args EvaluateArgs) (*EvaluateVal, error) {
 }
 
 /*
-	Returns the isolate id.
+Returns the isolate id.
 */
 func GetIsolateId(c protocol.Caller) (*GetIsolateIdVal, error) {
 	var val = &GetIsolateIdVal{}
@@ -70,6 +72,7 @@ func GetIsolateId(c protocol.Caller) (*GetIsolateIdVal, error) {
 
 /*
 	Returns the JavaScript heap usage.
+
 It is the total usage of the corresponding isolate not scoped to a particular Runtime.
 */
 func GetHeapUsage(c protocol.Caller) (*GetHeapUsageVal, error) {
@@ -79,6 +82,7 @@ func GetHeapUsage(c protocol.Caller) (*GetHeapUsageVal, error) {
 
 /*
 	Returns properties of a given object. Object group of the result is inherited from the target
+
 object.
 */
 func GetProperties(c protocol.Caller, args GetPropertiesArgs) (*GetPropertiesVal, error) {
@@ -87,7 +91,7 @@ func GetProperties(c protocol.Caller, args GetPropertiesArgs) (*GetPropertiesVal
 }
 
 /*
-	Returns all let, const and class variables from global scope.
+Returns all let, const and class variables from global scope.
 */
 func GlobalLexicalScopeNames(c protocol.Caller, args GlobalLexicalScopeNamesArgs) (*GlobalLexicalScopeNamesVal, error) {
 	var val = &GlobalLexicalScopeNamesVal{}
@@ -95,7 +99,6 @@ func GlobalLexicalScopeNames(c protocol.Caller, args GlobalLexicalScopeNamesArgs
 }
 
 /*
-
  */
 func QueryObjects(c protocol.Caller, args QueryObjectsArgs) (*QueryObjectsVal, error) {
 	var val = &QueryObjectsVal{}
@@ -103,28 +106,28 @@ func QueryObjects(c protocol.Caller, args QueryObjectsArgs) (*QueryObjectsVal, e
 }
 
 /*
-	Releases remote object with given id.
+Releases remote object with given id.
 */
 func ReleaseObject(c protocol.Caller, args ReleaseObjectArgs) error {
 	return c.Call("Runtime.releaseObject", args, nil)
 }
 
 /*
-	Releases all remote objects that belong to a given group.
+Releases all remote objects that belong to a given group.
 */
 func ReleaseObjectGroup(c protocol.Caller, args ReleaseObjectGroupArgs) error {
 	return c.Call("Runtime.releaseObjectGroup", args, nil)
 }
 
 /*
-	Tells inspected instance to run if it was waiting for debugger to attach.
+Tells inspected instance to run if it was waiting for debugger to attach.
 */
 func RunIfWaitingForDebugger(c protocol.Caller) error {
 	return c.Call("Runtime.runIfWaitingForDebugger", nil, nil)
 }
 
 /*
-	Runs script with given id in a given context.
+Runs script with given id in a given context.
 */
 func RunScript(c protocol.Caller, args RunScriptArgs) (*RunScriptVal, error) {
 	var val = &RunScriptVal{}
@@ -132,21 +135,19 @@ func RunScript(c protocol.Caller, args RunScriptArgs) (*RunScriptVal, error) {
 }
 
 /*
-	Enables or disables async call stacks tracking.
+Enables or disables async call stacks tracking.
 */
 func SetAsyncCallStackDepth(c protocol.Caller, args SetAsyncCallStackDepthArgs) error {
 	return c.Call("Runtime.setAsyncCallStackDepth", args, nil)
 }
 
 /*
-
  */
 func SetCustomObjectFormatterEnabled(c protocol.Caller, args SetCustomObjectFormatterEnabledArgs) error {
 	return c.Call("Runtime.setCustomObjectFormatterEnabled", args, nil)
 }
 
 /*
-
  */
 func SetMaxCallStackSizeToCapture(c protocol.Caller, args SetMaxCallStackSizeToCaptureArgs) error {
 	return c.Call("Runtime.setMaxCallStackSizeToCapture", args, nil)
@@ -154,6 +155,7 @@ func SetMaxCallStackSizeToCapture(c protocol.Caller, args SetMaxCallStackSizeToC
 
 /*
 	Terminate current or next JavaScript execution.
+
 Will cancel the termination when the outer-most script execution ends.
 */
 func TerminateExecution(c protocol.Caller) error {
@@ -162,6 +164,7 @@ func TerminateExecution(c protocol.Caller) error {
 
 /*
 	If executionContextId is empty, adds binding with the given name on the
+
 global objects of all inspected contexts, including those created later,
 bindings survive reloads.
 Binding function takes exactly one argument, this argument should be string,
@@ -174,8 +177,22 @@ func AddBinding(c protocol.Caller, args AddBindingArgs) error {
 
 /*
 	This method does not remove binding function from global object but
+
 unsubscribes current runtime agent from Runtime.bindingCalled notifications.
 */
 func RemoveBinding(c protocol.Caller, args RemoveBindingArgs) error {
 	return c.Call("Runtime.removeBinding", args, nil)
+}
+
+/*
+	This method tries to lookup and populate exception details for a
+
+JavaScript Error object.
+Note that the stackTrace portion of the resulting exceptionDetails will
+only be populated if the Runtime domain was enabled at the time when the
+Error was thrown.
+*/
+func GetExceptionDetails(c protocol.Caller, args GetExceptionDetailsArgs) (*GetExceptionDetailsVal, error) {
+	var val = &GetExceptionDetailsVal{}
+	return val, c.Call("Runtime.getExceptionDetails", args, val)
 }
