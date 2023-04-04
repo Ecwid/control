@@ -96,7 +96,7 @@ func (s *Session) handle(e transport.Event) error {
 			return err
 		}
 		frameID := common.FrameId((v.Context.AuxData.(map[string]interface{}))["frameId"].(string))
-		s.executions.Store(frameID, v.Context.Id)
+		s.executions.Store(frameID, v.Context.UniqueId)
 
 	case "Target.targetCrashed":
 		var v = target.TargetCrashed{}

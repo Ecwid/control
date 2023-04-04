@@ -6,17 +6,17 @@ import (
 )
 
 /*
-	Unique Layer identifier.
+Unique Layer identifier.
 */
 type LayerId string
 
 /*
-	Unique snapshot identifier.
+Unique snapshot identifier.
 */
 type SnapshotId string
 
 /*
-	Rectangle where scrolling happens on the main thread.
+Rectangle where scrolling happens on the main thread.
 */
 type ScrollRect struct {
 	Rect *common.Rect `json:"rect"`
@@ -24,7 +24,7 @@ type ScrollRect struct {
 }
 
 /*
-	Sticky position constraints.
+Sticky position constraints.
 */
 type StickyPositionConstraint struct {
 	StickyBoxRect                       *common.Rect `json:"stickyBoxRect"`
@@ -34,7 +34,7 @@ type StickyPositionConstraint struct {
 }
 
 /*
-	Serialized fragment of layer picture along with its offset within the layer.
+Serialized fragment of layer picture along with its offset within the layer.
 */
 type PictureTile struct {
 	X       float64 `json:"x"`
@@ -43,7 +43,7 @@ type PictureTile struct {
 }
 
 /*
-	Information about a compositing layer.
+Information about a compositing layer.
 */
 type Layer struct {
 	LayerId                  LayerId                   `json:"layerId"`
@@ -65,7 +65,7 @@ type Layer struct {
 }
 
 /*
-	Array of timings, one per paint step.
+Array of timings, one per paint step.
 */
 type PaintProfile []float64
 

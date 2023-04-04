@@ -5,14 +5,14 @@ import (
 )
 
 /*
-	Activates (focuses) the target.
+Activates (focuses) the target.
 */
 func ActivateTarget(c protocol.Caller, args ActivateTargetArgs) error {
 	return c.Call("Target.activateTarget", args, nil)
 }
 
 /*
-	Attaches to the target with given id.
+Attaches to the target with given id.
 */
 func AttachToTarget(c protocol.Caller, args AttachToTargetArgs) (*AttachToTargetVal, error) {
 	var val = &AttachToTargetVal{}
@@ -20,7 +20,7 @@ func AttachToTarget(c protocol.Caller, args AttachToTargetArgs) (*AttachToTarget
 }
 
 /*
-	Attaches to the browser target, only uses flat sessionId mode.
+Attaches to the browser target, only uses flat sessionId mode.
 */
 func AttachToBrowserTarget(c protocol.Caller) (*AttachToBrowserTargetVal, error) {
 	var val = &AttachToBrowserTargetVal{}
@@ -28,7 +28,7 @@ func AttachToBrowserTarget(c protocol.Caller) (*AttachToBrowserTargetVal, error)
 }
 
 /*
-	Closes the target. If the target is a page that gets closed too.
+Closes the target. If the target is a page that gets closed too.
 */
 func CloseTarget(c protocol.Caller, args CloseTargetArgs) error {
 	return c.Call("Target.closeTarget", args, nil)
@@ -36,6 +36,7 @@ func CloseTarget(c protocol.Caller, args CloseTargetArgs) error {
 
 /*
 	Inject object to the target's main frame that provides a communication
+
 channel with browser target.
 
 Injected object will be available as `window[bindingName]`.
@@ -50,6 +51,7 @@ func ExposeDevToolsProtocol(c protocol.Caller, args ExposeDevToolsProtocolArgs) 
 
 /*
 	Creates a new empty BrowserContext. Similar to an incognito profile but you can have more than
+
 one.
 */
 func CreateBrowserContext(c protocol.Caller, args CreateBrowserContextArgs) (*CreateBrowserContextVal, error) {
@@ -58,7 +60,7 @@ func CreateBrowserContext(c protocol.Caller, args CreateBrowserContextArgs) (*Cr
 }
 
 /*
-	Returns all browser contexts created with `Target.createBrowserContext` method.
+Returns all browser contexts created with `Target.createBrowserContext` method.
 */
 func GetBrowserContexts(c protocol.Caller) (*GetBrowserContextsVal, error) {
 	var val = &GetBrowserContextsVal{}
@@ -66,7 +68,7 @@ func GetBrowserContexts(c protocol.Caller) (*GetBrowserContextsVal, error) {
 }
 
 /*
-	Creates a new page.
+Creates a new page.
 */
 func CreateTarget(c protocol.Caller, args CreateTargetArgs) (*CreateTargetVal, error) {
 	var val = &CreateTargetVal{}
@@ -74,7 +76,7 @@ func CreateTarget(c protocol.Caller, args CreateTargetArgs) (*CreateTargetVal, e
 }
 
 /*
-	Detaches session with given id.
+Detaches session with given id.
 */
 func DetachFromTarget(c protocol.Caller, args DetachFromTargetArgs) error {
 	return c.Call("Target.detachFromTarget", args, nil)
@@ -82,6 +84,7 @@ func DetachFromTarget(c protocol.Caller, args DetachFromTargetArgs) error {
 
 /*
 	Deletes a BrowserContext. All the belonging pages will be closed without calling their
+
 beforeunload hooks.
 */
 func DisposeBrowserContext(c protocol.Caller, args DisposeBrowserContextArgs) error {
@@ -89,7 +92,7 @@ func DisposeBrowserContext(c protocol.Caller, args DisposeBrowserContextArgs) er
 }
 
 /*
-	Returns information about a target.
+Returns information about a target.
 */
 func GetTargetInfo(c protocol.Caller, args GetTargetInfoArgs) (*GetTargetInfoVal, error) {
 	var val = &GetTargetInfoVal{}
@@ -97,24 +100,40 @@ func GetTargetInfo(c protocol.Caller, args GetTargetInfoArgs) (*GetTargetInfoVal
 }
 
 /*
-	Retrieves a list of available targets.
+Retrieves a list of available targets.
 */
-func GetTargets(c protocol.Caller) (*GetTargetsVal, error) {
+func GetTargets(c protocol.Caller, args GetTargetsArgs) (*GetTargetsVal, error) {
 	var val = &GetTargetsVal{}
-	return val, c.Call("Target.getTargets", nil, val)
+	return val, c.Call("Target.getTargets", args, val)
 }
 
 /*
 	Controls whether to automatically attach to new targets which are considered to be related to
+
 this one. When turned on, attaches to all existing related targets as well. When turned off,
 automatically detaches from all currently attached targets.
+This also clears all targets added by `autoAttachRelated` from the list of targets to watch
+for creation of related targets.
 */
 func SetAutoAttach(c protocol.Caller, args SetAutoAttachArgs) error {
 	return c.Call("Target.setAutoAttach", args, nil)
 }
 
 /*
+	Adds the specified target to the list of targets that will be monitored for any related target
+
+creation (such as child frames, child workers and new versions of service worker) and reported
+through `attachedToTarget`. The specified target is also auto-attached.
+This cancels the effect of any previous `setAutoAttach` and is also cancelled by subsequent
+`setAutoAttach`. Only available at the Browser target.
+*/
+func AutoAttachRelated(c protocol.Caller, args AutoAttachRelatedArgs) error {
+	return c.Call("Target.autoAttachRelated", args, nil)
+}
+
+/*
 	Controls whether to discover available targets and notify via
+
 `targetCreated/targetInfoChanged/targetDestroyed` events.
 */
 func SetDiscoverTargets(c protocol.Caller, args SetDiscoverTargetsArgs) error {
@@ -123,6 +142,7 @@ func SetDiscoverTargets(c protocol.Caller, args SetDiscoverTargetsArgs) error {
 
 /*
 	Enables target discovery for the specified locations, when `setDiscoverTargets` was set to
+
 `true`.
 */
 func SetRemoteLocations(c protocol.Caller, args SetRemoteLocationsArgs) error {

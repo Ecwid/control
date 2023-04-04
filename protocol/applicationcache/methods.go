@@ -5,14 +5,14 @@ import (
 )
 
 /*
-	Enables application cache domain notifications.
+Enables application cache domain notifications.
 */
 func Enable(c protocol.Caller) error {
 	return c.Call("ApplicationCache.enable", nil, nil)
 }
 
 /*
-	Returns relevant application cache data for the document in given frame.
+Returns relevant application cache data for the document in given frame.
 */
 func GetApplicationCacheForFrame(c protocol.Caller, args GetApplicationCacheForFrameArgs) (*GetApplicationCacheForFrameVal, error) {
 	var val = &GetApplicationCacheForFrameVal{}
@@ -21,6 +21,7 @@ func GetApplicationCacheForFrame(c protocol.Caller, args GetApplicationCacheForF
 
 /*
 	Returns array of frame identifiers with manifest urls for each frame containing a document
+
 associated with some application cache.
 */
 func GetFramesWithManifests(c protocol.Caller) (*GetFramesWithManifestsVal, error) {
@@ -29,7 +30,7 @@ func GetFramesWithManifests(c protocol.Caller) (*GetFramesWithManifestsVal, erro
 }
 
 /*
-	Returns manifest URL for document in the given frame.
+Returns manifest URL for document in the given frame.
 */
 func GetManifestForFrame(c protocol.Caller, args GetManifestForFrameArgs) (*GetManifestForFrameVal, error) {
 	var val = &GetManifestForFrameVal{}

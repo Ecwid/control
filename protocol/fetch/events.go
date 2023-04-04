@@ -7,6 +7,7 @@ import (
 
 /*
 	Issued when the domain is enabled and the request URL matches the
+
 specified filter. The request is paused until the client responds
 with one of continueRequest, failRequest or fulfillRequest.
 The stage of the request can be determined by presence of responseErrorReason
@@ -20,12 +21,15 @@ type RequestPaused struct {
 	ResourceType        network.ResourceType `json:"resourceType"`
 	ResponseErrorReason network.ErrorReason  `json:"responseErrorReason,omitempty"`
 	ResponseStatusCode  int                  `json:"responseStatusCode,omitempty"`
+	ResponseStatusText  string               `json:"responseStatusText,omitempty"`
 	ResponseHeaders     []*HeaderEntry       `json:"responseHeaders,omitempty"`
-	NetworkId           RequestId            `json:"networkId,omitempty"`
+	NetworkId           network.RequestId    `json:"networkId,omitempty"`
+	RedirectedRequestId RequestId            `json:"redirectedRequestId,omitempty"`
 }
 
 /*
 	Issued when the domain is enabled with handleAuthRequests set to true.
+
 The request is paused until client responds with continueWithAuth.
 */
 type AuthRequired struct {

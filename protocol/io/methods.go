@@ -5,14 +5,14 @@ import (
 )
 
 /*
-	Close the stream, discard any temporary backing storage.
+Close the stream, discard any temporary backing storage.
 */
 func Close(c protocol.Caller, args CloseArgs) error {
 	return c.Call("IO.close", args, nil)
 }
 
 /*
-	Read a chunk of the stream
+Read a chunk of the stream
 */
 func Read(c protocol.Caller, args ReadArgs) (*ReadVal, error) {
 	var val = &ReadVal{}
@@ -20,7 +20,7 @@ func Read(c protocol.Caller, args ReadArgs) (*ReadVal, error) {
 }
 
 /*
-	Return UUID of Blob object specified by a remote object id.
+Return UUID of Blob object specified by a remote object id.
 */
 func ResolveBlob(c protocol.Caller, args ResolveBlobArgs) (*ResolveBlobVal, error) {
 	var val = &ResolveBlobVal{}

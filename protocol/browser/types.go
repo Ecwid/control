@@ -6,22 +6,20 @@ import (
 )
 
 /*
-
  */
 type BrowserContextID string
 
 /*
-
  */
 type WindowID int
 
 /*
-	The state of the browser window.
+The state of the browser window.
 */
 type WindowState string
 
 /*
-	Browser window bounds information
+Browser window bounds information
 */
 type Bounds struct {
 	Left        int         `json:"left,omitempty"`
@@ -32,17 +30,16 @@ type Bounds struct {
 }
 
 /*
-
  */
 type PermissionType string
 
 /*
-
  */
 type PermissionSetting string
 
 /*
 	Definition of PermissionDescriptor defined in the Permissions API:
+
 https://w3c.github.io/permissions/#dictdef-permissiondescriptor.
 */
 type PermissionDescriptor struct {
@@ -54,12 +51,12 @@ type PermissionDescriptor struct {
 }
 
 /*
-	Browser command ids used by executeBrowserCommand.
+Browser command ids used by executeBrowserCommand.
 */
 type BrowserCommandId string
 
 /*
-	Chrome histogram bucket.
+Chrome histogram bucket.
 */
 type Bucket struct {
 	Low   int `json:"low"`
@@ -68,7 +65,7 @@ type Bucket struct {
 }
 
 /*
-	Chrome histogram.
+Chrome histogram.
 */
 type Histogram struct {
 	Name    string    `json:"name"`

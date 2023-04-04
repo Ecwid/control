@@ -169,14 +169,14 @@ func (f Frame) Evaluate(expression string, await, returnByValue bool) (interface
 }
 
 func (f Frame) evaluate(expression string, await, returnByValue bool) (*runtime.RemoteObject, error) {
-	var cid, ok = f.session.executions.Load(f.id)
+	var uid, ok = f.session.executions.Load(f.id)
 	if !ok {
 		return nil, ErrExecutionContextDestroyed
 	}
 	val, err := runtime.Evaluate(f, runtime.EvaluateArgs{
 		Expression:            expression,
 		IncludeCommandLineAPI: true,
-		ContextId:             cid.(runtime.ExecutionContextId),
+		UniqueContextId:       uid.(string),
 		AwaitPromise:          await,
 		ReturnByValue:         returnByValue,
 	})

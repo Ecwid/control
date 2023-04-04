@@ -5,7 +5,6 @@ import (
 )
 
 /*
-
  */
 type BufferUsage struct {
 	PercentFull float64 `json:"percentFull,omitempty"`
@@ -14,8 +13,9 @@ type BufferUsage struct {
 }
 
 /*
-	Contains an bucket of collected trace events. When tracing is stopped collected events will be
-send as a sequence of dataCollected events followed by tracingComplete event.
+	Contains a bucket of collected trace events. When tracing is stopped collected events will be
+
+sent as a sequence of dataCollected events followed by tracingComplete event.
 */
 type DataCollected struct {
 	Value []interface{} `json:"value"`
@@ -23,6 +23,7 @@ type DataCollected struct {
 
 /*
 	Signals that tracing is stopped and there is no trace buffers pending flush, all data were
+
 delivered via dataCollected events.
 */
 type TracingComplete struct {

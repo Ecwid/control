@@ -1,14 +1,13 @@
 package heapprofiler
 
 /*
-
  */
 type AddHeapSnapshotChunk struct {
 	Chunk string `json:"chunk"`
 }
 
 /*
-	If heap objects tracking has been started then backend may send update for one or more fragments
+If heap objects tracking has been started then backend may send update for one or more fragments
 */
 type HeapStatsUpdate struct {
 	StatsUpdate []int `json:"statsUpdate"`
@@ -16,6 +15,7 @@ type HeapStatsUpdate struct {
 
 /*
 	If heap objects tracking has been started then backend regularly sends a current value for last
+
 seen object id and corresponding timestamp. If the were changes in the heap since last event
 then one or more heapStatsUpdate events will be sent before a new lastSeenObjectId event.
 */
@@ -25,7 +25,6 @@ type LastSeenObjectId struct {
 }
 
 /*
-
  */
 type ReportHeapSnapshotProgress struct {
 	Done     int  `json:"done"`
@@ -34,6 +33,5 @@ type ReportHeapSnapshotProgress struct {
 }
 
 /*
-
  */
 type ResetProfiles interface{}

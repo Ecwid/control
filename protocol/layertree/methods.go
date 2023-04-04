@@ -5,7 +5,7 @@ import (
 )
 
 /*
-	Provides the reasons why the given layer was composited.
+Provides the reasons why the given layer was composited.
 */
 func CompositingReasons(c protocol.Caller, args CompositingReasonsArgs) (*CompositingReasonsVal, error) {
 	var val = &CompositingReasonsVal{}
@@ -13,21 +13,21 @@ func CompositingReasons(c protocol.Caller, args CompositingReasonsArgs) (*Compos
 }
 
 /*
-	Disables compositing tree inspection.
+Disables compositing tree inspection.
 */
 func Disable(c protocol.Caller) error {
 	return c.Call("LayerTree.disable", nil, nil)
 }
 
 /*
-	Enables compositing tree inspection.
+Enables compositing tree inspection.
 */
 func Enable(c protocol.Caller) error {
 	return c.Call("LayerTree.enable", nil, nil)
 }
 
 /*
-	Returns the snapshot identifier.
+Returns the snapshot identifier.
 */
 func LoadSnapshot(c protocol.Caller, args LoadSnapshotArgs) (*LoadSnapshotVal, error) {
 	var val = &LoadSnapshotVal{}
@@ -35,7 +35,7 @@ func LoadSnapshot(c protocol.Caller, args LoadSnapshotArgs) (*LoadSnapshotVal, e
 }
 
 /*
-	Returns the layer snapshot identifier.
+Returns the layer snapshot identifier.
 */
 func MakeSnapshot(c protocol.Caller, args MakeSnapshotArgs) (*MakeSnapshotVal, error) {
 	var val = &MakeSnapshotVal{}
@@ -43,7 +43,6 @@ func MakeSnapshot(c protocol.Caller, args MakeSnapshotArgs) (*MakeSnapshotVal, e
 }
 
 /*
-
  */
 func ProfileSnapshot(c protocol.Caller, args ProfileSnapshotArgs) (*ProfileSnapshotVal, error) {
 	var val = &ProfileSnapshotVal{}
@@ -51,14 +50,14 @@ func ProfileSnapshot(c protocol.Caller, args ProfileSnapshotArgs) (*ProfileSnaps
 }
 
 /*
-	Releases layer snapshot captured by the back-end.
+Releases layer snapshot captured by the back-end.
 */
 func ReleaseSnapshot(c protocol.Caller, args ReleaseSnapshotArgs) error {
 	return c.Call("LayerTree.releaseSnapshot", args, nil)
 }
 
 /*
-	Replays the layer snapshot and returns the resulting bitmap.
+Replays the layer snapshot and returns the resulting bitmap.
 */
 func ReplaySnapshot(c protocol.Caller, args ReplaySnapshotArgs) (*ReplaySnapshotVal, error) {
 	var val = &ReplaySnapshotVal{}
@@ -66,7 +65,7 @@ func ReplaySnapshot(c protocol.Caller, args ReplaySnapshotArgs) (*ReplaySnapshot
 }
 
 /*
-	Replays the layer snapshot and returns canvas log.
+Replays the layer snapshot and returns canvas log.
 */
 func SnapshotCommandLog(c protocol.Caller, args SnapshotCommandLogArgs) (*SnapshotCommandLogVal, error) {
 	var val = &SnapshotCommandLogVal{}

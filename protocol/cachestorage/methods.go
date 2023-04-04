@@ -5,21 +5,21 @@ import (
 )
 
 /*
-	Deletes a cache.
+Deletes a cache.
 */
 func DeleteCache(c protocol.Caller, args DeleteCacheArgs) error {
 	return c.Call("CacheStorage.deleteCache", args, nil)
 }
 
 /*
-	Deletes a cache entry.
+Deletes a cache entry.
 */
 func DeleteEntry(c protocol.Caller, args DeleteEntryArgs) error {
 	return c.Call("CacheStorage.deleteEntry", args, nil)
 }
 
 /*
-	Requests cache names.
+Requests cache names.
 */
 func RequestCacheNames(c protocol.Caller, args RequestCacheNamesArgs) (*RequestCacheNamesVal, error) {
 	var val = &RequestCacheNamesVal{}
@@ -27,7 +27,7 @@ func RequestCacheNames(c protocol.Caller, args RequestCacheNamesArgs) (*RequestC
 }
 
 /*
-	Fetches cache entry.
+Fetches cache entry.
 */
 func RequestCachedResponse(c protocol.Caller, args RequestCachedResponseArgs) (*RequestCachedResponseVal, error) {
 	var val = &RequestCachedResponseVal{}
@@ -35,7 +35,7 @@ func RequestCachedResponse(c protocol.Caller, args RequestCachedResponseArgs) (*
 }
 
 /*
-	Requests data from cache.
+Requests data from cache.
 */
 func RequestEntries(c protocol.Caller, args RequestEntriesArgs) (*RequestEntriesVal, error) {
 	var val = &RequestEntriesVal{}

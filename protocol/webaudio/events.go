@@ -1,35 +1,35 @@
 package webaudio
 
 /*
-	Notifies that a new BaseAudioContext has been created.
+Notifies that a new BaseAudioContext has been created.
 */
 type ContextCreated struct {
 	Context *BaseAudioContext `json:"context"`
 }
 
 /*
-	Notifies that an existing BaseAudioContext will be destroyed.
+Notifies that an existing BaseAudioContext will be destroyed.
 */
 type ContextWillBeDestroyed struct {
 	ContextId GraphObjectId `json:"contextId"`
 }
 
 /*
-	Notifies that existing BaseAudioContext has changed some properties (id stays the same)..
+Notifies that existing BaseAudioContext has changed some properties (id stays the same)..
 */
 type ContextChanged struct {
 	Context *BaseAudioContext `json:"context"`
 }
 
 /*
-	Notifies that the construction of an AudioListener has finished.
+Notifies that the construction of an AudioListener has finished.
 */
 type AudioListenerCreated struct {
 	Listener *AudioListener `json:"listener"`
 }
 
 /*
-	Notifies that a new AudioListener has been created.
+Notifies that a new AudioListener has been created.
 */
 type AudioListenerWillBeDestroyed struct {
 	ContextId  GraphObjectId `json:"contextId"`
@@ -37,14 +37,14 @@ type AudioListenerWillBeDestroyed struct {
 }
 
 /*
-	Notifies that a new AudioNode has been created.
+Notifies that a new AudioNode has been created.
 */
 type AudioNodeCreated struct {
 	Node *AudioNode `json:"node"`
 }
 
 /*
-	Notifies that an existing AudioNode has been destroyed.
+Notifies that an existing AudioNode has been destroyed.
 */
 type AudioNodeWillBeDestroyed struct {
 	ContextId GraphObjectId `json:"contextId"`
@@ -52,14 +52,14 @@ type AudioNodeWillBeDestroyed struct {
 }
 
 /*
-	Notifies that a new AudioParam has been created.
+Notifies that a new AudioParam has been created.
 */
 type AudioParamCreated struct {
 	Param *AudioParam `json:"param"`
 }
 
 /*
-	Notifies that an existing AudioParam has been destroyed.
+Notifies that an existing AudioParam has been destroyed.
 */
 type AudioParamWillBeDestroyed struct {
 	ContextId GraphObjectId `json:"contextId"`
@@ -68,7 +68,7 @@ type AudioParamWillBeDestroyed struct {
 }
 
 /*
-	Notifies that two AudioNodes are connected.
+Notifies that two AudioNodes are connected.
 */
 type NodesConnected struct {
 	ContextId             GraphObjectId `json:"contextId"`
@@ -79,7 +79,7 @@ type NodesConnected struct {
 }
 
 /*
-	Notifies that AudioNodes are disconnected. The destination can be null, and it means all the outgoing connections from the source are disconnected.
+Notifies that AudioNodes are disconnected. The destination can be null, and it means all the outgoing connections from the source are disconnected.
 */
 type NodesDisconnected struct {
 	ContextId             GraphObjectId `json:"contextId"`
@@ -90,7 +90,7 @@ type NodesDisconnected struct {
 }
 
 /*
-	Notifies that an AudioNode is connected to an AudioParam.
+Notifies that an AudioNode is connected to an AudioParam.
 */
 type NodeParamConnected struct {
 	ContextId         GraphObjectId `json:"contextId"`
@@ -100,7 +100,7 @@ type NodeParamConnected struct {
 }
 
 /*
-	Notifies that an AudioNode is disconnected to an AudioParam.
+Notifies that an AudioNode is disconnected to an AudioParam.
 */
 type NodeParamDisconnected struct {
 	ContextId         GraphObjectId `json:"contextId"`

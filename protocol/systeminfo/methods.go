@@ -5,7 +5,7 @@ import (
 )
 
 /*
-	Returns information about the system.
+Returns information about the system.
 */
 func GetInfo(c protocol.Caller) (*GetInfoVal, error) {
 	var val = &GetInfoVal{}
@@ -13,7 +13,15 @@ func GetInfo(c protocol.Caller) (*GetInfoVal, error) {
 }
 
 /*
-	Returns information about all running processes.
+Returns information about the feature state.
+*/
+func GetFeatureState(c protocol.Caller, args GetFeatureStateArgs) (*GetFeatureStateVal, error) {
+	var val = &GetFeatureStateVal{}
+	return val, c.Call("SystemInfo.getFeatureState", args, val)
+}
+
+/*
+Returns information about all running processes.
 */
 func GetProcessInfo(c protocol.Caller) (*GetProcessInfoVal, error) {
 	var val = &GetProcessInfoVal{}

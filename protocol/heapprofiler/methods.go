@@ -6,6 +6,7 @@ import (
 
 /*
 	Enables console to refer to the node with given id via $x (see Command Line API for more details
+
 $x functions).
 */
 func AddInspectedHeapObject(c protocol.Caller, args AddInspectedHeapObjectArgs) error {
@@ -13,28 +14,24 @@ func AddInspectedHeapObject(c protocol.Caller, args AddInspectedHeapObjectArgs) 
 }
 
 /*
-
  */
 func CollectGarbage(c protocol.Caller) error {
 	return c.Call("HeapProfiler.collectGarbage", nil, nil)
 }
 
 /*
-
  */
 func Disable(c protocol.Caller) error {
 	return c.Call("HeapProfiler.disable", nil, nil)
 }
 
 /*
-
  */
 func Enable(c protocol.Caller) error {
 	return c.Call("HeapProfiler.enable", nil, nil)
 }
 
 /*
-
  */
 func GetHeapObjectId(c protocol.Caller, args GetHeapObjectIdArgs) (*GetHeapObjectIdVal, error) {
 	var val = &GetHeapObjectIdVal{}
@@ -42,7 +39,6 @@ func GetHeapObjectId(c protocol.Caller, args GetHeapObjectIdArgs) (*GetHeapObjec
 }
 
 /*
-
  */
 func GetObjectByHeapObjectId(c protocol.Caller, args GetObjectByHeapObjectIdArgs) (*GetObjectByHeapObjectIdVal, error) {
 	var val = &GetObjectByHeapObjectIdVal{}
@@ -50,7 +46,6 @@ func GetObjectByHeapObjectId(c protocol.Caller, args GetObjectByHeapObjectIdArgs
 }
 
 /*
-
  */
 func GetSamplingProfile(c protocol.Caller) (*GetSamplingProfileVal, error) {
 	var val = &GetSamplingProfileVal{}
@@ -58,21 +53,18 @@ func GetSamplingProfile(c protocol.Caller) (*GetSamplingProfileVal, error) {
 }
 
 /*
-
  */
 func StartSampling(c protocol.Caller, args StartSamplingArgs) error {
 	return c.Call("HeapProfiler.startSampling", args, nil)
 }
 
 /*
-
  */
 func StartTrackingHeapObjects(c protocol.Caller, args StartTrackingHeapObjectsArgs) error {
 	return c.Call("HeapProfiler.startTrackingHeapObjects", args, nil)
 }
 
 /*
-
  */
 func StopSampling(c protocol.Caller) (*StopSamplingVal, error) {
 	var val = &StopSamplingVal{}
@@ -80,14 +72,12 @@ func StopSampling(c protocol.Caller) (*StopSamplingVal, error) {
 }
 
 /*
-
  */
 func StopTrackingHeapObjects(c protocol.Caller, args StopTrackingHeapObjectsArgs) error {
 	return c.Call("HeapProfiler.stopTrackingHeapObjects", args, nil)
 }
 
 /*
-
  */
 func TakeHeapSnapshot(c protocol.Caller, args TakeHeapSnapshotArgs) error {
 	return c.Call("HeapProfiler.takeHeapSnapshot", args, nil)

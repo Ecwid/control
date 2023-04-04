@@ -5,23 +5,24 @@ import (
 )
 
 /*
-	An internal certificate ID value.
+An internal certificate ID value.
 */
 type CertificateId int
 
 /*
 	A description of mixed content (HTTP resources on HTTPS pages), as defined by
+
 https://www.w3.org/TR/mixed-content/#categories
 */
 type MixedContentType string
 
 /*
-	The security level of a page or resource.
+The security level of a page or resource.
 */
 type SecurityState string
 
 /*
-	Details about the security state of the page certificate.
+Details about the security state of the page certificate.
 */
 type CertificateSecurityState struct {
 	Protocol                    string                `json:"protocol"`
@@ -45,12 +46,10 @@ type CertificateSecurityState struct {
 }
 
 /*
-
  */
 type SafetyTipStatus string
 
 /*
-
  */
 type SafetyTipInfo struct {
 	SafetyTipStatus SafetyTipStatus `json:"safetyTipStatus"`
@@ -58,7 +57,7 @@ type SafetyTipInfo struct {
 }
 
 /*
-	Security state information about the page.
+Security state information about the page.
 */
 type VisibleSecurityState struct {
 	SecurityState            SecurityState             `json:"securityState"`
@@ -68,7 +67,7 @@ type VisibleSecurityState struct {
 }
 
 /*
-	An explanation of an factor contributing to the security state.
+An explanation of an factor contributing to the security state.
 */
 type SecurityStateExplanation struct {
 	SecurityState    SecurityState    `json:"securityState"`
@@ -82,6 +81,7 @@ type SecurityStateExplanation struct {
 
 /*
 	The action to take when a certificate error occurs. continue will continue processing the
+
 request and cancel will cancel the request.
 */
 type CertificateErrorAction string

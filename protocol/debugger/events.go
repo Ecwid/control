@@ -5,7 +5,7 @@ import (
 )
 
 /*
-	Fired when breakpoint is resolved to an actual script and location.
+Fired when breakpoint is resolved to an actual script and location.
 */
 type BreakpointResolved struct {
 	BreakpointId BreakpointId `json:"breakpointId"`
@@ -13,7 +13,7 @@ type BreakpointResolved struct {
 }
 
 /*
-	Fired when the virtual machine stopped on breakpoint or exception or any other stop criteria.
+Fired when the virtual machine stopped on breakpoint or exception or any other stop criteria.
 */
 type Paused struct {
 	CallFrames        []*CallFrame          `json:"callFrames"`
@@ -25,12 +25,12 @@ type Paused struct {
 }
 
 /*
-	Fired when the virtual machine resumed execution.
+Fired when the virtual machine resumed execution.
 */
 type Resumed interface{}
 
 /*
-	Fired when virtual machine fails to parse the script.
+Fired when virtual machine fails to parse the script.
 */
 type ScriptFailedToParse struct {
 	ScriptId                runtime.ScriptId           `json:"scriptId"`
@@ -54,6 +54,7 @@ type ScriptFailedToParse struct {
 
 /*
 	Fired when virtual machine parses script. This event is also fired for all known and uncollected
+
 scripts upon enabling debugger.
 */
 type ScriptParsed struct {

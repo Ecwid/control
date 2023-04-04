@@ -1,7 +1,7 @@
 package dom
 
 /*
-	Fired when `Element`'s attribute is modified.
+Fired when `Element`'s attribute is modified.
 */
 type AttributeModified struct {
 	NodeId NodeId `json:"nodeId"`
@@ -10,7 +10,7 @@ type AttributeModified struct {
 }
 
 /*
-	Fired when `Element`'s attribute is removed.
+Fired when `Element`'s attribute is removed.
 */
 type AttributeRemoved struct {
 	NodeId NodeId `json:"nodeId"`
@@ -18,7 +18,7 @@ type AttributeRemoved struct {
 }
 
 /*
-	Mirrors `DOMCharacterDataModified` event.
+Mirrors `DOMCharacterDataModified` event.
 */
 type CharacterDataModified struct {
 	NodeId        NodeId `json:"nodeId"`
@@ -26,7 +26,7 @@ type CharacterDataModified struct {
 }
 
 /*
-	Fired when `Container`'s child node count has changed.
+Fired when `Container`'s child node count has changed.
 */
 type ChildNodeCountUpdated struct {
 	NodeId         NodeId `json:"nodeId"`
@@ -34,7 +34,7 @@ type ChildNodeCountUpdated struct {
 }
 
 /*
-	Mirrors `DOMNodeInserted` event.
+Mirrors `DOMNodeInserted` event.
 */
 type ChildNodeInserted struct {
 	ParentNodeId   NodeId `json:"parentNodeId"`
@@ -43,7 +43,7 @@ type ChildNodeInserted struct {
 }
 
 /*
-	Mirrors `DOMNodeRemoved` event.
+Mirrors `DOMNodeRemoved` event.
 */
 type ChildNodeRemoved struct {
 	ParentNodeId NodeId `json:"parentNodeId"`
@@ -51,7 +51,7 @@ type ChildNodeRemoved struct {
 }
 
 /*
-	Called when distrubution is changed.
+Called when distribution is changed.
 */
 type DistributedNodesUpdated struct {
 	InsertionPointId NodeId         `json:"insertionPointId"`
@@ -59,19 +59,19 @@ type DistributedNodesUpdated struct {
 }
 
 /*
-	Fired when `Document` has been totally updated. Node ids are no longer valid.
+Fired when `Document` has been totally updated. Node ids are no longer valid.
 */
 type DocumentUpdated interface{}
 
 /*
-	Fired when `Element`'s inline style is modified via a CSS property modification.
+Fired when `Element`'s inline style is modified via a CSS property modification.
 */
 type InlineStyleInvalidated struct {
 	NodeIds []NodeId `json:"nodeIds"`
 }
 
 /*
-	Called when a pseudo element is added to an element.
+Called when a pseudo element is added to an element.
 */
 type PseudoElementAdded struct {
 	ParentId      NodeId `json:"parentId"`
@@ -79,7 +79,12 @@ type PseudoElementAdded struct {
 }
 
 /*
-	Called when a pseudo element is removed from an element.
+Called when top layer elements are changed.
+*/
+type TopLayerElementsUpdated interface{}
+
+/*
+Called when a pseudo element is removed from an element.
 */
 type PseudoElementRemoved struct {
 	ParentId        NodeId `json:"parentId"`
@@ -88,6 +93,7 @@ type PseudoElementRemoved struct {
 
 /*
 	Fired when backend wants to provide client with the missing DOM structure. This happens upon
+
 most of the calls requesting node ids.
 */
 type SetChildNodes struct {
@@ -96,7 +102,7 @@ type SetChildNodes struct {
 }
 
 /*
-	Called when shadow root is popped from the element.
+Called when shadow root is popped from the element.
 */
 type ShadowRootPopped struct {
 	HostId NodeId `json:"hostId"`
@@ -104,7 +110,7 @@ type ShadowRootPopped struct {
 }
 
 /*
-	Called when shadow root is pushed into the element.
+Called when shadow root is pushed into the element.
 */
 type ShadowRootPushed struct {
 	HostId NodeId `json:"hostId"`

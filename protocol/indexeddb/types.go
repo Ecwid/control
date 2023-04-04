@@ -5,7 +5,7 @@ import (
 )
 
 /*
-	Database with an array of object stores.
+Database with an array of object stores.
 */
 type DatabaseWithObjectStores struct {
 	Name         string         `json:"name"`
@@ -14,7 +14,7 @@ type DatabaseWithObjectStores struct {
 }
 
 /*
-	Object store.
+Object store.
 */
 type ObjectStore struct {
 	Name          string              `json:"name"`
@@ -24,7 +24,7 @@ type ObjectStore struct {
 }
 
 /*
-	Object store index.
+Object store index.
 */
 type ObjectStoreIndex struct {
 	Name       string   `json:"name"`
@@ -34,7 +34,7 @@ type ObjectStoreIndex struct {
 }
 
 /*
-	Key.
+Key.
 */
 type Key struct {
 	Type   string  `json:"type"`
@@ -45,7 +45,7 @@ type Key struct {
 }
 
 /*
-	Key range.
+Key range.
 */
 type KeyRange struct {
 	Lower     *Key `json:"lower,omitempty"`
@@ -55,7 +55,7 @@ type KeyRange struct {
 }
 
 /*
-	Data entry.
+Data entry.
 */
 type DataEntry struct {
 	Key        *runtime.RemoteObject `json:"key"`
@@ -64,7 +64,7 @@ type DataEntry struct {
 }
 
 /*
-	Key path.
+Key path.
 */
 type KeyPath struct {
 	Type   string   `json:"type"`
@@ -73,25 +73,29 @@ type KeyPath struct {
 }
 
 type ClearObjectStoreArgs struct {
-	SecurityOrigin  string `json:"securityOrigin"`
+	SecurityOrigin  string `json:"securityOrigin,omitempty"`
+	StorageKey      string `json:"storageKey,omitempty"`
 	DatabaseName    string `json:"databaseName"`
 	ObjectStoreName string `json:"objectStoreName"`
 }
 
 type DeleteDatabaseArgs struct {
-	SecurityOrigin string `json:"securityOrigin"`
+	SecurityOrigin string `json:"securityOrigin,omitempty"`
+	StorageKey     string `json:"storageKey,omitempty"`
 	DatabaseName   string `json:"databaseName"`
 }
 
 type DeleteObjectStoreEntriesArgs struct {
-	SecurityOrigin  string    `json:"securityOrigin"`
+	SecurityOrigin  string    `json:"securityOrigin,omitempty"`
+	StorageKey      string    `json:"storageKey,omitempty"`
 	DatabaseName    string    `json:"databaseName"`
 	ObjectStoreName string    `json:"objectStoreName"`
 	KeyRange        *KeyRange `json:"keyRange"`
 }
 
 type RequestDataArgs struct {
-	SecurityOrigin  string    `json:"securityOrigin"`
+	SecurityOrigin  string    `json:"securityOrigin,omitempty"`
+	StorageKey      string    `json:"storageKey,omitempty"`
 	DatabaseName    string    `json:"databaseName"`
 	ObjectStoreName string    `json:"objectStoreName"`
 	IndexName       string    `json:"indexName"`
@@ -106,7 +110,8 @@ type RequestDataVal struct {
 }
 
 type GetMetadataArgs struct {
-	SecurityOrigin  string `json:"securityOrigin"`
+	SecurityOrigin  string `json:"securityOrigin,omitempty"`
+	StorageKey      string `json:"storageKey,omitempty"`
 	DatabaseName    string `json:"databaseName"`
 	ObjectStoreName string `json:"objectStoreName"`
 }
@@ -117,7 +122,8 @@ type GetMetadataVal struct {
 }
 
 type RequestDatabaseArgs struct {
-	SecurityOrigin string `json:"securityOrigin"`
+	SecurityOrigin string `json:"securityOrigin,omitempty"`
+	StorageKey     string `json:"storageKey,omitempty"`
 	DatabaseName   string `json:"databaseName"`
 }
 
@@ -126,7 +132,8 @@ type RequestDatabaseVal struct {
 }
 
 type RequestDatabaseNamesArgs struct {
-	SecurityOrigin string `json:"securityOrigin"`
+	SecurityOrigin string `json:"securityOrigin,omitempty"`
+	StorageKey     string `json:"storageKey,omitempty"`
 }
 
 type RequestDatabaseNamesVal struct {

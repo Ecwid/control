@@ -1,23 +1,35 @@
 package runtime
 
 /*
-	Unique script identifier.
+Unique script identifier.
 */
 type ScriptId string
 
 /*
-	Unique object identifier.
+	Represents the value serialiazed by the WebDriver BiDi specification
+
+https://w3c.github.io/webdriver-bidi.
+*/
+type WebDriverValue struct {
+	Type     string      `json:"type"`
+	Value    interface{} `json:"value,omitempty"`
+	ObjectId string      `json:"objectId,omitempty"`
+}
+
+/*
+Unique object identifier.
 */
 type RemoteObjectId string
 
 /*
 	Primitive value which cannot be JSON-stringified. Includes values `-0`, `NaN`, `Infinity`,
+
 `-Infinity`, and bigint literals.
 */
 type UnserializableValue string
 
 /*
-	Mirror object referencing original JavaScript object.
+Mirror object referencing original JavaScript object.
 */
 type RemoteObject struct {
 	Type                string              `json:"type"`
@@ -26,13 +38,13 @@ type RemoteObject struct {
 	Value               interface{}         `json:"value,omitempty"`
 	UnserializableValue UnserializableValue `json:"unserializableValue,omitempty"`
 	Description         string              `json:"description,omitempty"`
+	WebDriverValue      *WebDriverValue     `json:"webDriverValue,omitempty"`
 	ObjectId            RemoteObjectId      `json:"objectId,omitempty"`
 	Preview             *ObjectPreview      `json:"preview,omitempty"`
 	CustomPreview       *CustomPreview      `json:"customPreview,omitempty"`
 }
 
 /*
-
  */
 type CustomPreview struct {
 	Header       string         `json:"header"`
@@ -40,7 +52,7 @@ type CustomPreview struct {
 }
 
 /*
-	Object containing abbreviated remote object value.
+Object containing abbreviated remote object value.
 */
 type ObjectPreview struct {
 	Type        string             `json:"type"`
@@ -52,7 +64,6 @@ type ObjectPreview struct {
 }
 
 /*
-
  */
 type PropertyPreview struct {
 	Name         string         `json:"name"`
@@ -63,7 +74,6 @@ type PropertyPreview struct {
 }
 
 /*
-
  */
 type EntryPreview struct {
 	Key   *ObjectPreview `json:"key,omitempty"`
@@ -71,7 +81,7 @@ type EntryPreview struct {
 }
 
 /*
-	Object property descriptor.
+Object property descriptor.
 */
 type PropertyDescriptor struct {
 	Name         string        `json:"name"`
@@ -87,7 +97,7 @@ type PropertyDescriptor struct {
 }
 
 /*
-	Object internal property descriptor. This property isn't normally visible in JavaScript code.
+Object internal property descriptor. This property isn't normally visible in JavaScript code.
 */
 type InternalPropertyDescriptor struct {
 	Name  string        `json:"name"`
@@ -95,7 +105,7 @@ type InternalPropertyDescriptor struct {
 }
 
 /*
-	Object private field descriptor.
+Object private field descriptor.
 */
 type PrivatePropertyDescriptor struct {
 	Name  string        `json:"name"`
@@ -106,6 +116,7 @@ type PrivatePropertyDescriptor struct {
 
 /*
 	Represents function call argument. Either remote object id `objectId`, primitive `value`,
+
 unserializable primitive value or neither of (for undefined) them should be specified.
 */
 type CallArgument struct {
@@ -115,12 +126,12 @@ type CallArgument struct {
 }
 
 /*
-	Id of an execution context.
+Id of an execution context.
 */
 type ExecutionContextId int
 
 /*
-	Description of an isolated world.
+Description of an isolated world.
 */
 type ExecutionContextDescription struct {
 	Id       ExecutionContextId `json:"id"`
@@ -132,6 +143,7 @@ type ExecutionContextDescription struct {
 
 /*
 	Detailed information about exception (or error) that was thrown during script compilation or
+
 execution.
 */
 type ExceptionDetails struct {
@@ -144,20 +156,21 @@ type ExceptionDetails struct {
 	StackTrace         *StackTrace        `json:"stackTrace,omitempty"`
 	Exception          *RemoteObject      `json:"exception,omitempty"`
 	ExecutionContextId ExecutionContextId `json:"executionContextId,omitempty"`
+	ExceptionMetaData  interface{}        `json:"exceptionMetaData,omitempty"`
 }
 
 /*
-	Number of milliseconds since epoch.
+Number of milliseconds since epoch.
 */
 type Timestamp float64
 
 /*
-	Number of milliseconds.
+Number of milliseconds.
 */
 type TimeDelta float64
 
 /*
-	Stack entry for runtime errors and assertions.
+Stack entry for runtime errors and assertions.
 */
 type CallFrame struct {
 	FunctionName string   `json:"functionName"`
@@ -168,7 +181,7 @@ type CallFrame struct {
 }
 
 /*
-	Call frames for assertions or error messages.
+Call frames for assertions or error messages.
 */
 type StackTrace struct {
 	Description string        `json:"description,omitempty"`
@@ -178,12 +191,13 @@ type StackTrace struct {
 }
 
 /*
-	Unique identifier of current debugger.
+Unique identifier of current debugger.
 */
 type UniqueDebuggerId string
 
 /*
 	If `debuggerId` is set stack trace comes from another debugger and can be resolved there. This
+
 allows to track cross-debugger calls. See `Runtime.StackTrace` and `Debugger.paused` for usages.
 */
 type StackTraceId struct {
@@ -203,16 +217,19 @@ type AwaitPromiseVal struct {
 }
 
 type CallFunctionOnArgs struct {
-	FunctionDeclaration string             `json:"functionDeclaration"`
-	ObjectId            RemoteObjectId     `json:"objectId,omitempty"`
-	Arguments           []*CallArgument    `json:"arguments,omitempty"`
-	Silent              bool               `json:"silent,omitempty"`
-	ReturnByValue       bool               `json:"returnByValue,omitempty"`
-	GeneratePreview     bool               `json:"generatePreview,omitempty"`
-	UserGesture         bool               `json:"userGesture,omitempty"`
-	AwaitPromise        bool               `json:"awaitPromise,omitempty"`
-	ExecutionContextId  ExecutionContextId `json:"executionContextId,omitempty"`
-	ObjectGroup         string             `json:"objectGroup,omitempty"`
+	FunctionDeclaration    string             `json:"functionDeclaration"`
+	ObjectId               RemoteObjectId     `json:"objectId,omitempty"`
+	Arguments              []*CallArgument    `json:"arguments,omitempty"`
+	Silent                 bool               `json:"silent,omitempty"`
+	ReturnByValue          bool               `json:"returnByValue,omitempty"`
+	GeneratePreview        bool               `json:"generatePreview,omitempty"`
+	UserGesture            bool               `json:"userGesture,omitempty"`
+	AwaitPromise           bool               `json:"awaitPromise,omitempty"`
+	ExecutionContextId     ExecutionContextId `json:"executionContextId,omitempty"`
+	ObjectGroup            string             `json:"objectGroup,omitempty"`
+	ThrowOnSideEffect      bool               `json:"throwOnSideEffect,omitempty"`
+	UniqueContextId        string             `json:"uniqueContextId,omitempty"`
+	GenerateWebDriverValue bool               `json:"generateWebDriverValue,omitempty"`
 }
 
 type CallFunctionOnVal struct {
@@ -248,6 +265,7 @@ type EvaluateArgs struct {
 	ReplMode                    bool               `json:"replMode,omitempty"`
 	AllowUnsafeEvalBlockedByCSP bool               `json:"allowUnsafeEvalBlockedByCSP,omitempty"`
 	UniqueContextId             string             `json:"uniqueContextId,omitempty"`
+	GenerateWebDriverValue      bool               `json:"generateWebDriverValue,omitempty"`
 }
 
 type EvaluateVal struct {
@@ -265,10 +283,11 @@ type GetHeapUsageVal struct {
 }
 
 type GetPropertiesArgs struct {
-	ObjectId               RemoteObjectId `json:"objectId"`
-	OwnProperties          bool           `json:"ownProperties,omitempty"`
-	AccessorPropertiesOnly bool           `json:"accessorPropertiesOnly,omitempty"`
-	GeneratePreview        bool           `json:"generatePreview,omitempty"`
+	ObjectId                 RemoteObjectId `json:"objectId"`
+	OwnProperties            bool           `json:"ownProperties,omitempty"`
+	AccessorPropertiesOnly   bool           `json:"accessorPropertiesOnly,omitempty"`
+	GeneratePreview          bool           `json:"generatePreview,omitempty"`
+	NonIndexedPropertiesOnly bool           `json:"nonIndexedPropertiesOnly,omitempty"`
 }
 
 type GetPropertiesVal struct {
@@ -332,11 +351,18 @@ type SetMaxCallStackSizeToCaptureArgs struct {
 }
 
 type AddBindingArgs struct {
-	Name                 string             `json:"name"`
-	ExecutionContextId   ExecutionContextId `json:"executionContextId,omitempty"`
-	ExecutionContextName string             `json:"executionContextName,omitempty"`
+	Name                 string `json:"name"`
+	ExecutionContextName string `json:"executionContextName,omitempty"`
 }
 
 type RemoveBindingArgs struct {
 	Name string `json:"name"`
+}
+
+type GetExceptionDetailsArgs struct {
+	ErrorObjectId RemoteObjectId `json:"errorObjectId"`
+}
+
+type GetExceptionDetailsVal struct {
+	ExceptionDetails *ExceptionDetails `json:"exceptionDetails,omitempty"`
 }

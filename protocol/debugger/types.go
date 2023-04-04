@@ -5,17 +5,17 @@ import (
 )
 
 /*
-	Breakpoint identifier.
+Breakpoint identifier.
 */
 type BreakpointId string
 
 /*
-	Call frame identifier.
+Call frame identifier.
 */
 type CallFrameId string
 
 /*
-	Location in the source code.
+Location in the source code.
 */
 type Location struct {
 	ScriptId     runtime.ScriptId `json:"scriptId"`
@@ -24,7 +24,7 @@ type Location struct {
 }
 
 /*
-	Location in the source code.
+Location in the source code.
 */
 type ScriptPosition struct {
 	LineNumber   int `json:"lineNumber"`
@@ -32,7 +32,7 @@ type ScriptPosition struct {
 }
 
 /*
-	Location range within one script.
+Location range within one script.
 */
 type LocationRange struct {
 	ScriptId runtime.ScriptId `json:"scriptId"`
@@ -41,21 +41,21 @@ type LocationRange struct {
 }
 
 /*
-	JavaScript call frame. Array of call frames form the call stack.
+JavaScript call frame. Array of call frames form the call stack.
 */
 type CallFrame struct {
 	CallFrameId      CallFrameId           `json:"callFrameId"`
 	FunctionName     string                `json:"functionName"`
 	FunctionLocation *Location             `json:"functionLocation,omitempty"`
 	Location         *Location             `json:"location"`
-	Url              string                `json:"url"`
 	ScopeChain       []*Scope              `json:"scopeChain"`
 	This             *runtime.RemoteObject `json:"this"`
 	ReturnValue      *runtime.RemoteObject `json:"returnValue,omitempty"`
+	CanBeRestarted   bool                  `json:"canBeRestarted,omitempty"`
 }
 
 /*
-	Scope description.
+Scope description.
 */
 type Scope struct {
 	Type          string                `json:"type"`
@@ -66,7 +66,7 @@ type Scope struct {
 }
 
 /*
-	Search match for resource.
+Search match for resource.
 */
 type SearchMatch struct {
 	LineNumber  float64 `json:"lineNumber"`
@@ -74,7 +74,6 @@ type SearchMatch struct {
 }
 
 /*
-
  */
 type BreakLocation struct {
 	ScriptId     runtime.ScriptId `json:"scriptId"`
@@ -84,12 +83,19 @@ type BreakLocation struct {
 }
 
 /*
-	Enum of possible script languages.
+ */
+type WasmDisassemblyChunk struct {
+	Lines           []string `json:"lines"`
+	BytecodeOffsets []int    `json:"bytecodeOffsets"`
+}
+
+/*
+Enum of possible script languages.
 */
 type ScriptLanguage string
 
 /*
-	Debug symbols available for a wasm script.
+Debug symbols available for a wasm script.
 */
 type DebugSymbols struct {
 	Type        string `json:"type"`
@@ -145,6 +151,25 @@ type GetScriptSourceVal struct {
 	Bytecode     []byte `json:"bytecode,omitempty"`
 }
 
+type DisassembleWasmModuleArgs struct {
+	ScriptId runtime.ScriptId `json:"scriptId"`
+}
+
+type DisassembleWasmModuleVal struct {
+	StreamId            string                `json:"streamId,omitempty"`
+	TotalNumberOfLines  int                   `json:"totalNumberOfLines"`
+	FunctionBodyOffsets []int                 `json:"functionBodyOffsets"`
+	Chunk               *WasmDisassemblyChunk `json:"chunk"`
+}
+
+type NextWasmDisassemblyChunkArgs struct {
+	StreamId string `json:"streamId"`
+}
+
+type NextWasmDisassemblyChunkVal struct {
+	Chunk *WasmDisassemblyChunk `json:"chunk"`
+}
+
 type GetStackTraceArgs struct {
 	StackTraceId *runtime.StackTraceId `json:"stackTraceId"`
 }
@@ -159,12 +184,7 @@ type RemoveBreakpointArgs struct {
 
 type RestartFrameArgs struct {
 	CallFrameId CallFrameId `json:"callFrameId"`
-}
-
-type RestartFrameVal struct {
-	CallFrames        []*CallFrame          `json:"callFrames"`
-	AsyncStackTrace   *runtime.StackTrace   `json:"asyncStackTrace,omitempty"`
-	AsyncStackTraceId *runtime.StackTraceId `json:"asyncStackTraceId,omitempty"`
+	Mode        string      `json:"mode,omitempty"`
 }
 
 type ResumeArgs struct {
@@ -249,17 +269,15 @@ type SetReturnValueArgs struct {
 }
 
 type SetScriptSourceArgs struct {
-	ScriptId     runtime.ScriptId `json:"scriptId"`
-	ScriptSource string           `json:"scriptSource"`
-	DryRun       bool             `json:"dryRun,omitempty"`
+	ScriptId             runtime.ScriptId `json:"scriptId"`
+	ScriptSource         string           `json:"scriptSource"`
+	DryRun               bool             `json:"dryRun,omitempty"`
+	AllowTopFrameEditing bool             `json:"allowTopFrameEditing,omitempty"`
 }
 
 type SetScriptSourceVal struct {
-	CallFrames        []*CallFrame              `json:"callFrames,omitempty"`
-	StackChanged      bool                      `json:"stackChanged,omitempty"`
-	AsyncStackTrace   *runtime.StackTrace       `json:"asyncStackTrace,omitempty"`
-	AsyncStackTraceId *runtime.StackTraceId     `json:"asyncStackTraceId,omitempty"`
-	ExceptionDetails  *runtime.ExceptionDetails `json:"exceptionDetails,omitempty"`
+	Status           string                    `json:"status"`
+	ExceptionDetails *runtime.ExceptionDetails `json:"exceptionDetails,omitempty"`
 }
 
 type SetSkipAllPausesArgs struct {

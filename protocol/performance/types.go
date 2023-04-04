@@ -1,7 +1,7 @@
 package performance
 
 /*
-	Run-time execution metric.
+Run-time execution metric.
 */
 type Metric struct {
 	Name  string  `json:"name"`

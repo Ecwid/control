@@ -5,21 +5,20 @@ import (
 )
 
 /*
-	Disables database tracking, prevents database events from being sent to the client.
+Disables database tracking, prevents database events from being sent to the client.
 */
 func Disable(c protocol.Caller) error {
 	return c.Call("Database.disable", nil, nil)
 }
 
 /*
-	Enables database tracking, database events will now be delivered to the client.
+Enables database tracking, database events will now be delivered to the client.
 */
 func Enable(c protocol.Caller) error {
 	return c.Call("Database.enable", nil, nil)
 }
 
 /*
-
  */
 func ExecuteSQL(c protocol.Caller, args ExecuteSQLArgs) (*ExecuteSQLVal, error) {
 	var val = &ExecuteSQLVal{}
@@ -27,7 +26,6 @@ func ExecuteSQL(c protocol.Caller, args ExecuteSQLArgs) (*ExecuteSQLVal, error) 
 }
 
 /*
-
  */
 func GetDatabaseTableNames(c protocol.Caller, args GetDatabaseTableNamesArgs) (*GetDatabaseTableNamesVal, error) {
 	var val = &GetDatabaseTableNamesVal{}

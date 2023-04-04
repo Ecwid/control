@@ -5,7 +5,6 @@ import (
 )
 
 /*
-
  */
 func GetDOMCounters(c protocol.Caller) (*GetDOMCountersVal, error) {
 	var val = &GetDOMCountersVal{}
@@ -13,42 +12,41 @@ func GetDOMCounters(c protocol.Caller) (*GetDOMCountersVal, error) {
 }
 
 /*
-
  */
 func PrepareForLeakDetection(c protocol.Caller) error {
 	return c.Call("Memory.prepareForLeakDetection", nil, nil)
 }
 
 /*
-	Simulate OomIntervention by purging V8 memory.
+Simulate OomIntervention by purging V8 memory.
 */
 func ForciblyPurgeJavaScriptMemory(c protocol.Caller) error {
 	return c.Call("Memory.forciblyPurgeJavaScriptMemory", nil, nil)
 }
 
 /*
-	Enable/disable suppressing memory pressure notifications in all processes.
+Enable/disable suppressing memory pressure notifications in all processes.
 */
 func SetPressureNotificationsSuppressed(c protocol.Caller, args SetPressureNotificationsSuppressedArgs) error {
 	return c.Call("Memory.setPressureNotificationsSuppressed", args, nil)
 }
 
 /*
-	Simulate a memory pressure notification in all processes.
+Simulate a memory pressure notification in all processes.
 */
 func SimulatePressureNotification(c protocol.Caller, args SimulatePressureNotificationArgs) error {
 	return c.Call("Memory.simulatePressureNotification", args, nil)
 }
 
 /*
-	Start collecting native memory profile.
+Start collecting native memory profile.
 */
 func StartSampling(c protocol.Caller, args StartSamplingArgs) error {
 	return c.Call("Memory.startSampling", args, nil)
 }
 
 /*
-	Stop collecting native memory profile.
+Stop collecting native memory profile.
 */
 func StopSampling(c protocol.Caller) error {
 	return c.Call("Memory.stopSampling", nil, nil)
@@ -56,6 +54,7 @@ func StopSampling(c protocol.Caller) error {
 
 /*
 	Retrieve native memory allocations profile
+
 collected since renderer process startup.
 */
 func GetAllTimeSamplingProfile(c protocol.Caller) (*GetAllTimeSamplingProfileVal, error) {
@@ -65,6 +64,7 @@ func GetAllTimeSamplingProfile(c protocol.Caller) (*GetAllTimeSamplingProfileVal
 
 /*
 	Retrieve native memory allocations profile
+
 collected since browser process startup.
 */
 func GetBrowserSamplingProfile(c protocol.Caller) (*GetBrowserSamplingProfileVal, error) {
@@ -74,6 +74,7 @@ func GetBrowserSamplingProfile(c protocol.Caller) (*GetBrowserSamplingProfileVal
 
 /*
 	Retrieve native memory allocations profile collected since last
+
 `startSampling` call.
 */
 func GetSamplingProfile(c protocol.Caller) (*GetSamplingProfileVal, error) {

@@ -5,7 +5,6 @@ import (
 )
 
 /*
-
  */
 type TouchPoint struct {
 	X                  float64 `json:"x"`
@@ -22,22 +21,19 @@ type TouchPoint struct {
 }
 
 /*
-
  */
 type GestureSourceType string
 
 /*
-
  */
 type MouseButton string
 
 /*
-	UTC time in seconds, counted from January 1, 1970.
+UTC time in seconds, counted from January 1, 1970.
 */
 type TimeSinceEpoch float64
 
 /*
-
  */
 type DragDataItem struct {
 	MimeType string `json:"mimeType"`
@@ -47,10 +43,10 @@ type DragDataItem struct {
 }
 
 /*
-
  */
 type DragData struct {
 	Items              []*DragDataItem `json:"items"`
+	Files              []string        `json:"files,omitempty"`
 	DragOperationsMask int             `json:"dragOperationsMask"`
 }
 
@@ -82,6 +78,14 @@ type DispatchKeyEventArgs struct {
 
 type InsertTextArgs struct {
 	Text string `json:"text"`
+}
+
+type ImeSetCompositionArgs struct {
+	Text             string `json:"text"`
+	SelectionStart   int    `json:"selectionStart"`
+	SelectionEnd     int    `json:"selectionEnd"`
+	ReplacementStart int    `json:"replacementStart,omitempty"`
+	ReplacementEnd   int    `json:"replacementEnd,omitempty"`
 }
 
 type DispatchMouseEventArgs struct {

@@ -9,43 +9,64 @@ import (
 )
 
 /*
-	Unique frame identifier.
+Unique frame identifier.
 */
 type FrameId string
 
 /*
-	Indicates whether a frame has been identified as an ad.
+Indicates whether a frame has been identified as an ad.
 */
 type AdFrameType string
 
 /*
-	Indicates whether the frame is a secure context and why it is the case.
+ */
+type AdFrameExplanation string
+
+/*
+Indicates whether a frame has been identified as an ad and why.
+*/
+type AdFrameStatus struct {
+	AdFrameType  AdFrameType          `json:"adFrameType"`
+	Explanations []AdFrameExplanation `json:"explanations,omitempty"`
+}
+
+/*
+	Identifies the bottom-most script which caused the frame to be labelled
+
+as an ad.
+*/
+type AdScriptId struct {
+	ScriptId   runtime.ScriptId         `json:"scriptId"`
+	DebuggerId runtime.UniqueDebuggerId `json:"debuggerId"`
+}
+
+/*
+Indicates whether the frame is a secure context and why it is the case.
 */
 type SecureContextType string
 
 /*
-	Indicates whether the frame is cross-origin isolated and why it is the case.
+Indicates whether the frame is cross-origin isolated and why it is the case.
 */
 type CrossOriginIsolatedContextType string
 
 /*
-
  */
 type GatedAPIFeatures string
 
 /*
 	All Permissions Policy features. This enum should match the one defined
-in renderer/core/feature_policy/feature_policy_features.json5.
+
+in third_party/blink/renderer/core/permissions_policy/permissions_policy_features.json5.
 */
 type PermissionsPolicyFeature string
 
 /*
-	Reason for a permissions policy feature to be disabled.
+Reason for a permissions policy feature to be disabled.
 */
 type PermissionsPolicyBlockReason string
 
 /*
-
  */
 type PermissionsPolicyBlockLocator struct {
 	FrameId     common.FrameId               `json:"frameId"`
@@ -53,7 +74,6 @@ type PermissionsPolicyBlockLocator struct {
 }
 
 /*
-
  */
 type PermissionsPolicyFeatureState struct {
 	Feature PermissionsPolicyFeature       `json:"feature"`
@@ -62,11 +82,54 @@ type PermissionsPolicyFeatureState struct {
 }
 
 /*
-	Information about the Frame on the page.
+	Origin Trial(https://www.chromium.org/blink/origin-trials) support.
+
+Status for an Origin Trial token.
+*/
+type OriginTrialTokenStatus string
+
+/*
+Status for an Origin Trial.
+*/
+type OriginTrialStatus string
+
+/*
+ */
+type OriginTrialUsageRestriction string
+
+/*
+ */
+type OriginTrialToken struct {
+	Origin           string                      `json:"origin"`
+	MatchSubDomains  bool                        `json:"matchSubDomains"`
+	TrialName        string                      `json:"trialName"`
+	ExpiryTime       common.TimeSinceEpoch       `json:"expiryTime"`
+	IsThirdParty     bool                        `json:"isThirdParty"`
+	UsageRestriction OriginTrialUsageRestriction `json:"usageRestriction"`
+}
+
+/*
+ */
+type OriginTrialTokenWithStatus struct {
+	RawTokenText string                 `json:"rawTokenText"`
+	ParsedToken  *OriginTrialToken      `json:"parsedToken,omitempty"`
+	Status       OriginTrialTokenStatus `json:"status"`
+}
+
+/*
+ */
+type OriginTrial struct {
+	TrialName        string                        `json:"trialName"`
+	Status           OriginTrialStatus             `json:"status"`
+	TokensWithStatus []*OriginTrialTokenWithStatus `json:"tokensWithStatus"`
+}
+
+/*
+Information about the Frame on the page.
 */
 type Frame struct {
 	Id                             common.FrameId                 `json:"id"`
-	ParentId                       string                         `json:"parentId,omitempty"`
+	ParentId                       common.FrameId                 `json:"parentId,omitempty"`
 	LoaderId                       network.LoaderId               `json:"loaderId"`
 	Name                           string                         `json:"name,omitempty"`
 	Url                            string                         `json:"url"`
@@ -75,14 +138,14 @@ type Frame struct {
 	SecurityOrigin                 string                         `json:"securityOrigin"`
 	MimeType                       string                         `json:"mimeType"`
 	UnreachableUrl                 string                         `json:"unreachableUrl,omitempty"`
-	AdFrameType                    AdFrameType                    `json:"adFrameType,omitempty"`
+	AdFrameStatus                  *AdFrameStatus                 `json:"adFrameStatus,omitempty"`
 	SecureContextType              SecureContextType              `json:"secureContextType"`
 	CrossOriginIsolatedContextType CrossOriginIsolatedContextType `json:"crossOriginIsolatedContextType"`
 	GatedAPIFeatures               []GatedAPIFeatures             `json:"gatedAPIFeatures"`
 }
 
 /*
-	Information about the Resource on the page.
+Information about the Resource on the page.
 */
 type FrameResource struct {
 	Url          string                `json:"url"`
@@ -95,7 +158,7 @@ type FrameResource struct {
 }
 
 /*
-	Information about the Frame hierarchy along with their cached resources.
+Information about the Frame hierarchy along with their cached resources.
 */
 type FrameResourceTree struct {
 	Frame       *Frame               `json:"frame"`
@@ -104,7 +167,7 @@ type FrameResourceTree struct {
 }
 
 /*
-	Information about the Frame hierarchy.
+Information about the Frame hierarchy.
 */
 type FrameTree struct {
 	Frame       *Frame       `json:"frame"`
@@ -112,17 +175,17 @@ type FrameTree struct {
 }
 
 /*
-	Unique script identifier.
+Unique script identifier.
 */
 type ScriptIdentifier string
 
 /*
-	Transition type.
+Transition type.
 */
 type TransitionType string
 
 /*
-	Navigation history entry.
+Navigation history entry.
 */
 type NavigationEntry struct {
 	Id             int            `json:"id"`
@@ -133,7 +196,7 @@ type NavigationEntry struct {
 }
 
 /*
-	Screencast frame metadata.
+Screencast frame metadata.
 */
 type ScreencastFrameMetadata struct {
 	OffsetTop       float64               `json:"offsetTop"`
@@ -146,12 +209,12 @@ type ScreencastFrameMetadata struct {
 }
 
 /*
-	Javascript dialog type.
+Javascript dialog type.
 */
 type DialogType string
 
 /*
-	Error while paring app manifest.
+Error while paring app manifest.
 */
 type AppManifestError struct {
 	Message  string `json:"message"`
@@ -161,14 +224,14 @@ type AppManifestError struct {
 }
 
 /*
-	Parsed app manifest properties.
+Parsed app manifest properties.
 */
 type AppManifestParsedProperties struct {
 	Scope string `json:"scope"`
 }
 
 /*
-	Layout viewport position and dimensions.
+Layout viewport position and dimensions.
 */
 type LayoutViewport struct {
 	PageX        int `json:"pageX"`
@@ -178,7 +241,7 @@ type LayoutViewport struct {
 }
 
 /*
-	Visual viewport position, dimensions, and scale.
+Visual viewport position, dimensions, and scale.
 */
 type VisualViewport struct {
 	OffsetX      float64 `json:"offsetX"`
@@ -192,7 +255,7 @@ type VisualViewport struct {
 }
 
 /*
-	Viewport for capturing screenshot.
+Viewport for capturing screenshot.
 */
 type Viewport struct {
 	X      float64 `json:"x"`
@@ -203,20 +266,28 @@ type Viewport struct {
 }
 
 /*
-	Generic font families collection.
+Generic font families collection.
 */
 type FontFamilies struct {
-	Standard   string `json:"standard,omitempty"`
-	Fixed      string `json:"fixed,omitempty"`
-	Serif      string `json:"serif,omitempty"`
-	SansSerif  string `json:"sansSerif,omitempty"`
-	Cursive    string `json:"cursive,omitempty"`
-	Fantasy    string `json:"fantasy,omitempty"`
-	Pictograph string `json:"pictograph,omitempty"`
+	Standard  string `json:"standard,omitempty"`
+	Fixed     string `json:"fixed,omitempty"`
+	Serif     string `json:"serif,omitempty"`
+	SansSerif string `json:"sansSerif,omitempty"`
+	Cursive   string `json:"cursive,omitempty"`
+	Fantasy   string `json:"fantasy,omitempty"`
+	Math      string `json:"math,omitempty"`
 }
 
 /*
-	Default font sizes.
+Font families collection for a script.
+*/
+type ScriptFontFamilies struct {
+	Script       string        `json:"script"`
+	FontFamilies *FontFamilies `json:"fontFamilies"`
+}
+
+/*
+Default font sizes.
 */
 type FontSizes struct {
 	Standard int `json:"standard,omitempty"`
@@ -224,17 +295,14 @@ type FontSizes struct {
 }
 
 /*
-
  */
 type ClientNavigationReason string
 
 /*
-
  */
 type ClientNavigationDisposition string
 
 /*
-
  */
 type InstallabilityErrorArgument struct {
 	Name  string `json:"name"`
@@ -242,7 +310,7 @@ type InstallabilityErrorArgument struct {
 }
 
 /*
-	The installability error
+The installability error
 */
 type InstallabilityError struct {
 	ErrorId        string                         `json:"errorId"`
@@ -250,21 +318,58 @@ type InstallabilityError struct {
 }
 
 /*
-	The referring-policy used for the navigation.
+The referring-policy used for the navigation.
 */
 type ReferrerPolicy string
 
 /*
-	Per-script compilation cache parameters for `Page.produceCompilationCache`
+Per-script compilation cache parameters for `Page.produceCompilationCache`
 */
 type CompilationCacheParams struct {
 	Url   string `json:"url"`
 	Eager bool   `json:"eager,omitempty"`
 }
 
+/*
+The type of a frameNavigated event.
+*/
+type NavigationType string
+
+/*
+List of not restored reasons for back-forward cache.
+*/
+type BackForwardCacheNotRestoredReason string
+
+/*
+Types of not restored reasons for back-forward cache.
+*/
+type BackForwardCacheNotRestoredReasonType string
+
+/*
+ */
+type BackForwardCacheNotRestoredExplanation struct {
+	Type    BackForwardCacheNotRestoredReasonType `json:"type"`
+	Reason  BackForwardCacheNotRestoredReason     `json:"reason"`
+	Context string                                `json:"context,omitempty"`
+}
+
+/*
+ */
+type BackForwardCacheNotRestoredExplanationTree struct {
+	Url          string                                        `json:"url"`
+	Explanations []*BackForwardCacheNotRestoredExplanation     `json:"explanations"`
+	Children     []*BackForwardCacheNotRestoredExplanationTree `json:"children"`
+}
+
+/*
+List of FinalStatus reasons for Prerender2.
+*/
+type PrerenderFinalStatus string
+
 type AddScriptToEvaluateOnNewDocumentArgs struct {
-	Source    string `json:"source"`
-	WorldName string `json:"worldName,omitempty"`
+	Source                string `json:"source"`
+	WorldName             string `json:"worldName,omitempty"`
+	IncludeCommandLineAPI bool   `json:"includeCommandLineAPI,omitempty"`
 }
 
 type AddScriptToEvaluateOnNewDocumentVal struct {
@@ -277,6 +382,7 @@ type CaptureScreenshotArgs struct {
 	Clip                  *Viewport `json:"clip,omitempty"`
 	FromSurface           bool      `json:"fromSurface,omitempty"`
 	CaptureBeyondViewport bool      `json:"captureBeyondViewport,omitempty"`
+	OptimizeForSpeed      bool      `json:"optimizeForSpeed,omitempty"`
 }
 
 type CaptureScreenshotVal struct {
@@ -314,6 +420,19 @@ type GetInstallabilityErrorsVal struct {
 
 type GetManifestIconsVal struct {
 	PrimaryIcon []byte `json:"primaryIcon,omitempty"`
+}
+
+type GetAppIdVal struct {
+	AppId         string `json:"appId,omitempty"`
+	RecommendedId string `json:"recommendedId,omitempty"`
+}
+
+type GetAdScriptIdArgs struct {
+	FrameId common.FrameId `json:"frameId"`
+}
+
+type GetAdScriptIdVal struct {
+	AdScriptId *AdScriptId `json:"adScriptId,omitempty"`
 }
 
 type GetFrameTreeVal struct {
@@ -369,22 +488,21 @@ type NavigateToHistoryEntryArgs struct {
 }
 
 type PrintToPDFArgs struct {
-	Landscape               bool    `json:"landscape,omitempty"`
-	DisplayHeaderFooter     bool    `json:"displayHeaderFooter,omitempty"`
-	PrintBackground         bool    `json:"printBackground,omitempty"`
-	Scale                   float64 `json:"scale,omitempty"`
-	PaperWidth              float64 `json:"paperWidth,omitempty"`
-	PaperHeight             float64 `json:"paperHeight,omitempty"`
-	MarginTop               float64 `json:"marginTop,omitempty"`
-	MarginBottom            float64 `json:"marginBottom,omitempty"`
-	MarginLeft              float64 `json:"marginLeft,omitempty"`
-	MarginRight             float64 `json:"marginRight,omitempty"`
-	PageRanges              string  `json:"pageRanges,omitempty"`
-	IgnoreInvalidPageRanges bool    `json:"ignoreInvalidPageRanges,omitempty"`
-	HeaderTemplate          string  `json:"headerTemplate,omitempty"`
-	FooterTemplate          string  `json:"footerTemplate,omitempty"`
-	PreferCSSPageSize       bool    `json:"preferCSSPageSize,omitempty"`
-	TransferMode            string  `json:"transferMode,omitempty"`
+	Landscape           bool    `json:"landscape,omitempty"`
+	DisplayHeaderFooter bool    `json:"displayHeaderFooter,omitempty"`
+	PrintBackground     bool    `json:"printBackground,omitempty"`
+	Scale               float64 `json:"scale,omitempty"`
+	PaperWidth          float64 `json:"paperWidth,omitempty"`
+	PaperHeight         float64 `json:"paperHeight,omitempty"`
+	MarginTop           float64 `json:"marginTop,omitempty"`
+	MarginBottom        float64 `json:"marginBottom,omitempty"`
+	MarginLeft          float64 `json:"marginLeft,omitempty"`
+	MarginRight         float64 `json:"marginRight,omitempty"`
+	PageRanges          string  `json:"pageRanges,omitempty"`
+	HeaderTemplate      string  `json:"headerTemplate,omitempty"`
+	FooterTemplate      string  `json:"footerTemplate,omitempty"`
+	PreferCSSPageSize   bool    `json:"preferCSSPageSize,omitempty"`
+	TransferMode        string  `json:"transferMode,omitempty"`
 }
 
 type PrintToPDFVal struct {
@@ -433,8 +551,17 @@ type GetPermissionsPolicyStateVal struct {
 	States []*PermissionsPolicyFeatureState `json:"states"`
 }
 
+type GetOriginTrialsArgs struct {
+	FrameId common.FrameId `json:"frameId"`
+}
+
+type GetOriginTrialsVal struct {
+	OriginTrials []*OriginTrial `json:"originTrials"`
+}
+
 type SetFontFamiliesArgs struct {
-	FontFamilies *FontFamilies `json:"fontFamilies"`
+	FontFamilies *FontFamilies         `json:"fontFamilies"`
+	ForScripts   []*ScriptFontFamilies `json:"forScripts,omitempty"`
 }
 
 type SetFontSizesArgs struct {
@@ -462,10 +589,6 @@ type SetWebLifecycleStateArgs struct {
 	State string `json:"state"`
 }
 
-type SetProduceCompilationCacheArgs struct {
-	Enabled bool `json:"enabled"`
-}
-
 type ProduceCompilationCacheArgs struct {
 	Scripts []*CompilationCacheParams `json:"scripts"`
 }
@@ -473,6 +596,10 @@ type ProduceCompilationCacheArgs struct {
 type AddCompilationCacheArgs struct {
 	Url  string `json:"url"`
 	Data []byte `json:"data"`
+}
+
+type SetSPCTransactionModeArgs struct {
+	Mode string `json:"mode"`
 }
 
 type GenerateTestReportArgs struct {

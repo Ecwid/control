@@ -7,7 +7,7 @@ import (
 )
 
 /*
-	A Node in the DOM tree.
+A Node in the DOM tree.
 */
 type DOMNode struct {
 	NodeType             int                          `json:"nodeType"`
@@ -42,6 +42,7 @@ type DOMNode struct {
 
 /*
 	Details of post layout rendered text positions. The exact layout should not be regarded as
+
 stable and may change between versions.
 */
 type InlineTextBox struct {
@@ -51,7 +52,7 @@ type InlineTextBox struct {
 }
 
 /*
-	Details of an element in the DOM tree with a LayoutObject.
+Details of an element in the DOM tree with a LayoutObject.
 */
 type LayoutTreeNode struct {
 	DomNodeIndex      int              `json:"domNodeIndex"`
@@ -64,14 +65,14 @@ type LayoutTreeNode struct {
 }
 
 /*
-	A subset of the full ComputedStyle as defined by the request whitelist.
+A subset of the full ComputedStyle as defined by the request whitelist.
 */
 type ComputedStyle struct {
 	Properties []*NameValue `json:"properties"`
 }
 
 /*
-	A name/value pair.
+A name/value pair.
 */
 type NameValue struct {
 	Name  string `json:"name"`
@@ -79,17 +80,17 @@ type NameValue struct {
 }
 
 /*
-	Index of the string in the strings table.
+Index of the string in the strings table.
 */
 type StringIndex int
 
 /*
-	Index of the string in the strings table.
+Index of the string in the strings table.
 */
 type ArrayOfStrings []StringIndex
 
 /*
-	Data that is only present on rare nodes.
+Data that is only present on rare nodes.
 */
 type RareStringData struct {
 	Index []int         `json:"index"`
@@ -97,14 +98,12 @@ type RareStringData struct {
 }
 
 /*
-
  */
 type RareBooleanData struct {
 	Index []int `json:"index"`
 }
 
 /*
-
  */
 type RareIntegerData struct {
 	Index []int `json:"index"`
@@ -112,12 +111,11 @@ type RareIntegerData struct {
 }
 
 /*
-
  */
 type Rectangle []float64
 
 /*
-	Document snapshot.
+Document snapshot.
 */
 type DocumentSnapshot struct {
 	DocumentURL     StringIndex         `json:"documentURL"`
@@ -138,11 +136,12 @@ type DocumentSnapshot struct {
 }
 
 /*
-	Table containing nodes.
+Table containing nodes.
 */
 type NodeTreeSnapshot struct {
 	ParentIndex          []int               `json:"parentIndex,omitempty"`
 	NodeType             []int               `json:"nodeType,omitempty"`
+	ShadowRootType       *RareStringData     `json:"shadowRootType,omitempty"`
 	NodeName             []StringIndex       `json:"nodeName,omitempty"`
 	NodeValue            []StringIndex       `json:"nodeValue,omitempty"`
 	BackendNodeId        []dom.BackendNodeId `json:"backendNodeId,omitempty"`
@@ -153,28 +152,32 @@ type NodeTreeSnapshot struct {
 	OptionSelected       *RareBooleanData    `json:"optionSelected,omitempty"`
 	ContentDocumentIndex *RareIntegerData    `json:"contentDocumentIndex,omitempty"`
 	PseudoType           *RareStringData     `json:"pseudoType,omitempty"`
+	PseudoIdentifier     *RareStringData     `json:"pseudoIdentifier,omitempty"`
 	IsClickable          *RareBooleanData    `json:"isClickable,omitempty"`
 	CurrentSourceURL     *RareStringData     `json:"currentSourceURL,omitempty"`
 	OriginURL            *RareStringData     `json:"originURL,omitempty"`
 }
 
 /*
-	Table of details of an element in the DOM tree with a LayoutObject.
+Table of details of an element in the DOM tree with a LayoutObject.
 */
 type LayoutTreeSnapshot struct {
-	NodeIndex        []int            `json:"nodeIndex"`
-	Styles           []ArrayOfStrings `json:"styles"`
-	Bounds           []Rectangle      `json:"bounds"`
-	Text             []StringIndex    `json:"text"`
-	StackingContexts *RareBooleanData `json:"stackingContexts"`
-	PaintOrders      []int            `json:"paintOrders,omitempty"`
-	OffsetRects      []Rectangle      `json:"offsetRects,omitempty"`
-	ScrollRects      []Rectangle      `json:"scrollRects,omitempty"`
-	ClientRects      []Rectangle      `json:"clientRects,omitempty"`
+	NodeIndex               []int            `json:"nodeIndex"`
+	Styles                  []ArrayOfStrings `json:"styles"`
+	Bounds                  []Rectangle      `json:"bounds"`
+	Text                    []StringIndex    `json:"text"`
+	StackingContexts        *RareBooleanData `json:"stackingContexts"`
+	PaintOrders             []int            `json:"paintOrders,omitempty"`
+	OffsetRects             []Rectangle      `json:"offsetRects,omitempty"`
+	ScrollRects             []Rectangle      `json:"scrollRects,omitempty"`
+	ClientRects             []Rectangle      `json:"clientRects,omitempty"`
+	BlendedBackgroundColors []StringIndex    `json:"blendedBackgroundColors,omitempty"`
+	TextColorOpacities      []float64        `json:"textColorOpacities,omitempty"`
 }
 
 /*
 	Table of details of the post layout rendered text positions. The exact layout should not be regarded as
+
 stable and may change between versions.
 */
 type TextBoxSnapshot struct {
@@ -185,9 +188,11 @@ type TextBoxSnapshot struct {
 }
 
 type CaptureSnapshotArgs struct {
-	ComputedStyles    []string `json:"computedStyles"`
-	IncludePaintOrder bool     `json:"includePaintOrder,omitempty"`
-	IncludeDOMRects   bool     `json:"includeDOMRects,omitempty"`
+	ComputedStyles                 []string `json:"computedStyles"`
+	IncludePaintOrder              bool     `json:"includePaintOrder,omitempty"`
+	IncludeDOMRects                bool     `json:"includeDOMRects,omitempty"`
+	IncludeBlendedBackgroundColors bool     `json:"includeBlendedBackgroundColors,omitempty"`
+	IncludeTextColorOpacities      bool     `json:"includeTextColorOpacities,omitempty"`
 }
 
 type CaptureSnapshotVal struct {

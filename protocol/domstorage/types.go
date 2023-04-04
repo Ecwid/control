@@ -1,15 +1,20 @@
 package domstorage
 
 /*
-	DOM Storage identifier.
+ */
+type SerializedStorageKey string
+
+/*
+DOM Storage identifier.
 */
 type StorageId struct {
-	SecurityOrigin string `json:"securityOrigin"`
-	IsLocalStorage bool   `json:"isLocalStorage"`
+	SecurityOrigin string               `json:"securityOrigin,omitempty"`
+	StorageKey     SerializedStorageKey `json:"storageKey,omitempty"`
+	IsLocalStorage bool                 `json:"isLocalStorage"`
 }
 
 /*
-	DOM Storage item.
+DOM Storage item.
 */
 type Item []string
 

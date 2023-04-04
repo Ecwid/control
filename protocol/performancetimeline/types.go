@@ -6,7 +6,7 @@ import (
 )
 
 /*
-	See https://github.com/WICG/LargestContentfulPaint and largest_contentful_paint.idl
+See https://github.com/WICG/LargestContentfulPaint and largest_contentful_paint.idl
 */
 type LargestContentfulPaint struct {
 	RenderTime common.TimeSinceEpoch `json:"renderTime"`
@@ -18,7 +18,6 @@ type LargestContentfulPaint struct {
 }
 
 /*
-
  */
 type LayoutShiftAttribution struct {
 	PreviousRect *common.Rect      `json:"previousRect"`
@@ -27,7 +26,7 @@ type LayoutShiftAttribution struct {
 }
 
 /*
-	See https://wicg.github.io/layout-instability/#sec-layout-shift and layout_shift.idl
+See https://wicg.github.io/layout-instability/#sec-layout-shift and layout_shift.idl
 */
 type LayoutShift struct {
 	Value          float64                   `json:"value"`
@@ -37,7 +36,6 @@ type LayoutShift struct {
 }
 
 /*
-
  */
 type TimelineEvent struct {
 	FrameId            common.FrameId          `json:"frameId"`

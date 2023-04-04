@@ -6,6 +6,7 @@ import (
 
 /*
 	Returns the response body and size if it were re-encoded with the specified settings. Only
+
 applies to images.
 */
 func GetEncodedResponse(c protocol.Caller, args GetEncodedResponseArgs) (*GetEncodedResponseVal, error) {
@@ -14,7 +15,7 @@ func GetEncodedResponse(c protocol.Caller, args GetEncodedResponseArgs) (*GetEnc
 }
 
 /*
-	Disables issues domain, prevents further issues from being reported to the client.
+Disables issues domain, prevents further issues from being reported to the client.
 */
 func Disable(c protocol.Caller) error {
 	return c.Call("Audits.disable", nil, nil)
@@ -22,6 +23,7 @@ func Disable(c protocol.Caller) error {
 
 /*
 	Enables issues domain, sends the issues collected so far to the client by means of the
+
 `issueAdded` event.
 */
 func Enable(c protocol.Caller) error {
@@ -30,6 +32,7 @@ func Enable(c protocol.Caller) error {
 
 /*
 	Runs the contrast check for the target page. Found issues are reported
+
 using Audits.issueAdded event.
 */
 func CheckContrast(c protocol.Caller, args CheckContrastArgs) error {

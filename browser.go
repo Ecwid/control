@@ -113,7 +113,7 @@ func (b BrowserContext) CloseTarget(id target.TargetID) (err error) {
 }
 
 func (b BrowserContext) GetTargets() ([]*target.TargetInfo, error) {
-	val, err := target.GetTargets(b)
+	val, err := target.GetTargets(b, target.GetTargetsArgs{})
 	if err != nil {
 		return nil, err
 	}

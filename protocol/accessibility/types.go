@@ -1,32 +1,33 @@
 package accessibility
 
 import (
+	"github.com/ecwid/control/protocol/common"
 	"github.com/ecwid/control/protocol/dom"
 	"github.com/ecwid/control/protocol/runtime"
 )
 
 /*
-	Unique accessibility node identifier.
+Unique accessibility node identifier.
 */
 type AXNodeId string
 
 /*
-	Enum of possible property types.
+Enum of possible property types.
 */
 type AXValueType string
 
 /*
-	Enum of possible property sources.
+Enum of possible property sources.
 */
 type AXValueSourceType string
 
 /*
-	Enum of possible native property sources (as a subtype of a particular AXValueSourceType).
+Enum of possible native property sources (as a subtype of a particular AXValueSourceType).
 */
 type AXValueNativeSourceType string
 
 /*
-	A single source for a computed AX property.
+A single source for a computed AX property.
 */
 type AXValueSource struct {
 	Type              AXValueSourceType       `json:"type"`
@@ -41,7 +42,6 @@ type AXValueSource struct {
 }
 
 /*
-
  */
 type AXRelatedNode struct {
 	BackendDOMNodeId dom.BackendNodeId `json:"backendDOMNodeId"`
@@ -50,7 +50,6 @@ type AXRelatedNode struct {
 }
 
 /*
-
  */
 type AXProperty struct {
 	Name  AXPropertyName `json:"name"`
@@ -58,7 +57,7 @@ type AXProperty struct {
 }
 
 /*
-	A single computed AX property.
+A single computed AX property.
 */
 type AXValue struct {
 	Type         AXValueType      `json:"type"`
@@ -69,6 +68,7 @@ type AXValue struct {
 
 /*
 	Values of AXProperty name:
+
 - from 'busy' to 'roledescription': states which apply to every AX node
 - from 'live' to 'root': attributes which apply to nodes in live regions
 - from 'autocomplete' to 'valuetext': attributes which apply to widgets
@@ -78,19 +78,22 @@ type AXValue struct {
 type AXPropertyName string
 
 /*
-	A node in the accessibility tree.
+A node in the accessibility tree.
 */
 type AXNode struct {
 	NodeId           AXNodeId          `json:"nodeId"`
 	Ignored          bool              `json:"ignored"`
 	IgnoredReasons   []*AXProperty     `json:"ignoredReasons,omitempty"`
 	Role             *AXValue          `json:"role,omitempty"`
+	ChromeRole       *AXValue          `json:"chromeRole,omitempty"`
 	Name             *AXValue          `json:"name,omitempty"`
 	Description      *AXValue          `json:"description,omitempty"`
 	Value            *AXValue          `json:"value,omitempty"`
 	Properties       []*AXProperty     `json:"properties,omitempty"`
+	ParentId         AXNodeId          `json:"parentId,omitempty"`
 	ChildIds         []AXNodeId        `json:"childIds,omitempty"`
 	BackendDOMNodeId dom.BackendNodeId `json:"backendDOMNodeId,omitempty"`
+	FrameId          common.FrameId    `json:"frameId,omitempty"`
 }
 
 type GetPartialAXTreeArgs struct {
@@ -105,15 +108,35 @@ type GetPartialAXTreeVal struct {
 }
 
 type GetFullAXTreeArgs struct {
-	Max_depth int `json:"max_depth,omitempty"`
+	Depth   int            `json:"depth,omitempty"`
+	FrameId common.FrameId `json:"frameId,omitempty"`
 }
 
 type GetFullAXTreeVal struct {
 	Nodes []*AXNode `json:"nodes"`
 }
 
+type GetRootAXNodeArgs struct {
+	FrameId common.FrameId `json:"frameId,omitempty"`
+}
+
+type GetRootAXNodeVal struct {
+	Node *AXNode `json:"node"`
+}
+
+type GetAXNodeAndAncestorsArgs struct {
+	NodeId        dom.NodeId             `json:"nodeId,omitempty"`
+	BackendNodeId dom.BackendNodeId      `json:"backendNodeId,omitempty"`
+	ObjectId      runtime.RemoteObjectId `json:"objectId,omitempty"`
+}
+
+type GetAXNodeAndAncestorsVal struct {
+	Nodes []*AXNode `json:"nodes"`
+}
+
 type GetChildAXNodesArgs struct {
-	Id AXNodeId `json:"id"`
+	Id      AXNodeId       `json:"id"`
+	FrameId common.FrameId `json:"frameId,omitempty"`
 }
 
 type GetChildAXNodesVal struct {

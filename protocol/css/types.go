@@ -6,27 +6,28 @@ import (
 )
 
 /*
-
  */
 type StyleSheetId string
 
 /*
 	Stylesheet type: "injected" for stylesheets injected via extension, "user-agent" for user-agent
+
 stylesheets, "inspector" for stylesheets created by the inspector (i.e. those holding the "via
 inspector" rules), "regular" for regular stylesheets.
 */
 type StyleSheetOrigin string
 
 /*
-	CSS rule collection for a single pseudo style.
+CSS rule collection for a single pseudo style.
 */
 type PseudoElementMatches struct {
-	PseudoType dom.PseudoType `json:"pseudoType"`
-	Matches    []*RuleMatch   `json:"matches"`
+	PseudoType       dom.PseudoType `json:"pseudoType"`
+	PseudoIdentifier string         `json:"pseudoIdentifier,omitempty"`
+	Matches          []*RuleMatch   `json:"matches"`
 }
 
 /*
-	Inherited CSS rule collection from ancestor node.
+Inherited CSS rule collection from ancestor node.
 */
 type InheritedStyleEntry struct {
 	InlineStyle     *CSSStyle    `json:"inlineStyle,omitempty"`
@@ -34,7 +35,14 @@ type InheritedStyleEntry struct {
 }
 
 /*
-	Match data for a CSS rule.
+Inherited pseudo element matches from pseudos of an ancestor node.
+*/
+type InheritedPseudoElementMatches struct {
+	PseudoElements []*PseudoElementMatches `json:"pseudoElements"`
+}
+
+/*
+Match data for a CSS rule.
 */
 type RuleMatch struct {
 	Rule              *CSSRule `json:"rule"`
@@ -42,7 +50,7 @@ type RuleMatch struct {
 }
 
 /*
-	Data for a simple selector (these are delimited by commas in a selector list).
+Data for a simple selector (these are delimited by commas in a selector list).
 */
 type Value struct {
 	Text  string       `json:"text"`
@@ -50,7 +58,7 @@ type Value struct {
 }
 
 /*
-	Selector list data.
+Selector list data.
 */
 type SelectorList struct {
 	Selectors []*Value `json:"selectors"`
@@ -58,7 +66,7 @@ type SelectorList struct {
 }
 
 /*
-	CSS stylesheet metainformation.
+CSS stylesheet metainformation.
 */
 type CSSStyleSheetHeader struct {
 	StyleSheetId  StyleSheetId      `json:"styleSheetId"`
@@ -81,18 +89,22 @@ type CSSStyleSheetHeader struct {
 }
 
 /*
-	CSS rule representation.
+CSS rule representation.
 */
 type CSSRule struct {
-	StyleSheetId StyleSheetId     `json:"styleSheetId,omitempty"`
-	SelectorList *SelectorList    `json:"selectorList"`
-	Origin       StyleSheetOrigin `json:"origin"`
-	Style        *CSSStyle        `json:"style"`
-	Media        []*CSSMedia      `json:"media,omitempty"`
+	StyleSheetId     StyleSheetId         `json:"styleSheetId,omitempty"`
+	SelectorList     *SelectorList        `json:"selectorList"`
+	Origin           StyleSheetOrigin     `json:"origin"`
+	Style            *CSSStyle            `json:"style"`
+	Media            []*CSSMedia          `json:"media,omitempty"`
+	ContainerQueries []*CSSContainerQuery `json:"containerQueries,omitempty"`
+	Supports         []*CSSSupports       `json:"supports,omitempty"`
+	Layers           []*CSSLayer          `json:"layers,omitempty"`
+	Scopes           []*CSSScope          `json:"scopes,omitempty"`
 }
 
 /*
-	CSS coverage information.
+CSS coverage information.
 */
 type RuleUsage struct {
 	StyleSheetId StyleSheetId `json:"styleSheetId"`
@@ -102,7 +114,7 @@ type RuleUsage struct {
 }
 
 /*
-	Text range within a resource. All numbers are zero-based.
+Text range within a resource. All numbers are zero-based.
 */
 type SourceRange struct {
 	StartLine   int `json:"startLine"`
@@ -112,7 +124,6 @@ type SourceRange struct {
 }
 
 /*
-
  */
 type ShorthandEntry struct {
 	Name      string `json:"name"`
@@ -121,7 +132,6 @@ type ShorthandEntry struct {
 }
 
 /*
-
  */
 type CSSComputedStyleProperty struct {
 	Name  string `json:"name"`
@@ -129,7 +139,7 @@ type CSSComputedStyleProperty struct {
 }
 
 /*
-	CSS style representation.
+CSS style representation.
 */
 type CSSStyle struct {
 	StyleSheetId     StyleSheetId      `json:"styleSheetId,omitempty"`
@@ -140,21 +150,22 @@ type CSSStyle struct {
 }
 
 /*
-	CSS property declaration data.
+CSS property declaration data.
 */
 type CSSProperty struct {
-	Name      string       `json:"name"`
-	Value     string       `json:"value"`
-	Important bool         `json:"important,omitempty"`
-	Implicit  bool         `json:"implicit,omitempty"`
-	Text      string       `json:"text,omitempty"`
-	ParsedOk  bool         `json:"parsedOk,omitempty"`
-	Disabled  bool         `json:"disabled,omitempty"`
-	Range     *SourceRange `json:"range,omitempty"`
+	Name               string         `json:"name"`
+	Value              string         `json:"value"`
+	Important          bool           `json:"important,omitempty"`
+	Implicit           bool           `json:"implicit,omitempty"`
+	Text               string         `json:"text,omitempty"`
+	ParsedOk           bool           `json:"parsedOk,omitempty"`
+	Disabled           bool           `json:"disabled,omitempty"`
+	Range              *SourceRange   `json:"range,omitempty"`
+	LonghandProperties []*CSSProperty `json:"longhandProperties,omitempty"`
 }
 
 /*
-	CSS media rule descriptor.
+CSS media rule descriptor.
 */
 type CSSMedia struct {
 	Text         string        `json:"text"`
@@ -166,7 +177,7 @@ type CSSMedia struct {
 }
 
 /*
-	Media query descriptor.
+Media query descriptor.
 */
 type MediaQuery struct {
 	Expressions []*MediaQueryExpression `json:"expressions"`
@@ -174,7 +185,7 @@ type MediaQuery struct {
 }
 
 /*
-	Media query expression descriptor.
+Media query expression descriptor.
 */
 type MediaQueryExpression struct {
 	Value          float64      `json:"value"`
@@ -185,7 +196,56 @@ type MediaQueryExpression struct {
 }
 
 /*
-	Information about amount of glyphs that were rendered with given font.
+CSS container query rule descriptor.
+*/
+type CSSContainerQuery struct {
+	Text         string           `json:"text"`
+	Range        *SourceRange     `json:"range,omitempty"`
+	StyleSheetId StyleSheetId     `json:"styleSheetId,omitempty"`
+	Name         string           `json:"name,omitempty"`
+	PhysicalAxes dom.PhysicalAxes `json:"physicalAxes,omitempty"`
+	LogicalAxes  dom.LogicalAxes  `json:"logicalAxes,omitempty"`
+}
+
+/*
+CSS Supports at-rule descriptor.
+*/
+type CSSSupports struct {
+	Text         string       `json:"text"`
+	Active       bool         `json:"active"`
+	Range        *SourceRange `json:"range,omitempty"`
+	StyleSheetId StyleSheetId `json:"styleSheetId,omitempty"`
+}
+
+/*
+CSS Scope at-rule descriptor.
+*/
+type CSSScope struct {
+	Text         string       `json:"text"`
+	Range        *SourceRange `json:"range,omitempty"`
+	StyleSheetId StyleSheetId `json:"styleSheetId,omitempty"`
+}
+
+/*
+CSS Layer at-rule descriptor.
+*/
+type CSSLayer struct {
+	Text         string       `json:"text"`
+	Range        *SourceRange `json:"range,omitempty"`
+	StyleSheetId StyleSheetId `json:"styleSheetId,omitempty"`
+}
+
+/*
+CSS Layer data.
+*/
+type CSSLayerData struct {
+	Name      string          `json:"name"`
+	SubLayers []*CSSLayerData `json:"subLayers,omitempty"`
+	Order     float64         `json:"order"`
+}
+
+/*
+Information about amount of glyphs that were rendered with given font.
 */
 type PlatformFontUsage struct {
 	FamilyName   string  `json:"familyName"`
@@ -194,7 +254,7 @@ type PlatformFontUsage struct {
 }
 
 /*
-	Information about font variation axes for variable fonts
+Information about font variation axes for variable fonts
 */
 type FontVariationAxis struct {
 	Tag          string  `json:"tag"`
@@ -206,6 +266,7 @@ type FontVariationAxis struct {
 
 /*
 	Properties of a web font: https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#font-descriptions
+
 and additional information such as platformFontFamily and fontVariationAxes.
 */
 type FontFace struct {
@@ -214,6 +275,7 @@ type FontFace struct {
 	FontVariant        string               `json:"fontVariant"`
 	FontWeight         string               `json:"fontWeight"`
 	FontStretch        string               `json:"fontStretch"`
+	FontDisplay        string               `json:"fontDisplay"`
 	UnicodeRange       string               `json:"unicodeRange"`
 	Src                string               `json:"src"`
 	PlatformFontFamily string               `json:"platformFontFamily"`
@@ -221,7 +283,7 @@ type FontFace struct {
 }
 
 /*
-	CSS keyframes rule representation.
+CSS keyframes rule representation.
 */
 type CSSKeyframesRule struct {
 	AnimationName *Value             `json:"animationName"`
@@ -229,7 +291,7 @@ type CSSKeyframesRule struct {
 }
 
 /*
-	CSS keyframe rule representation.
+CSS keyframe rule representation.
 */
 type CSSKeyframeRule struct {
 	StyleSheetId StyleSheetId     `json:"styleSheetId,omitempty"`
@@ -239,7 +301,7 @@ type CSSKeyframeRule struct {
 }
 
 /*
-	A descriptor of operation to mutate style declaration text.
+A descriptor of operation to mutate style declaration text.
 */
 type StyleDeclarationEdit struct {
 	StyleSheetId StyleSheetId `json:"styleSheetId"`
@@ -310,12 +372,14 @@ type GetMatchedStylesForNodeArgs struct {
 }
 
 type GetMatchedStylesForNodeVal struct {
-	InlineStyle       *CSSStyle               `json:"inlineStyle,omitempty"`
-	AttributesStyle   *CSSStyle               `json:"attributesStyle,omitempty"`
-	MatchedCSSRules   []*RuleMatch            `json:"matchedCSSRules,omitempty"`
-	PseudoElements    []*PseudoElementMatches `json:"pseudoElements,omitempty"`
-	Inherited         []*InheritedStyleEntry  `json:"inherited,omitempty"`
-	CssKeyframesRules []*CSSKeyframesRule     `json:"cssKeyframesRules,omitempty"`
+	InlineStyle             *CSSStyle                        `json:"inlineStyle,omitempty"`
+	AttributesStyle         *CSSStyle                        `json:"attributesStyle,omitempty"`
+	MatchedCSSRules         []*RuleMatch                     `json:"matchedCSSRules,omitempty"`
+	PseudoElements          []*PseudoElementMatches          `json:"pseudoElements,omitempty"`
+	Inherited               []*InheritedStyleEntry           `json:"inherited,omitempty"`
+	InheritedPseudoElements []*InheritedPseudoElementMatches `json:"inheritedPseudoElements,omitempty"`
+	CssKeyframesRules       []*CSSKeyframesRule              `json:"cssKeyframesRules,omitempty"`
+	ParentLayoutNodeId      dom.NodeId                       `json:"parentLayoutNodeId,omitempty"`
 }
 
 type GetMediaQueriesVal struct {
@@ -336,6 +400,14 @@ type GetStyleSheetTextArgs struct {
 
 type GetStyleSheetTextVal struct {
 	Text string `json:"text"`
+}
+
+type GetLayersForNodeArgs struct {
+	NodeId dom.NodeId `json:"nodeId"`
+}
+
+type GetLayersForNodeVal struct {
+	RootLayer *CSSLayerData `json:"rootLayer"`
 }
 
 type TrackComputedStyleUpdatesArgs struct {
@@ -370,6 +442,36 @@ type SetMediaTextArgs struct {
 
 type SetMediaTextVal struct {
 	Media *CSSMedia `json:"media"`
+}
+
+type SetContainerQueryTextArgs struct {
+	StyleSheetId StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange `json:"range"`
+	Text         string       `json:"text"`
+}
+
+type SetContainerQueryTextVal struct {
+	ContainerQuery *CSSContainerQuery `json:"containerQuery"`
+}
+
+type SetSupportsTextArgs struct {
+	StyleSheetId StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange `json:"range"`
+	Text         string       `json:"text"`
+}
+
+type SetSupportsTextVal struct {
+	Supports *CSSSupports `json:"supports"`
+}
+
+type SetScopeTextArgs struct {
+	StyleSheetId StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange `json:"range"`
+	Text         string       `json:"text"`
+}
+
+type SetScopeTextVal struct {
+	Scope *CSSScope `json:"scope"`
 }
 
 type SetRuleSelectorArgs struct {

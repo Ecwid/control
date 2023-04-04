@@ -5,14 +5,14 @@ import (
 )
 
 /*
-	Clears the overridden Device Orientation.
+Clears the overridden Device Orientation.
 */
 func ClearDeviceOrientationOverride(c protocol.Caller) error {
 	return c.Call("DeviceOrientation.clearDeviceOrientationOverride", nil, nil)
 }
 
 /*
-	Overrides the Device Orientation.
+Overrides the Device Orientation.
 */
 func SetDeviceOrientationOverride(c protocol.Caller, args SetDeviceOrientationOverrideArgs) error {
 	return c.Call("DeviceOrientation.setDeviceOrientationOverride", args, nil)
