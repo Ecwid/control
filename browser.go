@@ -69,7 +69,7 @@ func (b BrowserContext) runSession(targetID target.TargetID, sessionID target.Se
 		return nil, err
 	}
 	// maxPostDataSize - The Longest post body size (in bytes) that would be included in requestWillBeSent notification
-	if err = network.Enable(session, network.EnableArgs{MaxPostDataSize: 10 * 1024}); err != nil {
+	if err = network.Enable(session, network.EnableArgs{MaxPostDataSize: 20 * 1024}); err != nil {
 		return nil, err
 	}
 	return
