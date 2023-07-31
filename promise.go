@@ -59,6 +59,10 @@ func (u Future) Cancel() {
 	u.promise.unregister()
 }
 
+func (u Future) IsPending() bool {
+	return u.promise.isPending()
+}
+
 func (u Future) Get(timeout time.Duration) (interface{}, error) {
 	var ctx, cancel = context.WithTimeout(u.promise.context, timeout)
 	defer cancel()
