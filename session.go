@@ -32,6 +32,7 @@ type Session struct {
 	Network   Network
 	Input     Input
 	Emulation Emulation
+	Animation Animation
 }
 
 func (s Session) Call(method string, send, recv interface{}) error {

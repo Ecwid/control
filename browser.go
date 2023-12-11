@@ -49,6 +49,7 @@ func (b BrowserContext) runSession(targetID target.TargetID, sessionID target.Se
 	session.Input = Input{s: session, mx: &sync.Mutex{}}
 	session.Network = Network{s: session}
 	session.Emulation = Emulation{s: session}
+	session.Animation = Animation{s: session}
 
 	go session.handleEventPool()
 	session.detach = b.Client.Register(session)
