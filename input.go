@@ -183,6 +183,43 @@ func (i Input) MouseRelease(button input.MouseButton, x, y float64) error {
 	})
 }
 
+func (i Input) TouchStart(x, y float64) error {
+	return input.DispatchTouchEvent(i.s, input.DispatchTouchEventArgs{
+		Type: "touchStart",
+		TouchPoints: []*input.TouchPoint{
+			{
+				X:       x,
+				Y:       y,
+				RadiusX: 0.5,
+				RadiusY: 0.5,
+				Force:   1,
+			},
+		},
+	})
+}
+
+func (i Input) TouchEnd() error {
+	return input.DispatchTouchEvent(i.s, input.DispatchTouchEventArgs{
+		Type:        "touchEnd",
+		TouchPoints: []*input.TouchPoint{},
+	})
+}
+
+func (i Input) TouchMove(x, y float64) error {
+	return input.DispatchTouchEvent(i.s, input.DispatchTouchEventArgs{
+		Type: "touchMove",
+		TouchPoints: []*input.TouchPoint{
+			{
+				X:       x,
+				Y:       y,
+				RadiusX: 0.5,
+				RadiusY: 0.5,
+				Force:   1,
+			},
+		},
+	})
+}
+
 // Keyboard events
 const (
 	dispatchKeyEventKeyDown = "keyDown"
