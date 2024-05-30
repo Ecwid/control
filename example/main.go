@@ -1,64 +1,95 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
+	"log/slog"
 	"time"
 
 	"github.com/ecwid/control"
-	"github.com/ecwid/control/chrome"
-	"github.com/ecwid/control/transport"
+	"github.com/ecwid/control/retry"
 )
 
+type Handler struct {
+	h slog.Handler
+}
+
+func (Handler) Enabled(c context.Context, l slog.Level) bool {
+	return l >= slog.LevelInfo
+}
+
+func (h Handler) Handle(c context.Context, r slog.Record) error {
+	buf := bytes.Buffer{}
+	buf.WriteString(r.Time.Format(time.TimeOnly))
+	buf.WriteByte(' ')
+	buf.WriteString(r.Level.String())
+	buf.WriteByte(' ')
+	buf.WriteString(r.Message)
+	buf.WriteByte(' ')
+	body := make(map[string]any, r.NumAttrs())
+	r.Attrs(func(a slog.Attr) bool {
+		body[a.Key] = a.Value.Any()
+		return true
+	})
+	enc := json.NewEncoder(&buf)
+	enc.SetIndent("", " ")
+	err := enc.Encode(body)
+	if err != nil {
+		return err
+	}
+	fmt.Print(buf.String())
+	return nil
+}
+
+func (h Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return h.h.WithAttrs(attrs)
+}
+
+func (h Handler) WithGroup(name string) slog.Handler {
+	return h.h.WithGroup(name)
+}
+
 func main() {
-
-	chromium, err := chrome.Launch(context.TODO(), "--disable-popup-blocking") // you can specify more startup parameters for chrome
+	sl := slog.New(Handler{h: slog.Default().Handler()})
+	session, dfr, err := control.TakeWithContext(context.TODO(), sl, "--no-startup-window")
 	if err != nil {
 		panic(err)
 	}
-	defer chromium.Close()
-	ctrl := control.New(chromium.GetClient())
-	ctrl.Client.Timeout = time.Second * 60
+	defer dfr()
 
-	go func() {
-		s1, err := ctrl.CreatePageTarget("")
-		if err != nil {
-			panic(err)
-		}
-		cancel := s1.Subscribe("Page.domContentEventFired", func(e transport.Event) error {
-			v, err1 := s1.Page().GetNavigationEntry()
-			log.Println(v)
-			log.Println(err1)
-			return err1
+	err = session.Frame.Navigate("https://zoid.ecwid.com")
+	if err != nil {
+		panic(err)
+	}
+
+	retrier := retry.DefaultTiming
+
+	var values []string
+	err = retry.Func(retrier, func() error {
+		values = []string{}
+		return session.Frame.QueryAll(".grid-product__title-inner").Then(func(nl control.NodeList) error {
+			return nl.Foreach(func(n *control.Node) error {
+				return n.GetText().Then(func(s string) error {
+					values = append(values, s)
+					return nil
+				})
+			})
 		})
-		defer cancel()
-		if err = s1.Page().Navigate("https://google.com/", control.LifecycleIdleNetwork, time.Second*60); err != nil {
-			panic(err)
-		}
-	}()
+	})
 
-	session, err := ctrl.CreatePageTarget("")
-	if err != nil {
-		panic(err)
-	}
+	log.Println(values, err)
 
-	var page = session.Page() // main frame
-	err = page.Navigate("https://surfparadise.ecwid.com/", control.LifecycleIdleNetwork, time.Second*60)
-	if err != nil {
-		panic(err)
-	}
+	err = retry.FuncPanic(retrier, func() {
+		node := session.Frame.MustQuery(`.pager__count-pages`)
+		node.MustGetBoundingClientRect()
+		node.MustClick()
+	})
+	log.Println(err)
 
-	_ = session.Activate()
-
-	items, err := page.QuerySelectorAll(".grid-product__title-inner")
-	if err != nil {
-		panic(err)
-	}
-	for _, i := range items {
-		title, err := i.GetText()
-		if err != nil {
-			panic(err)
-		}
-		log.Print(title)
-	}
+	p := session.Frame.Evaluate(`new Promise((a,b) => a('ok'))`, false).MustGetValue().(control.RemoteObject)
+	a, b := session.Frame.AwaitPromise(p)
+	log.Println(a, b)
 }

@@ -10,10 +10,11 @@ type ScriptId string
 
 https://w3c.github.io/webdriver-bidi.
 */
-type WebDriverValue struct {
-	Type     string      `json:"type"`
-	Value    interface{} `json:"value,omitempty"`
-	ObjectId string      `json:"objectId,omitempty"`
+type DeepSerializedValue struct {
+	Type                     string `json:"type"`
+	Value                    any    `json:"value,omitempty"`
+	ObjectId                 string `json:"objectId,omitempty"`
+	WeakLocalObjectReference int    `json:"weakLocalObjectReference,omitempty"`
 }
 
 /*
@@ -32,16 +33,16 @@ type UnserializableValue string
 Mirror object referencing original JavaScript object.
 */
 type RemoteObject struct {
-	Type                string              `json:"type"`
-	Subtype             string              `json:"subtype,omitempty"`
-	ClassName           string              `json:"className,omitempty"`
-	Value               interface{}         `json:"value,omitempty"`
-	UnserializableValue UnserializableValue `json:"unserializableValue,omitempty"`
-	Description         string              `json:"description,omitempty"`
-	WebDriverValue      *WebDriverValue     `json:"webDriverValue,omitempty"`
-	ObjectId            RemoteObjectId      `json:"objectId,omitempty"`
-	Preview             *ObjectPreview      `json:"preview,omitempty"`
-	CustomPreview       *CustomPreview      `json:"customPreview,omitempty"`
+	Type                string               `json:"type"`
+	Subtype             string               `json:"subtype,omitempty"`
+	ClassName           string               `json:"className,omitempty"`
+	Value               any                  `json:"value,omitempty"`
+	UnserializableValue UnserializableValue  `json:"unserializableValue,omitempty"`
+	Description         string               `json:"description,omitempty"`
+	DeepSerializedValue *DeepSerializedValue `json:"deepSerializedValue,omitempty"`
+	ObjectId            RemoteObjectId       `json:"objectId,omitempty"`
+	Preview             *ObjectPreview       `json:"preview,omitempty"`
+	CustomPreview       *CustomPreview       `json:"customPreview,omitempty"`
 }
 
 /*
@@ -217,19 +218,19 @@ type AwaitPromiseVal struct {
 }
 
 type CallFunctionOnArgs struct {
-	FunctionDeclaration    string             `json:"functionDeclaration"`
-	ObjectId               RemoteObjectId     `json:"objectId,omitempty"`
-	Arguments              []*CallArgument    `json:"arguments,omitempty"`
-	Silent                 bool               `json:"silent,omitempty"`
-	ReturnByValue          bool               `json:"returnByValue,omitempty"`
-	GeneratePreview        bool               `json:"generatePreview,omitempty"`
-	UserGesture            bool               `json:"userGesture,omitempty"`
-	AwaitPromise           bool               `json:"awaitPromise,omitempty"`
-	ExecutionContextId     ExecutionContextId `json:"executionContextId,omitempty"`
-	ObjectGroup            string             `json:"objectGroup,omitempty"`
-	ThrowOnSideEffect      bool               `json:"throwOnSideEffect,omitempty"`
-	UniqueContextId        string             `json:"uniqueContextId,omitempty"`
-	GenerateWebDriverValue bool               `json:"generateWebDriverValue,omitempty"`
+	FunctionDeclaration  string                `json:"functionDeclaration"`
+	ObjectId             RemoteObjectId        `json:"objectId,omitempty"`
+	Arguments            []*CallArgument       `json:"arguments,omitempty"`
+	Silent               bool                  `json:"silent,omitempty"`
+	ReturnByValue        bool                  `json:"returnByValue,omitempty"`
+	GeneratePreview      bool                  `json:"generatePreview,omitempty"`
+	UserGesture          bool                  `json:"userGesture,omitempty"`
+	AwaitPromise         bool                  `json:"awaitPromise,omitempty"`
+	ExecutionContextId   ExecutionContextId    `json:"executionContextId,omitempty"`
+	ObjectGroup          string                `json:"objectGroup,omitempty"`
+	ThrowOnSideEffect    bool                  `json:"throwOnSideEffect,omitempty"`
+	UniqueContextId      string                `json:"uniqueContextId,omitempty"`
+	SerializationOptions *SerializationOptions `json:"serializationOptions,omitempty"`
 }
 
 type CallFunctionOnVal struct {
@@ -249,23 +250,28 @@ type CompileScriptVal struct {
 	ExceptionDetails *ExceptionDetails `json:"exceptionDetails,omitempty"`
 }
 
+type SerializationOptions struct {
+	Serialization string `json:"serialization,omitempty"`
+	MaxDepth      int    `json:"maxDepth,omitempty"`
+}
+
 type EvaluateArgs struct {
-	Expression                  string             `json:"expression"`
-	ObjectGroup                 string             `json:"objectGroup,omitempty"`
-	IncludeCommandLineAPI       bool               `json:"includeCommandLineAPI,omitempty"`
-	Silent                      bool               `json:"silent,omitempty"`
-	ContextId                   ExecutionContextId `json:"contextId,omitempty"`
-	ReturnByValue               bool               `json:"returnByValue,omitempty"`
-	GeneratePreview             bool               `json:"generatePreview,omitempty"`
-	UserGesture                 bool               `json:"userGesture,omitempty"`
-	AwaitPromise                bool               `json:"awaitPromise,omitempty"`
-	ThrowOnSideEffect           bool               `json:"throwOnSideEffect,omitempty"`
-	Timeout                     TimeDelta          `json:"timeout,omitempty"`
-	DisableBreaks               bool               `json:"disableBreaks,omitempty"`
-	ReplMode                    bool               `json:"replMode,omitempty"`
-	AllowUnsafeEvalBlockedByCSP bool               `json:"allowUnsafeEvalBlockedByCSP,omitempty"`
-	UniqueContextId             string             `json:"uniqueContextId,omitempty"`
-	GenerateWebDriverValue      bool               `json:"generateWebDriverValue,omitempty"`
+	Expression                  string                `json:"expression"`
+	ObjectGroup                 string                `json:"objectGroup,omitempty"`
+	IncludeCommandLineAPI       bool                  `json:"includeCommandLineAPI,omitempty"`
+	Silent                      bool                  `json:"silent,omitempty"`
+	ContextId                   ExecutionContextId    `json:"contextId,omitempty"`
+	ReturnByValue               bool                  `json:"returnByValue,omitempty"`
+	GeneratePreview             bool                  `json:"generatePreview,omitempty"`
+	UserGesture                 bool                  `json:"userGesture,omitempty"`
+	AwaitPromise                bool                  `json:"awaitPromise,omitempty"`
+	ThrowOnSideEffect           bool                  `json:"throwOnSideEffect,omitempty"`
+	Timeout                     TimeDelta             `json:"timeout,omitempty"`
+	DisableBreaks               bool                  `json:"disableBreaks,omitempty"`
+	ReplMode                    bool                  `json:"replMode,omitempty"`
+	AllowUnsafeEvalBlockedByCSP bool                  `json:"allowUnsafeEvalBlockedByCSP,omitempty"`
+	UniqueContextId             string                `json:"uniqueContextId,omitempty"`
+	SerializationOptions        *SerializationOptions `json:"serializationOptions,omitempty"`
 }
 
 type EvaluateVal struct {

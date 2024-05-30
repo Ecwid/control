@@ -11,76 +11,65 @@ _Warning_ This is an experimental project, backward compatibility is not guarant
 Here is an example of using:
 
 ```go
-package main
-
-import (
-	"context"
-	"log"
-	"time"
-
-	"github.com/ecwid/control"
-	"github.com/ecwid/control/chrome"
-)
-
 func main() {
-	chromium, err := chrome.Launch(context.TODO(), "--disable-popup-blocking") // you can specify more startup parameters for chrome
+	session, cancel, err := control.Take("--no-startup-window")
 	if err != nil {
 		panic(err)
 	}
-	defer chromium.Close()
-	ctrl := control.New(chromium.GetClient())
-	
-	session, err := ctrl.CreatePageTarget("")
+	defer cancel()
+
+	retrier := retry.Static{
+		Timeout: 10 * time.Second,
+		Delay:   500 * time.Millisecond, // delay between attempts
+	}
+
+	session.Frame.MustNavigate("https://zoid.ecwid.com")
+
+	var products []string
+	err = retry.Func(retrier, func() error {
+		products = []string{}
+		return session.Frame.QueryAll(".grid-product__title-inner").Then(func(nl control.NodeList) error {
+			return nl.Foreach(func(n *control.Node) error {
+				return n.GetText().Then(func(s string) error {
+					products = append(products, s)
+					return nil
+				})
+			})
+		})
+	})
 	if err != nil {
 		panic(err)
 	}
 
-	var page = session.Page() // main frame 
-	err = page.Navigate("https://surfparadise.ecwid.com/", control.LifecycleIdleNetwork, time.Second*60)
-	if err != nil {
-		panic(err)
-	}
+    // "must way" throws panic on an error
 
-	items, err := page.QuerySelectorAll(".grid-product__title-inner")
-	if err != nil {
-		panic(err)
-	}
-	for _, i := range items {
-		title, err := i.GetText()
-		if err != nil {
-			panic(err)
-		}
-		log.Print(title)
+	for _, node := range session.Frame.MustQueryAll(".grid-product__title-inner") {
+		log.Println(node.MustGetText())
 	}
 }
 ```
 
 You can call any CDP method implemented in protocol package using a session
 ```go
-err = security.SetIgnoreCertificateErrors(sess, security.SetIgnoreCertificateErrorsArgs{
+err = security.SetIgnoreCertificateErrors(session, security.SetIgnoreCertificateErrorsArgs{
     Ignore: true,
 })
 ```
 
-or even call a custom method
+or call a custom unimplemented method
 ```go
-err = sess.Call("Security.setIgnoreCertificateErrors", sendStruct, receiveStruct)
+err = session.Call("Security.setIgnoreCertificateErrors", sendStruct, receiveStruct)
 ```
 
-Subscribe on domain event
+Subscribe on the domain event
 ```go
-cancel := sess.Subscribe("Overlay.screenshotRequested", func(e observe.Value) {
-    v := overlay.ScreenshotRequested{}
-    _= json.Unmarshal(e.Params, &v)
-    doSomething(v.Viewport.Height)
+future := control.Subscribe(session, "Target.targetCreated", func(t target.TargetCreated) bool {
+    return t.TargetInfo.Type == "page"
 })
-defer cancel()
+defer future.Cancel()
 
-// Subscribe on all incoming events
-sess.Subscribe("*", func(e observe.Value) {
-    switch e.Method {
-        case "Overlay.screenshotRequested":
-    }
-})
+// do something here ...
 
+ctx, cancel := context.WithTimeout(context.TODO(), time.Second*10)
+result /* target.TargetCreated */, err := future.Get(ctx)
 ```

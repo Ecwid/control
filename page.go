@@ -1,64 +1,147 @@
 package control
 
 import (
-	"github.com/ecwid/control/protocol/browser"
+	"errors"
+
+	"github.com/ecwid/control/protocol/common"
 	"github.com/ecwid/control/protocol/page"
 )
 
-// CaptureScreenshot get screen of current page
-func (s Session) CaptureScreenshot(format string, quality int, clip *page.Viewport, fromSurface, captureBeyondViewport bool) ([]byte, error) {
-	val, err := page.CaptureScreenshot(s, page.CaptureScreenshotArgs{
-		Format:                format,
-		Quality:               quality,
-		Clip:                  clip,
-		FromSurface:           fromSurface,
-		CaptureBeyondViewport: captureBeyondViewport,
+type LifecycleEventType string
+
+const (
+	LifecycleDOMContentLoaded              LifecycleEventType = "DOMContentLoaded"
+	LifecycleIdleNetwork                   LifecycleEventType = "networkIdle"
+	LifecycleFirstContentfulPaint          LifecycleEventType = "firstContentfulPaint"
+	LifecycleFirstMeaningfulPaint          LifecycleEventType = "firstMeaningfulPaint"
+	LifecycleFirstMeaningfulPaintCandidate LifecycleEventType = "firstMeaningfulPaintCandidate"
+	LifecycleFirstPaint                    LifecycleEventType = "firstPaint"
+	LifecycleFirstTextPaint                LifecycleEventType = "firstTextPaint"
+	LifecycleInit                          LifecycleEventType = "init"
+	LifecycleLoad                          LifecycleEventType = "load"
+	LifecycleNetworkAlmostIdle             LifecycleEventType = "networkAlmostIdle"
+)
+
+var ErrNavigateNoLoader = errors.New("navigation to the same address")
+
+type Queryable interface {
+	Query(string) Optional[*Node]
+	MustQuery(string) *Node
+	QueryAll(string) Optional[NodeList]
+	MustQueryAll(string) NodeList
+	OwnerFrame() *Frame
+}
+
+type Frame struct {
+	node    *Node
+	session *Session
+	id      common.FrameId
+	parent  *Frame
+}
+
+func (f Frame) GetSession() *Session {
+	return f.session
+}
+
+func (f Frame) GetID() common.FrameId {
+	return f.id
+}
+
+func (f Frame) executionContextID() string {
+	if value, ok := f.session.frames.Load(f.id); ok {
+		return value.(string)
+	}
+	return ""
+}
+
+func (f Frame) Call(method string, send, recv any) error {
+	return f.session.Call(method, send, recv)
+}
+
+func (f *Frame) OwnerFrame() *Frame {
+	return f
+}
+
+func (f *Frame) Parent() *Frame {
+	return f.parent
+}
+
+func (f Frame) Log(msg string, args ...any) {
+	args = append(args, "frameId", f.id)
+	f.session.Log(msg, args...)
+}
+
+func (f Frame) Navigate(url string) error {
+	nav, err := page.Navigate(f, page.NavigateArgs{
+		Url:     url,
+		FrameId: f.id,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return val.Data, nil
+	if nav.ErrorText != "" {
+		return errors.New(nav.ErrorText)
+	}
+	if nav.LoaderId == "" {
+		return ErrNavigateNoLoader
+	}
+	return nil
 }
 
-// AddScriptToEvaluateOnNewDocument https://chromedevtools.github.io/devtools-protocol/tot/Page#method-addScriptToEvaluateOnNewDocument
-func (s Session) AddScriptToEvaluateOnNewDocument(source string) (page.ScriptIdentifier, error) {
-	val, err := page.AddScriptToEvaluateOnNewDocument(s, page.AddScriptToEvaluateOnNewDocumentArgs{
-		Source: source,
+func (f Frame) MustNavigate(url string) {
+	if err := f.Navigate(url); err != nil {
+		panic(err)
+	}
+}
+
+func (f Frame) Reload(ignoreCache bool, scriptToEvaluateOnLoad string) error {
+	return page.Reload(f, page.ReloadArgs{
+		IgnoreCache:            ignoreCache,
+		ScriptToEvaluateOnLoad: scriptToEvaluateOnLoad,
 	})
+}
+
+func (f Frame) MustReload(ignoreCache bool, scriptToEvaluateOnLoad string) {
+	if err := f.Reload(ignoreCache, scriptToEvaluateOnLoad); err != nil {
+		panic(err)
+	}
+}
+
+func (f Frame) Evaluate(expression string, awaitPromise bool) Optional[any] {
+	return optional[any](f.evaluate(expression, awaitPromise))
+}
+
+func (f Frame) Document() Optional[*Node] {
+	opt := optional[*Node](f.evaluate("document", true))
+	if opt.err == nil && opt.value == nil {
+		opt.err = NoSuchSelectorError("document")
+	}
+	if opt.value != nil {
+		opt.value.requestedSelector = "document"
+	}
+	return opt
+}
+
+func (f Frame) MustQuery(cssSelector string) *Node {
+	return f.Query(cssSelector).MustGetValue()
+}
+
+func (f Frame) Query(cssSelector string) Optional[*Node] {
+	doc, err := f.Document().Unwrap()
 	if err != nil {
-		return "", err
+		return Optional[*Node]{err: err}
 	}
-	return val.Identifier, nil
+	return doc.Query(cssSelector)
 }
 
-// RemoveScriptToEvaluateOnNewDocument https://chromedevtools.github.io/devtools-protocol/tot/Page#method-removeScriptToEvaluateOnNewDocument
-func (s Session) RemoveScriptToEvaluateOnNewDocument(identifier page.ScriptIdentifier) error {
-	return page.RemoveScriptToEvaluateOnNewDocument(s, page.RemoveScriptToEvaluateOnNewDocumentArgs{
-		Identifier: identifier,
-	})
+func (f Frame) MustQueryAll(cssSelector string) NodeList {
+	return f.QueryAll(cssSelector).MustGetValue()
 }
 
-// SetDownloadBehavior https://chromedevtools.github.io/devtools-protocol/tot/Page#method-setDownloadBehavior
-func (s Session) SetDownloadBehavior(behavior string, downloadPath string, eventsEnabled bool) error {
-	return browser.SetDownloadBehavior(s, browser.SetDownloadBehaviorArgs{
-		Behavior:      behavior,
-		DownloadPath:  downloadPath,
-		EventsEnabled: eventsEnabled, // default false
-	})
-}
-
-// HandleJavaScriptDialog ...
-func (s Session) HandleJavaScriptDialog(accept bool, promptText string) error {
-	return page.HandleJavaScriptDialog(s, page.HandleJavaScriptDialogArgs{
-		Accept:     accept,
-		PromptText: promptText,
-	})
-}
-
-func (s Session) GetLayoutMetrics() (*page.GetLayoutMetricsVal, error) {
-	view, err := page.GetLayoutMetrics(s)
+func (f Frame) QueryAll(cssSelector string) Optional[NodeList] {
+	doc, err := f.Document().Unwrap()
 	if err != nil {
-		return nil, err
+		return Optional[NodeList]{err: err}
 	}
-	return view, nil
+	return doc.QueryAll(cssSelector)
 }
