@@ -444,6 +444,7 @@ func (e Node) Click() (err error) {
 				if (b.isTrusted && d(b.target)) {
 					a('')
 				} else {
+				 	b.preventDefault()
 					b.stopImmediatePropagation()
 					a('target overlapped')
 				}
