@@ -12,11 +12,11 @@ import (
 	"github.com/ecwid/control/protocol/target"
 )
 
-func Take(args ...string) (session *Session, cancel func(), err error) {
+func Take(args ...string) (session *Session, cancel func() error, err error) {
 	return TakeWithContext(context.TODO(), nil, args...)
 }
 
-func TakeWithContext(ctx context.Context, logger *slog.Logger, chromeArgs ...string) (session *Session, cancel func(), err error) {
+func TakeWithContext(ctx context.Context, logger *slog.Logger, chromeArgs ...string) (session *Session, cancel func() error, err error) {
 	browser, err := chrome.Launch(ctx, chromeArgs...)
 	if err != nil {
 		return nil, nil, errors.Join(err, errors.New("chrome launch failed"))
@@ -33,13 +33,14 @@ func TakeWithContext(ctx context.Context, logger *slog.Logger, chromeArgs ...str
 	if err != nil {
 		return nil, nil, errors.Join(err, errors.New("failed to create a new session"))
 	}
-	teardown := func() {
+	teardown := func() error {
 		if err := transport.Close(); err != nil {
-			transport.Log(slog.LevelError, "can't close transport", "err", err.Error())
+			return errors.Join(err, errors.New("can't close transport"))
 		}
 		if err = browser.WaitCloseGracefully(); err != nil {
-			transport.Log(slog.LevelError, "can't close browser gracefully", "err", err.Error())
+			return errors.Join(err, errors.New("can't close browser gracefully"))
 		}
+		return nil
 	}
 	return session, teardown, nil
 }
