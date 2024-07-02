@@ -1,7 +1,6 @@
 package cdp
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -9,7 +8,6 @@ var BrokerChannelSize = 50000
 
 type subscriber struct {
 	sessionID string
-	desc      string
 	channel   chan Message
 }
 
@@ -57,18 +55,14 @@ func (b broker) run() {
 		case message := <-b.messages:
 			for _, subscriber := range value {
 				if message.SessionID == "" || subscriber.sessionID == "" || message.SessionID == subscriber.sessionID {
-					select {
-					case subscriber.channel <- message:
-					default:
-						fmt.Println(subscriber.desc, "channel is full")
-					}
+					subscriber.channel <- message
 				}
 			}
 		}
 	}
 }
 
-func (b broker) subscribe(sessionID, desc string) chan Message {
+func (b broker) subscribe(sessionID string) chan Message {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -78,7 +72,6 @@ func (b broker) subscribe(sessionID, desc string) chan Message {
 	default:
 		sub := subscriber{
 			sessionID: sessionID,
-			desc:      desc,
 			channel:   make(chan Message, BrokerChannelSize),
 		}
 		b.sub <- sub

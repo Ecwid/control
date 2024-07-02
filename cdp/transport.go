@@ -96,8 +96,8 @@ func (t *Transport) gracefullyClose() {
 	}
 }
 
-func (t *Transport) Subscribe(sessionID, desc string) (chan Message, func()) {
-	channel := t.broker.subscribe(sessionID, desc)
+func (t *Transport) Subscribe(sessionID string) (chan Message, func()) {
+	channel := t.broker.subscribe(sessionID)
 	return channel, func() {
 		if channel != nil {
 			t.broker.unsubscribe(channel)

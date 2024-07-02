@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -48,7 +47,7 @@ func TakeWithContext(ctx context.Context, logger *slog.Logger, chromeArgs ...str
 
 func Subscribe[T any](s *Session, method string, filter func(T) bool) cdp.Future[T] {
 	var (
-		channel, cancel = s.Subscribe(fmt.Sprintf("%s-listener", method))
+		channel, cancel = s.Subscribe()
 	)
 	callback := func(resolve func(T), reject func(error)) {
 		for value := range channel {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -125,8 +124,8 @@ func (s *Session) Call(method string, send, recv any) error {
 	return nil
 }
 
-func (s *Session) Subscribe(desc string) (channel chan cdp.Message, cancel func()) {
-	return s.transport.Subscribe(s.sessionID, desc)
+func (s *Session) Subscribe() (channel chan cdp.Message, cancel func()) {
+	return s.transport.Subscribe(s.sessionID)
 }
 
 func NewSession(transport *cdp.Transport, targetID target.TargetID) (*Session, error) {
@@ -153,7 +152,7 @@ func NewSession(transport *cdp.Transport, targetID target.TargetID) (*Session, e
 		return nil, err
 	}
 	session.sessionID = string(val.SessionId)
-	channel, unsubscribe := session.Subscribe("session-core-handler")
+	channel, unsubscribe := session.Subscribe()
 	go func() {
 		if err := session.handle(channel); err != nil {
 			unsubscribe()
@@ -229,7 +228,7 @@ func (s *Session) handle(channel chan cdp.Message) error {
 }
 
 func (s *Session) funcCalled(fn string) cdp.Future[runtime.BindingCalled] {
-	var channel, cancel = s.Subscribe(fmt.Sprintf("func-%s-called-listener", fn))
+	var channel, cancel = s.Subscribe()
 	callback := func(resolve func(runtime.BindingCalled), reject func(error)) {
 		for value := range channel {
 			if value.Method == "Runtime.bindingCalled" {
