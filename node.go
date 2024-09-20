@@ -239,7 +239,7 @@ func (e Node) Log(msg string, args ...any) {
 }
 
 func (e Node) HasClass(class string) Optional[bool] {
-	return optional[bool](e.eval(`function(c){return this.classList.contains(c)}`))
+	return optional[bool](e.eval(`function(c){return this.classList.contains(c)}`, class))
 }
 
 func (e Node) MustHasClass(class string) bool {
