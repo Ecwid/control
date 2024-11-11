@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -19,7 +18,6 @@ var MaxTimeToStart = 10 * time.Second
 
 type Chrome struct {
 	WebSocketUrl string
-	UserDataDir  string
 	StartArgs    string
 	cmd          *exec.Cmd
 }
@@ -61,13 +59,7 @@ func (c Chrome) NewTab(cli *http.Client, address string) (target Target, err err
 	return
 }
 
-func (c Chrome) WaitCloseGracefully() error {
-	defer func() {
-		err := os.RemoveAll(c.UserDataDir)
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+func (c Chrome) Wait() error {
 	return c.cmd.Wait()
 }
 
@@ -92,20 +84,14 @@ func bin() string {
 }
 
 func Launch(ctx context.Context, userFlags ...string) (value Chrome, err error) {
-	if value.UserDataDir, err = os.MkdirTemp("", "chrome-control-*"); err != nil {
-		return value, err
-	}
 	// https://github.com/GoogleChrome/chrome-launcher/blob/master/docs/chrome-flags-for-tools.md
 	// https://docs.google.com/spreadsheets/d/1n-vw_PCPS45jX3Jt9jQaAhFqBY6Ge1vWF_Pa0k7dCk4/edit#gid=1265672696
-	flags := []string{
-		"--remote-debugging-port=0",
-		"--user-data-dir=" + value.UserDataDir,
+	var flags = []string{"--remote-debugging-port=0"}
+	if os.Getuid() == 0 {
+		flags = append(flags, "--no-sandbox", "--disable-setuid-sandbox")
 	}
 	if len(userFlags) > 0 {
 		flags = append(flags, userFlags...)
-	}
-	if os.Getuid() == 0 {
-		flags = append(flags, "--no-sandbox", "--disable-setuid-sandbox")
 	}
 	binary := bin()
 	value.StartArgs = fmt.Sprint(binary, strings.Join(flags, " "))
