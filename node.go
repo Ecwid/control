@@ -474,6 +474,10 @@ func (e Node) MustClick() {
 	panicIfError(e.Click())
 }
 
+func (e Node) Press(key key.Definition) error {
+	return e.frame.session.kb.Press(key, time.Millisecond*85)
+}
+
 func (e Node) Down() (err error) {
 	if err = e.scrollIntoView(); err != nil {
 		return err
