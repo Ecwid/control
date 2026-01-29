@@ -62,6 +62,10 @@ type Session struct {
 	touch            Touch
 }
 
+func (s *Session) SetTimeout(timeout time.Duration) {
+	s.timeout = timeout
+}
+
 func (s *Session) Transport() *cdp.Transport {
 	return s.transport
 }
@@ -149,6 +153,7 @@ func NewSession(transport *cdp.Transport, targetID target.TargetID) (*Session, e
 		Flatten:  true,
 	})
 	if err != nil {
+		cancel(err)
 		return nil, err
 	}
 	session.sessionID = string(val.SessionId)
