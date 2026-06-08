@@ -291,26 +291,31 @@ type Initiator struct {
 	RequestId    RequestId           `json:"requestId,omitempty"`
 }
 
+type CookiePartitionKey struct {
+	TopLevelSite         string `json:"topLevelSite"`
+	HasCrossSiteAncestor bool   `json:"hasCrossSiteAncestor"`
+}
+
 /*
 Cookie object
 */
 type Cookie struct {
-	Name               string             `json:"name"`
-	Value              string             `json:"value"`
-	Domain             string             `json:"domain"`
-	Path               string             `json:"path"`
-	Expires            float64            `json:"expires"`
-	Size               int                `json:"size"`
-	HttpOnly           bool               `json:"httpOnly"`
-	Secure             bool               `json:"secure"`
-	Session            bool               `json:"session"`
-	SameSite           CookieSameSite     `json:"sameSite,omitempty"`
-	Priority           CookiePriority     `json:"priority"`
-	SameParty          bool               `json:"sameParty"`
-	SourceScheme       CookieSourceScheme `json:"sourceScheme"`
-	SourcePort         int                `json:"sourcePort"`
-	PartitionKey       string             `json:"partitionKey,omitempty"`
-	PartitionKeyOpaque bool               `json:"partitionKeyOpaque,omitempty"`
+	Name               string              `json:"name"`
+	Value              string              `json:"value"`
+	Domain             string              `json:"domain"`
+	Path               string              `json:"path"`
+	Expires            float64             `json:"expires"`
+	Size               int                 `json:"size"`
+	HttpOnly           bool                `json:"httpOnly"`
+	Secure             bool                `json:"secure"`
+	Session            bool                `json:"session"`
+	SameSite           CookieSameSite      `json:"sameSite,omitempty"`
+	Priority           CookiePriority      `json:"priority"`
+	SameParty          bool                `json:"sameParty"`
+	SourceScheme       CookieSourceScheme  `json:"sourceScheme"`
+	SourcePort         int                 `json:"sourcePort"`
+	PartitionKey       *CookiePartitionKey `json:"partitionKey,omitempty"`
+	PartitionKeyOpaque bool                `json:"partitionKeyOpaque,omitempty"`
 }
 
 /*
