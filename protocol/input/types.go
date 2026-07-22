@@ -14,8 +14,8 @@ type TouchPoint struct {
 	RotationAngle      float64 `json:"rotationAngle,omitempty"`
 	Force              float64 `json:"force,omitempty"`
 	TangentialPressure float64 `json:"tangentialPressure,omitempty"`
-	TiltX              int     `json:"tiltX,omitempty"`
-	TiltY              int     `json:"tiltY,omitempty"`
+	TiltX              float64 `json:"tiltX,omitempty"`
+	TiltY              float64 `json:"tiltY,omitempty"`
 	Twist              int     `json:"twist,omitempty"`
 	Id                 float64 `json:"id,omitempty"`
 }
@@ -99,8 +99,8 @@ type DispatchMouseEventArgs struct {
 	ClickCount         int                   `json:"clickCount,omitempty"`
 	Force              float64               `json:"force,omitempty"`
 	TangentialPressure float64               `json:"tangentialPressure,omitempty"`
-	TiltX              int                   `json:"tiltX,omitempty"`
-	TiltY              int                   `json:"tiltY,omitempty"`
+	TiltX              float64               `json:"tiltX,omitempty"`
+	TiltY              float64               `json:"tiltY,omitempty"`
 	Twist              int                   `json:"twist,omitempty"`
 	DeltaX             float64               `json:"deltaX,omitempty"`
 	DeltaY             float64               `json:"deltaY,omitempty"`

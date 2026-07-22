@@ -6,10 +6,6 @@ import (
 )
 
 /*
- */
-type StyleSheetId string
-
-/*
 	Stylesheet type: "injected" for stylesheets injected via extension, "user-agent" for user-agent
 
 stylesheets, "inspector" for stylesheets created by the inspector (i.e. those holding the "via
@@ -27,11 +23,27 @@ type PseudoElementMatches struct {
 }
 
 /*
+CSS style coming from animations with the name of the animation.
+*/
+type CSSAnimationStyle struct {
+	Name  string    `json:"name,omitempty"`
+	Style *CSSStyle `json:"style"`
+}
+
+/*
 Inherited CSS rule collection from ancestor node.
 */
 type InheritedStyleEntry struct {
 	InlineStyle     *CSSStyle    `json:"inlineStyle,omitempty"`
 	MatchedCSSRules []*RuleMatch `json:"matchedCSSRules"`
+}
+
+/*
+Inherited CSS style collection for animated styles from ancestor node.
+*/
+type InheritedAnimatedStyleEntry struct {
+	AnimationStyles  []*CSSAnimationStyle `json:"animationStyles,omitempty"`
+	TransitionsStyle *CSSStyle            `json:"transitionsStyle,omitempty"`
 }
 
 /*
@@ -53,8 +65,20 @@ type RuleMatch struct {
 Data for a simple selector (these are delimited by commas in a selector list).
 */
 type Value struct {
-	Text  string       `json:"text"`
-	Range *SourceRange `json:"range,omitempty"`
+	Text        string       `json:"text"`
+	Range       *SourceRange `json:"range,omitempty"`
+	Specificity *Specificity `json:"specificity,omitempty"`
+}
+
+/*
+	Specificity:
+
+https://drafts.csswg.org/selectors/#specificity-rules
+*/
+type Specificity struct {
+	A int `json:"a"`
+	B int `json:"b"`
+	C int `json:"c"`
 }
 
 /*
@@ -69,7 +93,7 @@ type SelectorList struct {
 CSS stylesheet metainformation.
 */
 type CSSStyleSheetHeader struct {
-	StyleSheetId  StyleSheetId      `json:"styleSheetId"`
+	StyleSheetId  dom.StyleSheetId  `json:"styleSheetId"`
 	FrameId       common.FrameId    `json:"frameId"`
 	SourceURL     string            `json:"sourceURL"`
 	SourceMapURL  string            `json:"sourceMapURL,omitempty"`
@@ -86,31 +110,44 @@ type CSSStyleSheetHeader struct {
 	Length        float64           `json:"length"`
 	EndLine       float64           `json:"endLine"`
 	EndColumn     float64           `json:"endColumn"`
+	LoadingFailed bool              `json:"loadingFailed,omitempty"`
 }
 
 /*
 CSS rule representation.
 */
 type CSSRule struct {
-	StyleSheetId     StyleSheetId         `json:"styleSheetId,omitempty"`
-	SelectorList     *SelectorList        `json:"selectorList"`
-	Origin           StyleSheetOrigin     `json:"origin"`
-	Style            *CSSStyle            `json:"style"`
-	Media            []*CSSMedia          `json:"media,omitempty"`
-	ContainerQueries []*CSSContainerQuery `json:"containerQueries,omitempty"`
-	Supports         []*CSSSupports       `json:"supports,omitempty"`
-	Layers           []*CSSLayer          `json:"layers,omitempty"`
-	Scopes           []*CSSScope          `json:"scopes,omitempty"`
+	StyleSheetId          dom.StyleSheetId     `json:"styleSheetId,omitempty"`
+	SelectorList          *SelectorList        `json:"selectorList"`
+	NestingSelectors      []string             `json:"nestingSelectors,omitempty"`
+	Origin                StyleSheetOrigin     `json:"origin"`
+	Style                 *CSSStyle            `json:"style"`
+	OriginTreeScopeNodeId dom.BackendNodeId    `json:"originTreeScopeNodeId,omitempty"`
+	Media                 []*CSSMedia          `json:"media,omitempty"`
+	ContainerQueries      []*CSSContainerQuery `json:"containerQueries,omitempty"`
+	Supports              []*CSSSupports       `json:"supports,omitempty"`
+	Layers                []*CSSLayer          `json:"layers,omitempty"`
+	Scopes                []*CSSScope          `json:"scopes,omitempty"`
+	RuleTypes             []CSSRuleType        `json:"ruleTypes,omitempty"`
+	StartingStyles        []*CSSStartingStyle  `json:"startingStyles,omitempty"`
+	Navigations           []*CSSNavigation     `json:"navigations,omitempty"`
 }
+
+/*
+	Enum indicating the type of a CSS rule, used to represent the order of a style rule's ancestors.
+
+This list only contains rule types that are collected during the ancestor rule collection.
+*/
+type CSSRuleType string
 
 /*
 CSS coverage information.
 */
 type RuleUsage struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
-	StartOffset  float64      `json:"startOffset"`
-	EndOffset    float64      `json:"endOffset"`
-	Used         bool         `json:"used"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	StartOffset  float64          `json:"startOffset"`
+	EndOffset    float64          `json:"endOffset"`
+	Used         bool             `json:"used"`
 }
 
 /*
@@ -139,10 +176,16 @@ type CSSComputedStyleProperty struct {
 }
 
 /*
+ */
+type ComputedStyleExtraFields struct {
+	IsAppearanceBase bool `json:"isAppearanceBase"`
+}
+
+/*
 CSS style representation.
 */
 type CSSStyle struct {
-	StyleSheetId     StyleSheetId      `json:"styleSheetId,omitempty"`
+	StyleSheetId     dom.StyleSheetId  `json:"styleSheetId,omitempty"`
 	CssProperties    []*CSSProperty    `json:"cssProperties"`
 	ShorthandEntries []*ShorthandEntry `json:"shorthandEntries"`
 	CssText          string            `json:"cssText,omitempty"`
@@ -168,12 +211,12 @@ type CSSProperty struct {
 CSS media rule descriptor.
 */
 type CSSMedia struct {
-	Text         string        `json:"text"`
-	Source       string        `json:"source"`
-	SourceURL    string        `json:"sourceURL,omitempty"`
-	Range        *SourceRange  `json:"range,omitempty"`
-	StyleSheetId StyleSheetId  `json:"styleSheetId,omitempty"`
-	MediaList    []*MediaQuery `json:"mediaList,omitempty"`
+	Text         string           `json:"text"`
+	Source       string           `json:"source"`
+	SourceURL    string           `json:"sourceURL,omitempty"`
+	Range        *SourceRange     `json:"range,omitempty"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId,omitempty"`
+	MediaList    []*MediaQuery    `json:"mediaList,omitempty"`
 }
 
 /*
@@ -199,40 +242,60 @@ type MediaQueryExpression struct {
 CSS container query rule descriptor.
 */
 type CSSContainerQuery struct {
-	Text         string           `json:"text"`
-	Range        *SourceRange     `json:"range,omitempty"`
-	StyleSheetId StyleSheetId     `json:"styleSheetId,omitempty"`
-	Name         string           `json:"name,omitempty"`
-	PhysicalAxes dom.PhysicalAxes `json:"physicalAxes,omitempty"`
-	LogicalAxes  dom.LogicalAxes  `json:"logicalAxes,omitempty"`
+	Range              *SourceRange     `json:"range,omitempty"`
+	StyleSheetId       dom.StyleSheetId `json:"styleSheetId,omitempty"`
+	Name               string           `json:"name,omitempty"`
+	PhysicalAxes       dom.PhysicalAxes `json:"physicalAxes,omitempty"`
+	LogicalAxes        dom.LogicalAxes  `json:"logicalAxes,omitempty"`
+	QueriesScrollState bool             `json:"queriesScrollState,omitempty"`
+	QueriesAnchored    bool             `json:"queriesAnchored,omitempty"`
+	ConditionText      string           `json:"conditionText"`
 }
 
 /*
 CSS Supports at-rule descriptor.
 */
 type CSSSupports struct {
-	Text         string       `json:"text"`
-	Active       bool         `json:"active"`
-	Range        *SourceRange `json:"range,omitempty"`
-	StyleSheetId StyleSheetId `json:"styleSheetId,omitempty"`
+	Text         string           `json:"text"`
+	Active       bool             `json:"active"`
+	Range        *SourceRange     `json:"range,omitempty"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId,omitempty"`
+}
+
+/*
+CSS Navigation at-rule descriptor.
+*/
+type CSSNavigation struct {
+	Text         string           `json:"text"`
+	Active       bool             `json:"active,omitempty"`
+	Range        *SourceRange     `json:"range,omitempty"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId,omitempty"`
 }
 
 /*
 CSS Scope at-rule descriptor.
 */
 type CSSScope struct {
-	Text         string       `json:"text"`
-	Range        *SourceRange `json:"range,omitempty"`
-	StyleSheetId StyleSheetId `json:"styleSheetId,omitempty"`
+	Text         string           `json:"text"`
+	Range        *SourceRange     `json:"range,omitempty"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId,omitempty"`
 }
 
 /*
 CSS Layer at-rule descriptor.
 */
 type CSSLayer struct {
-	Text         string       `json:"text"`
-	Range        *SourceRange `json:"range,omitempty"`
-	StyleSheetId StyleSheetId `json:"styleSheetId,omitempty"`
+	Text         string           `json:"text"`
+	Range        *SourceRange     `json:"range,omitempty"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId,omitempty"`
+}
+
+/*
+CSS Starting Style at-rule descriptor.
+*/
+type CSSStartingStyle struct {
+	Range        *SourceRange     `json:"range,omitempty"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId,omitempty"`
 }
 
 /*
@@ -248,9 +311,10 @@ type CSSLayerData struct {
 Information about amount of glyphs that were rendered with given font.
 */
 type PlatformFontUsage struct {
-	FamilyName   string  `json:"familyName"`
-	IsCustomFont bool    `json:"isCustomFont"`
-	GlyphCount   float64 `json:"glyphCount"`
+	FamilyName     string  `json:"familyName"`
+	PostScriptName string  `json:"postScriptName"`
+	IsCustomFont   bool    `json:"isCustomFont"`
+	GlyphCount     float64 `json:"glyphCount"`
 }
 
 /*
@@ -283,6 +347,26 @@ type FontFace struct {
 }
 
 /*
+CSS try rule representation.
+*/
+type CSSTryRule struct {
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId,omitempty"`
+	Origin       StyleSheetOrigin `json:"origin"`
+	Style        *CSSStyle        `json:"style"`
+}
+
+/*
+CSS @position-try rule representation.
+*/
+type CSSPositionTryRule struct {
+	Name         *Value           `json:"name"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId,omitempty"`
+	Origin       StyleSheetOrigin `json:"origin"`
+	Style        *CSSStyle        `json:"style"`
+	Active       bool             `json:"active"`
+}
+
+/*
 CSS keyframes rule representation.
 */
 type CSSKeyframesRule struct {
@@ -291,10 +375,82 @@ type CSSKeyframesRule struct {
 }
 
 /*
+Representation of a custom property registration through CSS.registerProperty
+*/
+type CSSPropertyRegistration struct {
+	PropertyName string `json:"propertyName"`
+	InitialValue *Value `json:"initialValue,omitempty"`
+	Inherits     bool   `json:"inherits"`
+	Syntax       string `json:"syntax"`
+}
+
+/*
+CSS generic @rule representation.
+*/
+type CSSAtRule struct {
+	Type         string           `json:"type"`
+	Subsection   string           `json:"subsection,omitempty"`
+	Name         *Value           `json:"name,omitempty"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId,omitempty"`
+	Origin       StyleSheetOrigin `json:"origin"`
+	Style        *CSSStyle        `json:"style"`
+}
+
+/*
+CSS property at-rule representation.
+*/
+type CSSPropertyRule struct {
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId,omitempty"`
+	Origin       StyleSheetOrigin `json:"origin"`
+	PropertyName *Value           `json:"propertyName"`
+	Style        *CSSStyle        `json:"style"`
+}
+
+/*
+CSS function argument representation.
+*/
+type CSSFunctionParameter struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+/*
+CSS function conditional block representation.
+*/
+type CSSFunctionConditionNode struct {
+	Media            *CSSMedia          `json:"media,omitempty"`
+	ContainerQueries *CSSContainerQuery `json:"containerQueries,omitempty"`
+	Supports         *CSSSupports       `json:"supports,omitempty"`
+	Navigation       *CSSNavigation     `json:"navigation,omitempty"`
+	Children         []*CSSFunctionNode `json:"children"`
+	ConditionText    string             `json:"conditionText"`
+}
+
+/*
+Section of the body of a CSS function rule.
+*/
+type CSSFunctionNode struct {
+	Condition *CSSFunctionConditionNode `json:"condition,omitempty"`
+	Style     *CSSStyle                 `json:"style,omitempty"`
+}
+
+/*
+CSS function at-rule representation.
+*/
+type CSSFunctionRule struct {
+	Name                  *Value                  `json:"name"`
+	StyleSheetId          dom.StyleSheetId        `json:"styleSheetId,omitempty"`
+	Origin                StyleSheetOrigin        `json:"origin"`
+	Parameters            []*CSSFunctionParameter `json:"parameters"`
+	Children              []*CSSFunctionNode      `json:"children"`
+	OriginTreeScopeNodeId dom.BackendNodeId       `json:"originTreeScopeNodeId,omitempty"`
+}
+
+/*
 CSS keyframe rule representation.
 */
 type CSSKeyframeRule struct {
-	StyleSheetId StyleSheetId     `json:"styleSheetId,omitempty"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId,omitempty"`
 	Origin       StyleSheetOrigin `json:"origin"`
 	KeyText      *Value           `json:"keyText"`
 	Style        *CSSStyle        `json:"style"`
@@ -304,15 +460,16 @@ type CSSKeyframeRule struct {
 A descriptor of operation to mutate style declaration text.
 */
 type StyleDeclarationEdit struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
-	Range        *SourceRange `json:"range"`
-	Text         string       `json:"text"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange     `json:"range"`
+	Text         string           `json:"text"`
 }
 
 type AddRuleArgs struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
-	RuleText     string       `json:"ruleText"`
-	Location     *SourceRange `json:"location"`
+	StyleSheetId                    dom.StyleSheetId `json:"styleSheetId"`
+	RuleText                        string           `json:"ruleText"`
+	Location                        *SourceRange     `json:"location"`
+	NodeForPropertySyntaxValidation dom.NodeId       `json:"nodeForPropertySyntaxValidation,omitempty"`
 }
 
 type AddRuleVal struct {
@@ -320,7 +477,7 @@ type AddRuleVal struct {
 }
 
 type CollectClassNamesArgs struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
 }
 
 type CollectClassNamesVal struct {
@@ -329,15 +486,21 @@ type CollectClassNamesVal struct {
 
 type CreateStyleSheetArgs struct {
 	FrameId common.FrameId `json:"frameId"`
+	Force   bool           `json:"force,omitempty"`
 }
 
 type CreateStyleSheetVal struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
 }
 
 type ForcePseudoStateArgs struct {
 	NodeId              dom.NodeId `json:"nodeId"`
 	ForcedPseudoClasses []string   `json:"forcedPseudoClasses"`
+}
+
+type ForceStartingStyleArgs struct {
+	NodeId dom.NodeId `json:"nodeId"`
+	Forced bool       `json:"forced"`
 }
 
 type GetBackgroundColorsArgs struct {
@@ -356,6 +519,28 @@ type GetComputedStyleForNodeArgs struct {
 
 type GetComputedStyleForNodeVal struct {
 	ComputedStyle []*CSSComputedStyleProperty `json:"computedStyle"`
+	ExtraFields   *ComputedStyleExtraFields   `json:"extraFields"`
+}
+
+type ResolveValuesArgs struct {
+	Values           []string       `json:"values"`
+	NodeId           dom.NodeId     `json:"nodeId"`
+	PropertyName     string         `json:"propertyName,omitempty"`
+	PseudoType       dom.PseudoType `json:"pseudoType,omitempty"`
+	PseudoIdentifier string         `json:"pseudoIdentifier,omitempty"`
+}
+
+type ResolveValuesVal struct {
+	Results []string `json:"results"`
+}
+
+type GetLonghandPropertiesArgs struct {
+	ShorthandName string `json:"shorthandName"`
+	Value         string `json:"value"`
+}
+
+type GetLonghandPropertiesVal struct {
+	LonghandProperties []*CSSProperty `json:"longhandProperties"`
 }
 
 type GetInlineStylesForNodeArgs struct {
@@ -367,19 +552,39 @@ type GetInlineStylesForNodeVal struct {
 	AttributesStyle *CSSStyle `json:"attributesStyle,omitempty"`
 }
 
+type GetAnimatedStylesForNodeArgs struct {
+	NodeId dom.NodeId `json:"nodeId"`
+}
+
+type GetAnimatedStylesForNodeVal struct {
+	AnimationStyles  []*CSSAnimationStyle           `json:"animationStyles,omitempty"`
+	TransitionsStyle *CSSStyle                      `json:"transitionsStyle,omitempty"`
+	Inherited        []*InheritedAnimatedStyleEntry `json:"inherited,omitempty"`
+}
+
 type GetMatchedStylesForNodeArgs struct {
 	NodeId dom.NodeId `json:"nodeId"`
 }
 
 type GetMatchedStylesForNodeVal struct {
-	InlineStyle             *CSSStyle                        `json:"inlineStyle,omitempty"`
-	AttributesStyle         *CSSStyle                        `json:"attributesStyle,omitempty"`
-	MatchedCSSRules         []*RuleMatch                     `json:"matchedCSSRules,omitempty"`
-	PseudoElements          []*PseudoElementMatches          `json:"pseudoElements,omitempty"`
-	Inherited               []*InheritedStyleEntry           `json:"inherited,omitempty"`
-	InheritedPseudoElements []*InheritedPseudoElementMatches `json:"inheritedPseudoElements,omitempty"`
-	CssKeyframesRules       []*CSSKeyframesRule              `json:"cssKeyframesRules,omitempty"`
-	ParentLayoutNodeId      dom.NodeId                       `json:"parentLayoutNodeId,omitempty"`
+	InlineStyle                 *CSSStyle                        `json:"inlineStyle,omitempty"`
+	AttributesStyle             *CSSStyle                        `json:"attributesStyle,omitempty"`
+	MatchedCSSRules             []*RuleMatch                     `json:"matchedCSSRules,omitempty"`
+	PseudoElements              []*PseudoElementMatches          `json:"pseudoElements,omitempty"`
+	Inherited                   []*InheritedStyleEntry           `json:"inherited,omitempty"`
+	InheritedPseudoElements     []*InheritedPseudoElementMatches `json:"inheritedPseudoElements,omitempty"`
+	CssKeyframesRules           []*CSSKeyframesRule              `json:"cssKeyframesRules,omitempty"`
+	CssPositionTryRules         []*CSSPositionTryRule            `json:"cssPositionTryRules,omitempty"`
+	ActivePositionFallbackIndex int                              `json:"activePositionFallbackIndex,omitempty"`
+	CssPropertyRules            []*CSSPropertyRule               `json:"cssPropertyRules,omitempty"`
+	CssPropertyRegistrations    []*CSSPropertyRegistration       `json:"cssPropertyRegistrations,omitempty"`
+	CssAtRules                  []*CSSAtRule                     `json:"cssAtRules,omitempty"`
+	ParentLayoutNodeId          dom.NodeId                       `json:"parentLayoutNodeId,omitempty"`
+	CssFunctionRules            []*CSSFunctionRule               `json:"cssFunctionRules,omitempty"`
+}
+
+type GetEnvironmentVariablesVal struct {
+	EnvironmentVariables any `json:"environmentVariables"`
 }
 
 type GetMediaQueriesVal struct {
@@ -395,7 +600,7 @@ type GetPlatformFontsForNodeVal struct {
 }
 
 type GetStyleSheetTextArgs struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
 }
 
 type GetStyleSheetTextVal struct {
@@ -408,6 +613,19 @@ type GetLayersForNodeArgs struct {
 
 type GetLayersForNodeVal struct {
 	RootLayer *CSSLayerData `json:"rootLayer"`
+}
+
+type GetLocationForSelectorArgs struct {
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	SelectorText string           `json:"selectorText"`
+}
+
+type GetLocationForSelectorVal struct {
+	Ranges []*SourceRange `json:"ranges"`
+}
+
+type TrackComputedStyleUpdatesForNodeArgs struct {
+	NodeId dom.NodeId `json:"nodeId,omitempty"`
 }
 
 type TrackComputedStyleUpdatesArgs struct {
@@ -424,10 +642,20 @@ type SetEffectivePropertyValueForNodeArgs struct {
 	Value        string     `json:"value"`
 }
 
+type SetPropertyRulePropertyNameArgs struct {
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange     `json:"range"`
+	PropertyName string           `json:"propertyName"`
+}
+
+type SetPropertyRulePropertyNameVal struct {
+	PropertyName *Value `json:"propertyName"`
+}
+
 type SetKeyframeKeyArgs struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
-	Range        *SourceRange `json:"range"`
-	KeyText      string       `json:"keyText"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange     `json:"range"`
+	KeyText      string           `json:"keyText"`
 }
 
 type SetKeyframeKeyVal struct {
@@ -435,39 +663,49 @@ type SetKeyframeKeyVal struct {
 }
 
 type SetMediaTextArgs struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
-	Range        *SourceRange `json:"range"`
-	Text         string       `json:"text"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange     `json:"range"`
+	Text         string           `json:"text"`
 }
 
 type SetMediaTextVal struct {
 	Media *CSSMedia `json:"media"`
 }
 
-type SetContainerQueryTextArgs struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
-	Range        *SourceRange `json:"range"`
-	Text         string       `json:"text"`
+type SetContainerQueryConditionTextArgs struct {
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange     `json:"range"`
+	Text         string           `json:"text"`
 }
 
-type SetContainerQueryTextVal struct {
+type SetContainerQueryConditionTextVal struct {
 	ContainerQuery *CSSContainerQuery `json:"containerQuery"`
 }
 
 type SetSupportsTextArgs struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
-	Range        *SourceRange `json:"range"`
-	Text         string       `json:"text"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange     `json:"range"`
+	Text         string           `json:"text"`
 }
 
 type SetSupportsTextVal struct {
 	Supports *CSSSupports `json:"supports"`
 }
 
+type SetNavigationTextArgs struct {
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange     `json:"range"`
+	Text         string           `json:"text"`
+}
+
+type SetNavigationTextVal struct {
+	Navigation *CSSNavigation `json:"navigation"`
+}
+
 type SetScopeTextArgs struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
-	Range        *SourceRange `json:"range"`
-	Text         string       `json:"text"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange     `json:"range"`
+	Text         string           `json:"text"`
 }
 
 type SetScopeTextVal struct {
@@ -475,9 +713,9 @@ type SetScopeTextVal struct {
 }
 
 type SetRuleSelectorArgs struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
-	Range        *SourceRange `json:"range"`
-	Selector     string       `json:"selector"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	Range        *SourceRange     `json:"range"`
+	Selector     string           `json:"selector"`
 }
 
 type SetRuleSelectorVal struct {
@@ -485,8 +723,8 @@ type SetRuleSelectorVal struct {
 }
 
 type SetStyleSheetTextArgs struct {
-	StyleSheetId StyleSheetId `json:"styleSheetId"`
-	Text         string       `json:"text"`
+	StyleSheetId dom.StyleSheetId `json:"styleSheetId"`
+	Text         string           `json:"text"`
 }
 
 type SetStyleSheetTextVal struct {
@@ -494,7 +732,8 @@ type SetStyleSheetTextVal struct {
 }
 
 type SetStyleTextsArgs struct {
-	Edits []*StyleDeclarationEdit `json:"edits"`
+	Edits                           []*StyleDeclarationEdit `json:"edits"`
+	NodeForPropertySyntaxValidation dom.NodeId              `json:"nodeForPropertySyntaxValidation,omitempty"`
 }
 
 type SetStyleTextsVal struct {

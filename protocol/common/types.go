@@ -15,7 +15,7 @@ type Rect struct {
 }
 
 /*
-	Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
+	Used to specify User Agent Client Hints to emulate. See https://wicg.github.io/ua-client-hints
 
 Missing optional values will be filled in by the target with what it would normally use.
 */
@@ -29,10 +29,11 @@ type UserAgentMetadata struct {
 	Mobile          bool                     `json:"mobile"`
 	Bitness         string                   `json:"bitness,omitempty"`
 	Wow64           bool                     `json:"wow64,omitempty"`
+	FormFactors     []string                 `json:"formFactors,omitempty"`
 }
 
 /*
-Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
+Used to specify User Agent Client Hints to emulate. See https://wicg.github.io/ua-client-hints
 */
 type UserAgentBrandVersion struct {
 	Brand   string `json:"brand"`

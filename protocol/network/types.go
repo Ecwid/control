@@ -19,7 +19,10 @@ Unique loader identifier.
 type LoaderId string
 
 /*
-Unique request identifier.
+	Unique network request identifier.
+
+Note that this does not identify individual HTTP requests that are part of
+a network request.
 */
 type RequestId string
 
@@ -46,7 +49,7 @@ type MonotonicTime float64
 /*
 Request / response headers as keys / values of JSON object.
 */
-type Headers interface{}
+type Headers any
 
 /*
 The underlying connection technology that the browser is supposedly using.
@@ -79,30 +82,38 @@ type CookieSourceScheme string
 Timing information for the request.
 */
 type ResourceTiming struct {
-	RequestTime              float64 `json:"requestTime"`
-	ProxyStart               float64 `json:"proxyStart"`
-	ProxyEnd                 float64 `json:"proxyEnd"`
-	DnsStart                 float64 `json:"dnsStart"`
-	DnsEnd                   float64 `json:"dnsEnd"`
-	ConnectStart             float64 `json:"connectStart"`
-	ConnectEnd               float64 `json:"connectEnd"`
-	SslStart                 float64 `json:"sslStart"`
-	SslEnd                   float64 `json:"sslEnd"`
-	WorkerStart              float64 `json:"workerStart"`
-	WorkerReady              float64 `json:"workerReady"`
-	WorkerFetchStart         float64 `json:"workerFetchStart"`
-	WorkerRespondWithSettled float64 `json:"workerRespondWithSettled"`
-	SendStart                float64 `json:"sendStart"`
-	SendEnd                  float64 `json:"sendEnd"`
-	PushStart                float64 `json:"pushStart"`
-	PushEnd                  float64 `json:"pushEnd"`
-	ReceiveHeadersEnd        float64 `json:"receiveHeadersEnd"`
+	RequestTime                 float64 `json:"requestTime"`
+	ProxyStart                  float64 `json:"proxyStart"`
+	ProxyEnd                    float64 `json:"proxyEnd"`
+	DnsStart                    float64 `json:"dnsStart"`
+	DnsEnd                      float64 `json:"dnsEnd"`
+	ConnectStart                float64 `json:"connectStart"`
+	ConnectEnd                  float64 `json:"connectEnd"`
+	SslStart                    float64 `json:"sslStart"`
+	SslEnd                      float64 `json:"sslEnd"`
+	WorkerStart                 float64 `json:"workerStart"`
+	WorkerReady                 float64 `json:"workerReady"`
+	WorkerFetchStart            float64 `json:"workerFetchStart"`
+	WorkerRespondWithSettled    float64 `json:"workerRespondWithSettled"`
+	WorkerRouterEvaluationStart float64 `json:"workerRouterEvaluationStart,omitempty"`
+	WorkerCacheLookupStart      float64 `json:"workerCacheLookupStart,omitempty"`
+	SendStart                   float64 `json:"sendStart"`
+	SendEnd                     float64 `json:"sendEnd"`
+	PushStart                   float64 `json:"pushStart"`
+	PushEnd                     float64 `json:"pushEnd"`
+	ReceiveHeadersStart         float64 `json:"receiveHeadersStart"`
+	ReceiveHeadersEnd           float64 `json:"receiveHeadersEnd"`
 }
 
 /*
 Loading priority of a resource request.
 */
 type ResourcePriority string
+
+/*
+The render-blocking behavior of a resource request.
+*/
+type RenderBlockingBehavior string
 
 /*
 Post data entry for HTTP request
@@ -119,7 +130,6 @@ type Request struct {
 	UrlFragment      string                    `json:"urlFragment,omitempty"`
 	Method           string                    `json:"method"`
 	Headers          *Headers                  `json:"headers"`
-	PostData         string                    `json:"postData,omitempty"`
 	HasPostData      bool                      `json:"hasPostData,omitempty"`
 	PostDataEntries  []*PostDataEntry          `json:"postDataEntries,omitempty"`
 	MixedContentType security.MixedContentType `json:"mixedContentType,omitempty"`
@@ -128,6 +138,7 @@ type Request struct {
 	IsLinkPreload    bool                      `json:"isLinkPreload,omitempty"`
 	TrustTokenParams *TrustTokenParams         `json:"trustTokenParams,omitempty"`
 	IsSameSite       bool                      `json:"isSameSite,omitempty"`
+	IsAdRelated      bool                      `json:"isAdRelated,omitempty"`
 }
 
 /*
@@ -214,6 +225,19 @@ The reason why Chrome uses a specific transport protocol for HTTP semantics.
 type AlternateProtocolUsage string
 
 /*
+Source of service worker router.
+*/
+type ServiceWorkerRouterSource string
+
+/*
+ */
+type ServiceWorkerRouterInfo struct {
+	RuleIdMatched     int                       `json:"ruleIdMatched,omitempty"`
+	MatchedSourceType ServiceWorkerRouterSource `json:"matchedSourceType,omitempty"`
+	ActualSourceType  ServiceWorkerRouterSource `json:"actualSourceType,omitempty"`
+}
+
+/*
 HTTP response data.
 */
 type Response struct {
@@ -222,6 +246,7 @@ type Response struct {
 	StatusText                  string                      `json:"statusText"`
 	Headers                     *Headers                    `json:"headers"`
 	MimeType                    string                      `json:"mimeType"`
+	Charset                     string                      `json:"charset"`
 	RequestHeaders              *Headers                    `json:"requestHeaders,omitempty"`
 	ConnectionReused            bool                        `json:"connectionReused"`
 	ConnectionId                float64                     `json:"connectionId"`
@@ -230,6 +255,8 @@ type Response struct {
 	FromDiskCache               bool                        `json:"fromDiskCache,omitempty"`
 	FromServiceWorker           bool                        `json:"fromServiceWorker,omitempty"`
 	FromPrefetchCache           bool                        `json:"fromPrefetchCache,omitempty"`
+	FromEarlyHints              bool                        `json:"fromEarlyHints,omitempty"`
+	ServiceWorkerRouterInfo     *ServiceWorkerRouterInfo    `json:"serviceWorkerRouterInfo,omitempty"`
 	EncodedDataLength           float64                     `json:"encodedDataLength"`
 	Timing                      *ResourceTiming             `json:"timing,omitempty"`
 	ServiceWorkerResponseSource ServiceWorkerResponseSource `json:"serviceWorkerResponseSource,omitempty"`
@@ -291,6 +318,11 @@ type Initiator struct {
 	RequestId    RequestId           `json:"requestId,omitempty"`
 }
 
+/*
+	cookiePartitionKey object
+
+The representation of the components of the key that are created by the cookiePartitionKey class contained in net/cookies/cookie_partition_key.h.
+*/
 type CookiePartitionKey struct {
 	TopLevelSite         string `json:"topLevelSite"`
 	HasCrossSiteAncestor bool   `json:"hasCrossSiteAncestor"`
@@ -311,7 +343,6 @@ type Cookie struct {
 	Session            bool                `json:"session"`
 	SameSite           CookieSameSite      `json:"sameSite,omitempty"`
 	Priority           CookiePriority      `json:"priority"`
-	SameParty          bool                `json:"sameParty"`
 	SourceScheme       CookieSourceScheme  `json:"sourceScheme"`
 	SourcePort         int                 `json:"sourcePort"`
 	PartitionKey       *CookiePartitionKey `json:"partitionKey,omitempty"`
@@ -329,6 +360,11 @@ Types of reasons why a cookie may not be sent with a request.
 type CookieBlockedReason string
 
 /*
+Types of reasons why a cookie should have been blocked by 3PCD but is exempted for the request.
+*/
+type CookieExemptionReason string
+
+/*
 A cookie which was not stored from a response with the corresponding reason.
 */
 type BlockedSetCookieWithReason struct {
@@ -338,11 +374,25 @@ type BlockedSetCookieWithReason struct {
 }
 
 /*
-A cookie with was not sent with a request with the corresponding reason.
+	A cookie should have been blocked by 3PCD but is exempted and stored from a response with the
+
+corresponding reason. A cookie could only have at most one exemption reason.
 */
-type BlockedCookieWithReason struct {
-	BlockedReasons []CookieBlockedReason `json:"blockedReasons"`
-	Cookie         *Cookie               `json:"cookie"`
+type ExemptedSetCookieWithReason struct {
+	ExemptionReason CookieExemptionReason `json:"exemptionReason"`
+	CookieLine      string                `json:"cookieLine"`
+	Cookie          *Cookie               `json:"cookie"`
+}
+
+/*
+	A cookie associated with the request which may or may not be sent with it.
+
+Includes the cookies itself and reasons for blocking or exemption.
+*/
+type AssociatedCookie struct {
+	Cookie          *Cookie               `json:"cookie"`
+	BlockedReasons  []CookieBlockedReason `json:"blockedReasons"`
+	ExemptionReason CookieExemptionReason `json:"exemptionReason,omitempty"`
 }
 
 /*
@@ -359,10 +409,9 @@ type CookieParam struct {
 	SameSite     CookieSameSite        `json:"sameSite,omitempty"`
 	Expires      common.TimeSinceEpoch `json:"expires,omitempty"`
 	Priority     CookiePriority        `json:"priority,omitempty"`
-	SameParty    bool                  `json:"sameParty,omitempty"`
 	SourceScheme CookieSourceScheme    `json:"sourceScheme,omitempty"`
 	SourcePort   int                   `json:"sourcePort,omitempty"`
-	PartitionKey string                `json:"partitionKey,omitempty"`
+	PartitionKey *CookiePartitionKey   `json:"partitionKey,omitempty"`
 }
 
 /*
@@ -449,6 +498,7 @@ Information about a signed exchange response.
 */
 type SignedExchangeInfo struct {
 	OuterResponse   *Response              `json:"outerResponse"`
+	HasExtraInfo    bool                   `json:"hasExtraInfo"`
 	Header          *SignedExchangeHeader  `json:"header,omitempty"`
 	SecurityDetails *SecurityDetails       `json:"securityDetails,omitempty"`
 	Errors          []*SignedExchangeError `json:"errors,omitempty"`
@@ -461,7 +511,65 @@ type ContentEncoding string
 
 /*
  */
-type PrivateNetworkRequestPolicy string
+type NetworkConditions struct {
+	UrlPattern         string         `json:"urlPattern"`
+	Latency            float64        `json:"latency"`
+	DownloadThroughput float64        `json:"downloadThroughput"`
+	UploadThroughput   float64        `json:"uploadThroughput"`
+	ConnectionType     ConnectionType `json:"connectionType,omitempty"`
+	PacketLoss         float64        `json:"packetLoss,omitempty"`
+	PacketQueueLength  int            `json:"packetQueueLength,omitempty"`
+	PacketReordering   bool           `json:"packetReordering,omitempty"`
+	Offline            bool           `json:"offline,omitempty"`
+}
+
+/*
+ */
+type BlockPattern struct {
+	UrlPattern string `json:"urlPattern"`
+	Block      bool   `json:"block"`
+}
+
+/*
+ */
+type DirectSocketDnsQueryType string
+
+/*
+ */
+type DirectTCPSocketOptions struct {
+	NoDelay           bool                     `json:"noDelay"`
+	KeepAliveDelay    float64                  `json:"keepAliveDelay,omitempty"`
+	SendBufferSize    float64                  `json:"sendBufferSize,omitempty"`
+	ReceiveBufferSize float64                  `json:"receiveBufferSize,omitempty"`
+	DnsQueryType      DirectSocketDnsQueryType `json:"dnsQueryType,omitempty"`
+}
+
+/*
+ */
+type DirectUDPSocketOptions struct {
+	RemoteAddr                   string                   `json:"remoteAddr,omitempty"`
+	RemotePort                   int                      `json:"remotePort,omitempty"`
+	LocalAddr                    string                   `json:"localAddr,omitempty"`
+	LocalPort                    int                      `json:"localPort,omitempty"`
+	DnsQueryType                 DirectSocketDnsQueryType `json:"dnsQueryType,omitempty"`
+	SendBufferSize               float64                  `json:"sendBufferSize,omitempty"`
+	ReceiveBufferSize            float64                  `json:"receiveBufferSize,omitempty"`
+	MulticastLoopback            bool                     `json:"multicastLoopback,omitempty"`
+	MulticastTimeToLive          int                      `json:"multicastTimeToLive,omitempty"`
+	MulticastAllowAddressSharing bool                     `json:"multicastAllowAddressSharing,omitempty"`
+}
+
+/*
+ */
+type DirectUDPMessage struct {
+	Data       []byte `json:"data"`
+	RemoteAddr string `json:"remoteAddr,omitempty"`
+	RemotePort int    `json:"remotePort,omitempty"`
+}
+
+/*
+ */
+type LocalNetworkAccessRequestPolicy string
 
 /*
  */
@@ -476,9 +584,46 @@ type ConnectTiming struct {
 /*
  */
 type ClientSecurityState struct {
-	InitiatorIsSecureContext    bool                        `json:"initiatorIsSecureContext"`
-	InitiatorIPAddressSpace     IPAddressSpace              `json:"initiatorIPAddressSpace"`
-	PrivateNetworkRequestPolicy PrivateNetworkRequestPolicy `json:"privateNetworkRequestPolicy"`
+	InitiatorIsSecureContext        bool                            `json:"initiatorIsSecureContext"`
+	InitiatorIPAddressSpace         IPAddressSpace                  `json:"initiatorIPAddressSpace"`
+	LocalNetworkAccessRequestPolicy LocalNetworkAccessRequestPolicy `json:"localNetworkAccessRequestPolicy"`
+}
+
+/*
+	Identifies the script on the stack that caused a resource or element to be
+
+labeled as an ad. For resources, this indicates the context that triggered
+the fetch. For elements, this indicates the context that caused the element
+to be appended to the DOM.
+*/
+type AdScriptIdentifier struct {
+	ScriptId   runtime.ScriptId         `json:"scriptId"`
+	DebuggerId runtime.UniqueDebuggerId `json:"debuggerId"`
+	Name       string                   `json:"name"`
+}
+
+/*
+	Encapsulates the script ancestry and the root script filter list rule that
+
+caused the resource or element to be labeled as an ad.
+*/
+type AdAncestry struct {
+	AncestryChain            []*AdScriptIdentifier `json:"ancestryChain"`
+	RootScriptFilterlistRule string                `json:"rootScriptFilterlistRule,omitempty"`
+}
+
+/*
+	Represents the provenance of an ad resource or element. Only one of
+
+`filterlistRule` or `adScriptAncestry` can be set. If `filterlistRule`
+is provided, the resource URL directly matches a filter list rule. If
+`adScriptAncestry` is provided, an ad script initiated the resource fetch or
+appended the element to the DOM. If neither is provided, the entity is
+known to be an ad, but provenance tracking information is unavailable.
+*/
+type AdProvenance struct {
+	FilterlistRule   string      `json:"filterlistRule,omitempty"`
+	AdScriptAncestry *AdAncestry `json:"adScriptAncestry,omitempty"`
 }
 
 /*
@@ -509,9 +654,22 @@ type CrossOriginEmbedderPolicyStatus struct {
 
 /*
  */
+type ContentSecurityPolicySource string
+
+/*
+ */
+type ContentSecurityPolicyStatus struct {
+	EffectiveDirectives string                      `json:"effectiveDirectives"`
+	IsEnforced          bool                        `json:"isEnforced"`
+	Source              ContentSecurityPolicySource `json:"source"`
+}
+
+/*
+ */
 type SecurityIsolationStatus struct {
 	Coop *CrossOriginOpenerPolicyStatus   `json:"coop,omitempty"`
 	Coep *CrossOriginEmbedderPolicyStatus `json:"coep,omitempty"`
+	Csp  []*ContentSecurityPolicyStatus   `json:"csp,omitempty"`
 }
 
 /*
@@ -534,7 +692,7 @@ type ReportingApiReport struct {
 	Timestamp         common.TimeSinceEpoch `json:"timestamp"`
 	Depth             int                   `json:"depth"`
 	CompletedAttempts int                   `json:"completedAttempts"`
-	Body              interface{}           `json:"body"`
+	Body              any                   `json:"body"`
 	Status            ReportStatus          `json:"status"`
 }
 
@@ -543,6 +701,120 @@ type ReportingApiReport struct {
 type ReportingApiEndpoint struct {
 	Url       string `json:"url"`
 	GroupName string `json:"groupName"`
+}
+
+/*
+Unique identifier for a device bound session.
+*/
+type DeviceBoundSessionKey struct {
+	Site string `json:"site"`
+	Id   string `json:"id"`
+}
+
+/*
+How a device bound session was used during a request.
+*/
+type DeviceBoundSessionWithUsage struct {
+	SessionKey *DeviceBoundSessionKey `json:"sessionKey"`
+	Usage      string                 `json:"usage"`
+}
+
+/*
+A device bound session's cookie craving.
+*/
+type DeviceBoundSessionCookieCraving struct {
+	Name     string         `json:"name"`
+	Domain   string         `json:"domain"`
+	Path     string         `json:"path"`
+	Secure   bool           `json:"secure"`
+	HttpOnly bool           `json:"httpOnly"`
+	SameSite CookieSameSite `json:"sameSite,omitempty"`
+}
+
+/*
+A device bound session's inclusion URL rule.
+*/
+type DeviceBoundSessionUrlRule struct {
+	RuleType    string `json:"ruleType"`
+	HostPattern string `json:"hostPattern"`
+	PathPrefix  string `json:"pathPrefix"`
+}
+
+/*
+A device bound session's inclusion rules.
+*/
+type DeviceBoundSessionInclusionRules struct {
+	Origin      string                       `json:"origin"`
+	IncludeSite bool                         `json:"includeSite"`
+	UrlRules    []*DeviceBoundSessionUrlRule `json:"urlRules"`
+}
+
+/*
+A device bound session.
+*/
+type DeviceBoundSession struct {
+	Key                      *DeviceBoundSessionKey             `json:"key"`
+	RefreshUrl               string                             `json:"refreshUrl"`
+	InclusionRules           *DeviceBoundSessionInclusionRules  `json:"inclusionRules"`
+	CookieCravings           []*DeviceBoundSessionCookieCraving `json:"cookieCravings"`
+	ExpiryDate               common.TimeSinceEpoch              `json:"expiryDate"`
+	CachedChallenge          string                             `json:"cachedChallenge,omitempty"`
+	AllowedRefreshInitiators []string                           `json:"allowedRefreshInitiators"`
+}
+
+/*
+A unique identifier for a device bound session event.
+*/
+type DeviceBoundSessionEventId string
+
+/*
+A fetch result for a device bound session creation or refresh.
+*/
+type DeviceBoundSessionFetchResult string
+
+/*
+Details about a failed device bound session network request.
+*/
+type DeviceBoundSessionFailedRequest struct {
+	RequestUrl        string `json:"requestUrl"`
+	NetError          string `json:"netError,omitempty"`
+	ResponseError     int    `json:"responseError,omitempty"`
+	ResponseErrorBody string `json:"responseErrorBody,omitempty"`
+}
+
+/*
+Session event details specific to creation.
+*/
+type CreationEventDetails struct {
+	FetchResult   DeviceBoundSessionFetchResult    `json:"fetchResult"`
+	NewSession    *DeviceBoundSession              `json:"newSession,omitempty"`
+	FailedRequest *DeviceBoundSessionFailedRequest `json:"failedRequest,omitempty"`
+}
+
+/*
+Session event details specific to refresh.
+*/
+type RefreshEventDetails struct {
+	RefreshResult            string                           `json:"refreshResult"`
+	FetchResult              DeviceBoundSessionFetchResult    `json:"fetchResult,omitempty"`
+	NewSession               *DeviceBoundSession              `json:"newSession,omitempty"`
+	WasFullyProactiveRefresh bool                             `json:"wasFullyProactiveRefresh"`
+	FailedRequest            *DeviceBoundSessionFailedRequest `json:"failedRequest,omitempty"`
+}
+
+/*
+Session event details specific to termination.
+*/
+type TerminationEventDetails struct {
+	DeletionReason string `json:"deletionReason"`
+}
+
+/*
+Session event details specific to challenges.
+*/
+type ChallengeEventDetails struct {
+	ChallengeResult string `json:"challengeResult"`
+	Challenge       string `json:"challenge"`
 }
 
 /*
@@ -572,13 +844,23 @@ type SetAcceptedEncodingsArgs struct {
 }
 
 type DeleteCookiesArgs struct {
-	Name   string `json:"name"`
-	Url    string `json:"url,omitempty"`
-	Domain string `json:"domain,omitempty"`
-	Path   string `json:"path,omitempty"`
+	Name         string              `json:"name"`
+	Url          string              `json:"url,omitempty"`
+	Domain       string              `json:"domain,omitempty"`
+	Path         string              `json:"path,omitempty"`
+	PartitionKey *CookiePartitionKey `json:"partitionKey,omitempty"`
 }
 
-type EmulateNetworkConditionsArgs struct {
+type EmulateNetworkConditionsByRuleArgs struct {
+	EmulateOfflineServiceWorker bool                 `json:"emulateOfflineServiceWorker,omitempty"`
+	MatchedNetworkConditions    []*NetworkConditions `json:"matchedNetworkConditions"`
+}
+
+type EmulateNetworkConditionsByRuleVal struct {
+	RuleIds []string `json:"ruleIds"`
+}
+
+type OverrideNetworkStateArgs struct {
 	Offline            bool           `json:"offline"`
 	Latency            float64        `json:"latency"`
 	DownloadThroughput float64        `json:"downloadThroughput"`
@@ -587,9 +869,16 @@ type EmulateNetworkConditionsArgs struct {
 }
 
 type EnableArgs struct {
+	MaxTotalBufferSize        int  `json:"maxTotalBufferSize,omitempty"`
+	MaxResourceBufferSize     int  `json:"maxResourceBufferSize,omitempty"`
+	MaxPostDataSize           int  `json:"maxPostDataSize,omitempty"`
+	ReportDirectSocketTraffic bool `json:"reportDirectSocketTraffic,omitempty"`
+	EnableDurableMessages     bool `json:"enableDurableMessages,omitempty"`
+}
+
+type ConfigureDurableMessagesArgs struct {
 	MaxTotalBufferSize    int `json:"maxTotalBufferSize,omitempty"`
 	MaxResourceBufferSize int `json:"maxResourceBufferSize,omitempty"`
-	MaxPostDataSize       int `json:"maxPostDataSize,omitempty"`
 }
 
 type GetCertificateArgs struct {
@@ -622,7 +911,8 @@ type GetRequestPostDataArgs struct {
 }
 
 type GetRequestPostDataVal struct {
-	PostData string `json:"postData"`
+	PostData      string `json:"postData"`
+	Base64Encoded bool   `json:"base64Encoded"`
 }
 
 type GetResponseBodyForInterceptionArgs struct {
@@ -658,7 +948,7 @@ type SearchInResponseBodyVal struct {
 }
 
 type SetBlockedURLsArgs struct {
-	Urls []string `json:"urls"`
+	UrlPatterns []*BlockPattern `json:"urlPatterns,omitempty"`
 }
 
 type SetBypassServiceWorkerArgs struct {
@@ -680,10 +970,9 @@ type SetCookieArgs struct {
 	SameSite     CookieSameSite        `json:"sameSite,omitempty"`
 	Expires      common.TimeSinceEpoch `json:"expires,omitempty"`
 	Priority     CookiePriority        `json:"priority,omitempty"`
-	SameParty    bool                  `json:"sameParty,omitempty"`
 	SourceScheme CookieSourceScheme    `json:"sourceScheme,omitempty"`
 	SourcePort   int                   `json:"sourcePort,omitempty"`
-	PartitionKey string                `json:"partitionKey,omitempty"`
+	PartitionKey *CookiePartitionKey   `json:"partitionKey,omitempty"`
 }
 
 type SetCookiesArgs struct {
@@ -705,6 +994,14 @@ type SetUserAgentOverrideArgs struct {
 	UserAgentMetadata *common.UserAgentMetadata `json:"userAgentMetadata,omitempty"`
 }
 
+type StreamResourceContentArgs struct {
+	RequestId RequestId `json:"requestId"`
+}
+
+type StreamResourceContentVal struct {
+	BufferedData []byte `json:"bufferedData"`
+}
+
 type GetSecurityIsolationStatusArgs struct {
 	FrameId common.FrameId `json:"frameId,omitempty"`
 }
@@ -717,6 +1014,22 @@ type EnableReportingApiArgs struct {
 	Enable bool `json:"enable"`
 }
 
+type EnableDeviceBoundSessionsArgs struct {
+	Enable bool `json:"enable"`
+}
+
+type DeleteDeviceBoundSessionArgs struct {
+	Key *DeviceBoundSessionKey `json:"key"`
+}
+
+type FetchSchemefulSiteArgs struct {
+	Origin string `json:"origin"`
+}
+
+type FetchSchemefulSiteVal struct {
+	SchemefulSite string `json:"schemefulSite"`
+}
+
 type LoadNetworkResourceArgs struct {
 	FrameId common.FrameId              `json:"frameId,omitempty"`
 	Url     string                      `json:"url"`
@@ -725,4 +1038,8 @@ type LoadNetworkResourceArgs struct {
 
 type LoadNetworkResourceVal struct {
 	Resource *LoadNetworkResourcePageResult `json:"resource"`
+}
+
+type SetCookieControlsArgs struct {
+	EnableThirdPartyCookieRestriction bool `json:"enableThirdPartyCookieRestriction"`
 }

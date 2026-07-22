@@ -28,8 +28,12 @@ type VirtualAuthenticatorOptions struct {
 	HasCredBlob                 bool                   `json:"hasCredBlob,omitempty"`
 	HasMinPinLength             bool                   `json:"hasMinPinLength,omitempty"`
 	HasPrf                      bool                   `json:"hasPrf,omitempty"`
+	HasHmacSecret               bool                   `json:"hasHmacSecret,omitempty"`
+	HasHmacSecretMc             bool                   `json:"hasHmacSecretMc,omitempty"`
 	AutomaticPresenceSimulation bool                   `json:"automaticPresenceSimulation,omitempty"`
 	IsUserVerified              bool                   `json:"isUserVerified,omitempty"`
+	DefaultBackupEligibility    bool                   `json:"defaultBackupEligibility,omitempty"`
+	DefaultBackupState          bool                   `json:"defaultBackupState,omitempty"`
 }
 
 /*
@@ -42,6 +46,10 @@ type Credential struct {
 	UserHandle           []byte `json:"userHandle,omitempty"`
 	SignCount            int    `json:"signCount"`
 	LargeBlob            []byte `json:"largeBlob,omitempty"`
+	BackupEligibility    bool   `json:"backupEligibility,omitempty"`
+	BackupState          bool   `json:"backupState,omitempty"`
+	UserName             string `json:"userName,omitempty"`
+	UserDisplayName      string `json:"userDisplayName,omitempty"`
 }
 
 type EnableArgs struct {
@@ -106,4 +114,11 @@ type SetUserVerifiedArgs struct {
 type SetAutomaticPresenceSimulationArgs struct {
 	AuthenticatorId AuthenticatorId `json:"authenticatorId"`
 	Enabled         bool            `json:"enabled"`
+}
+
+type SetCredentialPropertiesArgs struct {
+	AuthenticatorId   AuthenticatorId `json:"authenticatorId"`
+	CredentialId      []byte          `json:"credentialId"`
+	BackupEligibility bool            `json:"backupEligibility,omitempty"`
+	BackupState       bool            `json:"backupState,omitempty"`
 }

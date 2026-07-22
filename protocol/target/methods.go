@@ -41,7 +41,7 @@ channel with browser target.
 
 Injected object will be available as `window[bindingName]`.
 
-The object has the follwing API:
+The object has the following API:
 - `binding.send(json)` - a method to send messages over the remote debugging protocol
 - `binding.onmessage = json => handleMessage(json)` - a callback that will be called for the protocol notifications and command responses.
 */
@@ -108,12 +108,15 @@ func GetTargets(c protocol.Caller, args GetTargetsArgs) (*GetTargetsVal, error) 
 }
 
 /*
-	Controls whether to automatically attach to new targets which are considered to be related to
+	Controls whether to automatically attach to new targets which are considered
 
-this one. When turned on, attaches to all existing related targets as well. When turned off,
+to be directly related to this one (for example, iframes or workers).
+When turned on, attaches to all existing related targets as well. When turned off,
 automatically detaches from all currently attached targets.
 This also clears all targets added by `autoAttachRelated` from the list of targets to watch
 for creation of related targets.
+You might want to call this recursively for auto-attached targets to attach
+to all available targets.
 */
 func SetAutoAttach(c protocol.Caller, args SetAutoAttachArgs) error {
 	return c.Call("Target.setAutoAttach", args, nil)
@@ -147,4 +150,22 @@ func SetDiscoverTargets(c protocol.Caller, args SetDiscoverTargetsArgs) error {
 */
 func SetRemoteLocations(c protocol.Caller, args SetRemoteLocationsArgs) error {
 	return c.Call("Target.setRemoteLocations", args, nil)
+}
+
+/*
+	Gets the targetId of the DevTools page target opened for the given target
+
+(if any).
+*/
+func GetDevToolsTarget(c protocol.Caller, args GetDevToolsTargetArgs) (*GetDevToolsTargetVal, error) {
+	var val = &GetDevToolsTargetVal{}
+	return val, c.Call("Target.getDevToolsTarget", args, val)
+}
+
+/*
+Opens a DevTools window for the target.
+*/
+func OpenDevTools(c protocol.Caller, args OpenDevToolsArgs) (*OpenDevToolsVal, error) {
+	var val = &OpenDevToolsVal{}
+	return val, c.Call("Target.openDevTools", args, val)
 }

@@ -20,3 +20,10 @@ Event for animation that has been started.
 type AnimationStarted struct {
 	Animation *Animation `json:"animation"`
 }
+
+/*
+Event for animation that has been updated.
+*/
+type AnimationUpdated struct {
+	Animation *Animation `json:"animation"`
+}

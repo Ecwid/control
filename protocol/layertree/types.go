@@ -74,6 +74,7 @@ type CompositingReasonsArgs struct {
 }
 
 type CompositingReasonsVal struct {
+	CompositingReasons   []string `json:"compositingReasons"`
 	CompositingReasonIds []string `json:"compositingReasonIds"`
 }
 
@@ -124,5 +125,5 @@ type SnapshotCommandLogArgs struct {
 }
 
 type SnapshotCommandLogVal struct {
-	CommandLog []interface{} `json:"commandLog"`
+	CommandLog []any `json:"commandLog"`
 }

@@ -164,7 +164,7 @@ func NewSession(transport *cdp.Transport, targetID target.TargetID) (*Session, e
 			cancel(err)
 		}
 	}()
-	if err = page.Enable(session); err != nil {
+	if err = page.Enable(session, page.EnableArgs{EnableFileChooserOpenedEvent: true}); err != nil {
 		return nil, err
 	}
 	if err = page.SetLifecycleEventsEnabled(session, page.SetLifecycleEventsEnabledArgs{Enabled: true}); err != nil {

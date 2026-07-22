@@ -99,7 +99,9 @@ func GetContentQuads(c protocol.Caller, args GetContentQuadsArgs) (*GetContentQu
 }
 
 /*
-Returns the root DOM node (and optionally the subtree) to the caller.
+	Returns the root DOM node (and optionally the subtree) to the caller.
+
+Implicitly enables the DOM domain events for the current target.
 */
 func GetDocument(c protocol.Caller, args GetDocumentArgs) (*GetDocumentVal, error) {
 	var val = &GetDocumentVal{}
@@ -240,6 +242,14 @@ func GetTopLayerElements(c protocol.Caller) (*GetTopLayerElementsVal, error) {
 }
 
 /*
+Returns the NodeId of the matched element according to certain relations.
+*/
+func GetElementByRelation(c protocol.Caller, args GetElementByRelationArgs) (*GetElementByRelationVal, error) {
+	var val = &GetElementByRelationVal{}
+	return val, c.Call("DOM.getElementByRelation", args, val)
+}
+
+/*
 Re-does the last undone action.
 */
 func Redo(c protocol.Caller) error {
@@ -338,6 +348,14 @@ func GetFileInfo(c protocol.Caller, args GetFileInfoArgs) (*GetFileInfoVal, erro
 }
 
 /*
+Returns list of detached nodes
+*/
+func GetDetachedDomNodes(c protocol.Caller) (*GetDetachedDomNodesVal, error) {
+	var val = &GetDetachedDomNodesVal{}
+	return val, c.Call("DOM.getDetachedDomNodes", nil, val)
+}
+
+/*
 	Enables console to refer to the node with given id via $x (see Command Line API for more details
 
 $x functions).
@@ -386,9 +404,10 @@ func GetFrameOwner(c protocol.Caller, args GetFrameOwnerArgs) (*GetFrameOwnerVal
 /*
 	Returns the query container of the given node based on container query
 
-conditions: containerName, physical, and logical axes. If no axes are
-provided, the style container is returned, which is the direct parent or the
-closest element with a matching container-name.
+conditions: containerName, physical and logical axes, and whether it queries
+scroll-state or anchored elements. If no axes are provided and
+queriesScrollState is false, the style container is returned, which is the
+direct parent or the closest element with a matching container-name.
 */
 func GetContainerForNode(c protocol.Caller, args GetContainerForNodeArgs) (*GetContainerForNodeVal, error) {
 	var val = &GetContainerForNodeVal{}
@@ -403,4 +422,24 @@ container queries against this container.
 func GetQueryingDescendantsForContainer(c protocol.Caller, args GetQueryingDescendantsForContainerArgs) (*GetQueryingDescendantsForContainerVal, error) {
 	var val = &GetQueryingDescendantsForContainerVal{}
 	return val, c.Call("DOM.getQueryingDescendantsForContainer", args, val)
+}
+
+/*
+	Returns the target anchor element of the given anchor query according to
+
+https://www.w3.org/TR/css-anchor-position-1/#target.
+*/
+func GetAnchorElement(c protocol.Caller, args GetAnchorElementArgs) (*GetAnchorElementVal, error) {
+	var val = &GetAnchorElementVal{}
+	return val, c.Call("DOM.getAnchorElement", args, val)
+}
+
+/*
+	When enabling, this API force-opens the popover identified by nodeId
+
+and keeps it open until disabled.
+*/
+func ForceShowPopover(c protocol.Caller, args ForceShowPopoverArgs) (*ForceShowPopoverVal, error) {
+	var val = &ForceShowPopoverVal{}
+	return val, c.Call("DOM.forceShowPopover", args, val)
 }

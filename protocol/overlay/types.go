@@ -151,6 +151,15 @@ type HingeConfig struct {
 }
 
 /*
+Configuration for Window Controls Overlay
+*/
+type WindowControlsOverlayConfig struct {
+	ShowCSS          bool   `json:"showCSS"`
+	SelectedPlatform string `json:"selectedPlatform"`
+	ThemeColor       string `json:"themeColor"`
+}
+
+/*
  */
 type ContainerQueryHighlightConfig struct {
 	ContainerQueryContainerHighlightConfig *ContainerQueryContainerHighlightConfig `json:"containerQueryContainerHighlightConfig"`
@@ -183,6 +192,13 @@ type IsolationModeHighlightConfig struct {
  */
 type InspectMode string
 
+/*
+ */
+type InspectedElementAnchorConfig struct {
+	NodeId        dom.NodeId        `json:"nodeId,omitempty"`
+	BackendNodeId dom.BackendNodeId `json:"backendNodeId,omitempty"`
+}
+
 type GetHighlightObjectForTestArgs struct {
 	NodeId                dom.NodeId  `json:"nodeId"`
 	IncludeDistance       bool        `json:"includeDistance,omitempty"`
@@ -192,7 +208,7 @@ type GetHighlightObjectForTestArgs struct {
 }
 
 type GetHighlightObjectForTestVal struct {
-	Highlight interface{} `json:"highlight"`
+	Highlight any `json:"highlight"`
 }
 
 type GetGridHighlightObjectsForTestArgs struct {
@@ -200,7 +216,7 @@ type GetGridHighlightObjectsForTestArgs struct {
 }
 
 type GetGridHighlightObjectsForTestVal struct {
-	Highlights interface{} `json:"highlights"`
+	Highlights any `json:"highlights"`
 }
 
 type GetSourceOrderHighlightObjectForTestArgs struct {
@@ -208,7 +224,7 @@ type GetSourceOrderHighlightObjectForTestArgs struct {
 }
 
 type GetSourceOrderHighlightObjectForTestVal struct {
-	Highlight interface{} `json:"highlight"`
+	Highlight any `json:"highlight"`
 }
 
 type HighlightNodeArgs struct {
@@ -278,6 +294,10 @@ type SetShowContainerQueryOverlaysArgs struct {
 	ContainerQueryHighlightConfigs []*ContainerQueryHighlightConfig `json:"containerQueryHighlightConfigs"`
 }
 
+type SetShowInspectedElementAnchorArgs struct {
+	InspectedElementAnchorConfig *InspectedElementAnchorConfig `json:"inspectedElementAnchorConfig"`
+}
+
 type SetShowPaintRectsArgs struct {
 	Result bool `json:"result"`
 }
@@ -287,10 +307,6 @@ type SetShowLayoutShiftRegionsArgs struct {
 }
 
 type SetShowScrollBottleneckRectsArgs struct {
-	Show bool `json:"show"`
-}
-
-type SetShowWebVitalsArgs struct {
 	Show bool `json:"show"`
 }
 
@@ -304,4 +320,8 @@ type SetShowHingeArgs struct {
 
 type SetShowIsolatedElementsArgs struct {
 	IsolatedElementHighlightConfigs []*IsolatedElementHighlightConfig `json:"isolatedElementHighlightConfigs"`
+}
+
+type SetShowWindowControlsOverlayArgs struct {
+	WindowControlsOverlayConfig *WindowControlsOverlayConfig `json:"windowControlsOverlayConfig,omitempty"`
 }

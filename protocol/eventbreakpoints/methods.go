@@ -17,3 +17,10 @@ Removes breakpoint on particular native event.
 func RemoveInstrumentationBreakpoint(c protocol.Caller, args RemoveInstrumentationBreakpointArgs) error {
 	return c.Call("EventBreakpoints.removeInstrumentationBreakpoint", args, nil)
 }
+
+/*
+Removes all breakpoints
+*/
+func Disable(c protocol.Caller) error {
+	return c.Call("EventBreakpoints.disable", nil, nil)
+}

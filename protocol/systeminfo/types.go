@@ -56,28 +56,15 @@ Image format of a given image.
 type ImageType string
 
 /*
-	Describes a supported image decoding profile with its associated minimum and
-
-maximum resolutions and subsampling.
-*/
-type ImageDecodeAcceleratorCapability struct {
-	ImageType     ImageType           `json:"imageType"`
-	MaxDimensions *Size               `json:"maxDimensions"`
-	MinDimensions *Size               `json:"minDimensions"`
-	Subsamplings  []SubsamplingFormat `json:"subsamplings"`
-}
-
-/*
 Provides information about the GPU(s) on the system.
 */
 type GPUInfo struct {
 	Devices              []*GPUDevice                        `json:"devices"`
-	AuxAttributes        interface{}                         `json:"auxAttributes,omitempty"`
-	FeatureStatus        interface{}                         `json:"featureStatus,omitempty"`
+	AuxAttributes        any                                 `json:"auxAttributes,omitempty"`
+	FeatureStatus        any                                 `json:"featureStatus,omitempty"`
 	DriverBugWorkarounds []string                            `json:"driverBugWorkarounds"`
 	VideoDecoding        []*VideoDecodeAcceleratorCapability `json:"videoDecoding"`
 	VideoEncoding        []*VideoEncodeAcceleratorCapability `json:"videoEncoding"`
-	ImageDecoding        []*ImageDecodeAcceleratorCapability `json:"imageDecoding"`
 }
 
 /*

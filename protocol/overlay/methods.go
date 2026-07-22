@@ -66,7 +66,11 @@ func HighlightQuad(c protocol.Caller, args HighlightQuadArgs) error {
 }
 
 /*
-Highlights given rectangle. Coordinates are absolute with respect to the main frame viewport.
+	Highlights given rectangle. Coordinates are absolute with respect to the main frame viewport.
+
+Issue: the method does not handle device pixel ratio (DPR) correctly.
+The coordinates currently have to be adjusted by the client
+if DPR is not 1 (see crbug.com/437807128).
 */
 func HighlightRect(c protocol.Caller, args HighlightRectArgs) error {
 	return c.Call("Overlay.highlightRect", args, nil)
@@ -143,6 +147,12 @@ func SetShowContainerQueryOverlays(c protocol.Caller, args SetShowContainerQuery
 }
 
 /*
+ */
+func SetShowInspectedElementAnchor(c protocol.Caller, args SetShowInspectedElementAnchorArgs) error {
+	return c.Call("Overlay.setShowInspectedElementAnchor", args, nil)
+}
+
+/*
 Requests that backend shows paint rectangles
 */
 func SetShowPaintRects(c protocol.Caller, args SetShowPaintRectsArgs) error {
@@ -164,13 +174,6 @@ func SetShowScrollBottleneckRects(c protocol.Caller, args SetShowScrollBottlenec
 }
 
 /*
-Request that backend shows an overlay with web vital metrics.
-*/
-func SetShowWebVitals(c protocol.Caller, args SetShowWebVitalsArgs) error {
-	return c.Call("Overlay.setShowWebVitals", args, nil)
-}
-
-/*
 Paints viewport size upon main frame resize.
 */
 func SetShowViewportSizeOnResize(c protocol.Caller, args SetShowViewportSizeOnResizeArgs) error {
@@ -189,4 +192,11 @@ Show elements in isolation mode with overlays.
 */
 func SetShowIsolatedElements(c protocol.Caller, args SetShowIsolatedElementsArgs) error {
 	return c.Call("Overlay.setShowIsolatedElements", args, nil)
+}
+
+/*
+Show Window Controls Overlay for PWA
+*/
+func SetShowWindowControlsOverlay(c protocol.Caller, args SetShowWindowControlsOverlayArgs) error {
+	return c.Call("Overlay.setShowWindowControlsOverlay", args, nil)
 }

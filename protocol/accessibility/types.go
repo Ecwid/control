@@ -61,7 +61,7 @@ A single computed AX property.
 */
 type AXValue struct {
 	Type         AXValueType      `json:"type"`
-	Value        interface{}      `json:"value,omitempty"`
+	Value        any              `json:"value,omitempty"`
 	RelatedNodes []*AXRelatedNode `json:"relatedNodes,omitempty"`
 	Sources      []*AXValueSource `json:"sources,omitempty"`
 }
@@ -73,7 +73,8 @@ type AXValue struct {
 - from 'live' to 'root': attributes which apply to nodes in live regions
 - from 'autocomplete' to 'valuetext': attributes which apply to widgets
 - from 'checked' to 'selected': states which apply to widgets
-- from 'activedescendant' to 'owns' - relationships between elements other than parent/child/sibling.
+- from 'activedescendant' to 'owns': relationships between elements other than parent/child/sibling
+- from 'activeFullscreenElement' to 'uninteresting': reasons why this noode is hidden
 */
 type AXPropertyName string
 

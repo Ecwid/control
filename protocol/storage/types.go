@@ -3,6 +3,7 @@ package storage
 import (
 	"github.com/ecwid/control/protocol/common"
 	"github.com/ecwid/control/protocol/network"
+	"github.com/ecwid/control/protocol/target"
 )
 
 /*
@@ -33,40 +34,34 @@ type TrustTokens struct {
 }
 
 /*
+Protected audience interest group auction identifier.
+*/
+type InterestGroupAuctionId string
+
+/*
 Enum of interest group access types.
 */
 type InterestGroupAccessType string
 
 /*
-Ad advertising element inside an interest group.
+Enum of auction events.
 */
-type InterestGroupAd struct {
-	RenderUrl string `json:"renderUrl"`
-	Metadata  string `json:"metadata,omitempty"`
-}
+type InterestGroupAuctionEventType string
 
 /*
-The full details of an interest group.
+Enum of network fetches auctions can do.
 */
-type InterestGroupDetails struct {
-	OwnerOrigin               string                `json:"ownerOrigin"`
-	Name                      string                `json:"name"`
-	ExpirationTime            common.TimeSinceEpoch `json:"expirationTime"`
-	JoiningOrigin             string                `json:"joiningOrigin"`
-	BiddingUrl                string                `json:"biddingUrl,omitempty"`
-	BiddingWasmHelperUrl      string                `json:"biddingWasmHelperUrl,omitempty"`
-	UpdateUrl                 string                `json:"updateUrl,omitempty"`
-	TrustedBiddingSignalsUrl  string                `json:"trustedBiddingSignalsUrl,omitempty"`
-	TrustedBiddingSignalsKeys []string              `json:"trustedBiddingSignalsKeys"`
-	UserBiddingSignals        string                `json:"userBiddingSignals,omitempty"`
-	Ads                       []*InterestGroupAd    `json:"ads"`
-	AdComponents              []*InterestGroupAd    `json:"adComponents"`
-}
+type InterestGroupAuctionFetchType string
 
 /*
-Enum of shared storage access types.
+Enum of shared storage access scopes.
 */
-type SharedStorageAccessType string
+type SharedStorageAccessScope string
+
+/*
+Enum of shared storage access methods.
+*/
+type SharedStorageAccessMethod string
 
 /*
 Struct for a single key-value pair in an origin's shared storage.
@@ -83,6 +78,19 @@ type SharedStorageMetadata struct {
 	CreationTime    common.TimeSinceEpoch `json:"creationTime"`
 	Length          int                   `json:"length"`
 	RemainingBudget float64               `json:"remainingBudget"`
+	BytesUsed       int                   `json:"bytesUsed"`
+}
+
+/*
+	Represents a dictionary object passed in as privateAggregationConfig to
+
+run or selectURL.
+*/
+type SharedStoragePrivateAggregationConfig struct {
+	AggregationCoordinatorOrigin string `json:"aggregationCoordinatorOrigin,omitempty"`
+	ContextId                    string `json:"contextId,omitempty"`
+	FilteringIdMaxBytes          int    `json:"filteringIdMaxBytes"`
+	MaxContributions             int    `json:"maxContributions,omitempty"`
 }
 
 /*
@@ -107,20 +115,61 @@ type SharedStorageUrlWithMetadata struct {
 presence/absence can vary according to SharedStorageAccessType.
 */
 type SharedStorageAccessParams struct {
-	ScriptSourceUrl  string                          `json:"scriptSourceUrl,omitempty"`
-	OperationName    string                          `json:"operationName,omitempty"`
-	SerializedData   string                          `json:"serializedData,omitempty"`
-	UrlsWithMetadata []*SharedStorageUrlWithMetadata `json:"urlsWithMetadata,omitempty"`
-	Key              string                          `json:"key,omitempty"`
-	Value            string                          `json:"value,omitempty"`
-	IgnoreIfPresent  bool                            `json:"ignoreIfPresent,omitempty"`
+	ScriptSourceUrl          string                                 `json:"scriptSourceUrl,omitempty"`
+	DataOrigin               string                                 `json:"dataOrigin,omitempty"`
+	OperationName            string                                 `json:"operationName,omitempty"`
+	OperationId              string                                 `json:"operationId,omitempty"`
+	KeepAlive                bool                                   `json:"keepAlive,omitempty"`
+	PrivateAggregationConfig *SharedStoragePrivateAggregationConfig `json:"privateAggregationConfig,omitempty"`
+	SerializedData           string                                 `json:"serializedData,omitempty"`
+	UrlsWithMetadata         []*SharedStorageUrlWithMetadata        `json:"urlsWithMetadata,omitempty"`
+	UrnUuid                  string                                 `json:"urnUuid,omitempty"`
+	Key                      string                                 `json:"key,omitempty"`
+	Value                    string                                 `json:"value,omitempty"`
+	IgnoreIfPresent          bool                                   `json:"ignoreIfPresent,omitempty"`
+	WorkletOrdinal           int                                    `json:"workletOrdinal,omitempty"`
+	WorkletTargetId          target.TargetID                        `json:"workletTargetId,omitempty"`
+	WithLock                 string                                 `json:"withLock,omitempty"`
+	BatchUpdateId            string                                 `json:"batchUpdateId,omitempty"`
+	BatchSize                int                                    `json:"batchSize,omitempty"`
 }
 
-type GetStorageKeyForFrameArgs struct {
-	FrameId common.FrameId `json:"frameId"`
+/*
+ */
+type StorageBucketsDurability string
+
+/*
+ */
+type StorageBucket struct {
+	StorageKey SerializedStorageKey `json:"storageKey"`
+	Name       string               `json:"name,omitempty"`
 }
 
-type GetStorageKeyForFrameVal struct {
+/*
+ */
+type StorageBucketInfo struct {
+	Bucket     *StorageBucket           `json:"bucket"`
+	Id         string                   `json:"id"`
+	Expiration common.TimeSinceEpoch    `json:"expiration"`
+	Quota      float64                  `json:"quota"`
+	Persistent bool                     `json:"persistent"`
+	Durability StorageBucketsDurability `json:"durability"`
+}
+
+/*
+A single Related Website Set object.
+*/
+type RelatedWebsiteSet struct {
+	PrimarySites    []string `json:"primarySites"`
+	AssociatedSites []string `json:"associatedSites"`
+	ServiceSites    []string `json:"serviceSites"`
+}
+
+type GetStorageKeyArgs struct {
+	FrameId common.FrameId `json:"frameId,omitempty"`
+}
+
+type GetStorageKeyVal struct {
 	StorageKey SerializedStorageKey `json:"storageKey"`
 }
 
@@ -217,10 +266,14 @@ type GetInterestGroupDetailsArgs struct {
 }
 
 type GetInterestGroupDetailsVal struct {
-	Details *InterestGroupDetails `json:"details"`
+	Details any `json:"details"`
 }
 
 type SetInterestGroupTrackingArgs struct {
+	Enable bool `json:"enable"`
+}
+
+type SetInterestGroupAuctionTrackingArgs struct {
 	Enable bool `json:"enable"`
 }
 
@@ -262,4 +315,27 @@ type ResetSharedStorageBudgetArgs struct {
 
 type SetSharedStorageTrackingArgs struct {
 	Enable bool `json:"enable"`
+}
+
+type SetStorageBucketTrackingArgs struct {
+	StorageKey string `json:"storageKey"`
+	Enable     bool   `json:"enable"`
+}
+
+type DeleteStorageBucketArgs struct {
+	Bucket *StorageBucket `json:"bucket"`
+}
+
+type RunBounceTrackingMitigationsVal struct {
+	DeletedSites []string `json:"deletedSites"`
+}
+
+type GetRelatedWebsiteSetsVal struct {
+	Sets []*RelatedWebsiteSet `json:"sets"`
+}
+
+type SetProtectedAudienceKAnonymityArgs struct {
+	Owner  string   `json:"owner"`
+	Name   string   `json:"name"`
+	Hashes [][]byte `json:"hashes"`
 }

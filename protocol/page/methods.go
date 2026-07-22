@@ -55,15 +55,20 @@ func Disable(c protocol.Caller) error {
 /*
 Enables page domain notifications.
 */
-func Enable(c protocol.Caller) error {
-	return c.Call("Page.enable", nil, nil)
+func Enable(c protocol.Caller, args EnableArgs) error {
+	return c.Call("Page.enable", args, nil)
 }
 
 /*
- */
-func GetAppManifest(c protocol.Caller) (*GetAppManifestVal, error) {
+		Gets the processed manifest for this current document.
+	  This API always waits for the manifest to be loaded.
+	  If manifestId is provided, and it does not match the manifest of the
+	    current document, this API errors out.
+	  If there is not a loaded page, this API errors out immediately.
+*/
+func GetAppManifest(c protocol.Caller, args GetAppManifestArgs) (*GetAppManifestVal, error) {
 	var val = &GetAppManifestVal{}
-	return val, c.Call("Page.getAppManifest", nil, val)
+	return val, c.Call("Page.getAppManifest", args, val)
 }
 
 /*
@@ -71,13 +76,6 @@ func GetAppManifest(c protocol.Caller) (*GetAppManifestVal, error) {
 func GetInstallabilityErrors(c protocol.Caller) (*GetInstallabilityErrorsVal, error) {
 	var val = &GetInstallabilityErrorsVal{}
 	return val, c.Call("Page.getInstallabilityErrors", nil, val)
-}
-
-/*
- */
-func GetManifestIcons(c protocol.Caller) (*GetManifestIconsVal, error) {
-	var val = &GetManifestIconsVal{}
-	return val, c.Call("Page.getManifestIcons", nil, val)
 }
 
 /*
@@ -92,9 +90,9 @@ func GetAppId(c protocol.Caller) (*GetAppIdVal, error) {
 
 /*
  */
-func GetAdScriptId(c protocol.Caller, args GetAdScriptIdArgs) (*GetAdScriptIdVal, error) {
-	var val = &GetAdScriptIdVal{}
-	return val, c.Call("Page.getAdScriptId", args, val)
+func GetAdScriptAncestry(c protocol.Caller, args GetAdScriptAncestryArgs) (*GetAdScriptAncestryVal, error) {
+	var val = &GetAdScriptAncestryVal{}
+	return val, c.Call("Page.getAdScriptAncestry", args, val)
 }
 
 /*
@@ -309,7 +307,7 @@ func StopScreencast(c protocol.Caller) error {
 /*
 	Requests backend to produce compilation cache for the specified scripts.
 
-`scripts` are appeneded to the list of scripts for which the cache
+`scripts` are appended to the list of scripts for which the cache
 would be produced. The list may be reset during page navigation.
 When script with a matching URL is encountered, the cache is optionally
 produced upon backend discretion, based on internal heuristics.
@@ -345,6 +343,15 @@ func SetSPCTransactionMode(c protocol.Caller, args SetSPCTransactionModeArgs) er
 }
 
 /*
+	Extensions for Custom Handlers API:
+
+https://html.spec.whatwg.org/multipage/system-state.html#rph-automation
+*/
+func SetRPHRegistrationMode(c protocol.Caller, args SetRPHRegistrationModeArgs) error {
+	return c.Call("Page.setRPHRegistrationMode", args, nil)
+}
+
+/*
 Generates a report for testing.
 */
 func GenerateTestReport(c protocol.Caller, args GenerateTestReportArgs) error {
@@ -366,4 +373,27 @@ Instead, a protocol event `Page.fileChooserOpened` is emitted.
 */
 func SetInterceptFileChooserDialog(c protocol.Caller, args SetInterceptFileChooserDialogArgs) error {
 	return c.Call("Page.setInterceptFileChooserDialog", args, nil)
+}
+
+/*
+	Enable/disable prerendering manually.
+
+This command is a short-term solution for https://crbug.com/1440085.
+See https://docs.google.com/document/d/12HVmFxYj5Jc-eJr5OmWsa2bqTJsbgGLKI6ZIyx0_wpA
+for more details.
+
+TODO(https://crbug.com/1440085): Remove this once Puppeteer supports tab targets.
+*/
+func SetPrerenderingAllowed(c protocol.Caller, args SetPrerenderingAllowedArgs) error {
+	return c.Call("Page.setPrerenderingAllowed", args, nil)
+}
+
+/*
+	Get the annotated page content for the main frame.
+
+This is an experimental command that is subject to change.
+*/
+func GetAnnotatedPageContent(c protocol.Caller, args GetAnnotatedPageContentArgs) (*GetAnnotatedPageContentVal, error) {
+	var val = &GetAnnotatedPageContentVal{}
+	return val, c.Call("Page.getAnnotatedPageContent", args, val)
 }

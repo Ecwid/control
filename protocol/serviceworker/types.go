@@ -38,6 +38,7 @@ type ServiceWorkerVersion struct {
 	ScriptResponseTime float64                           `json:"scriptResponseTime,omitempty"`
 	ControlledClients  []target.TargetID                 `json:"controlledClients,omitempty"`
 	TargetId           target.TargetID                   `json:"targetId,omitempty"`
+	RouterRules        string                            `json:"routerRules,omitempty"`
 }
 
 /*
@@ -69,10 +70,6 @@ type DispatchPeriodicSyncEventArgs struct {
 	Origin         string         `json:"origin"`
 	RegistrationId RegistrationID `json:"registrationId"`
 	Tag            string         `json:"tag"`
-}
-
-type InspectWorkerArgs struct {
-	VersionId string `json:"versionId"`
 }
 
 type SetForceUpdateOnPageLoadArgs struct {

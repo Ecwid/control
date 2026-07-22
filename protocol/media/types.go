@@ -1,5 +1,9 @@
 package media
 
+import (
+	"github.com/ecwid/control/protocol/dom"
+)
+
 /*
 Players will get an ID that is unique within the agent context.
 */
@@ -53,5 +57,12 @@ type PlayerError struct {
 	Code      int                          `json:"code"`
 	Stack     []*PlayerErrorSourceLocation `json:"stack"`
 	Cause     []*PlayerError               `json:"cause"`
-	Data      interface{}                  `json:"data"`
+	Data      any                          `json:"data"`
+}
+
+/*
+ */
+type Player struct {
+	PlayerId  PlayerId          `json:"playerId"`
+	DomNodeId dom.BackendNodeId `json:"domNodeId,omitempty"`
 }

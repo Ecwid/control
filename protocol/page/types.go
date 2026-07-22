@@ -31,16 +31,6 @@ type AdFrameStatus struct {
 }
 
 /*
-	Identifies the bottom-most script which caused the frame to be labelled
-
-as an ad.
-*/
-type AdScriptId struct {
-	ScriptId   runtime.ScriptId         `json:"scriptId"`
-	DebuggerId runtime.UniqueDebuggerId `json:"debuggerId"`
-}
-
-/*
 Indicates whether the frame is a secure context and why it is the case.
 */
 type SecureContextType string
@@ -57,7 +47,8 @@ type GatedAPIFeatures string
 /*
 	All Permissions Policy features. This enum should match the one defined
 
-in third_party/blink/renderer/core/permissions_policy/permissions_policy_features.json5.
+in services/network/public/cpp/permissions_policy/permissions_policy_features.json5.
+LINT.IfChange(PermissionsPolicyFeature)
 */
 type PermissionsPolicyFeature string
 
@@ -125,6 +116,13 @@ type OriginTrial struct {
 }
 
 /*
+Additional information about the frame document's security origin.
+*/
+type SecurityOriginDetails struct {
+	IsLocalhost bool `json:"isLocalhost"`
+}
+
+/*
 Information about the Frame on the page.
 */
 type Frame struct {
@@ -136,6 +134,7 @@ type Frame struct {
 	UrlFragment                    string                         `json:"urlFragment,omitempty"`
 	DomainAndRegistry              string                         `json:"domainAndRegistry"`
 	SecurityOrigin                 string                         `json:"securityOrigin"`
+	SecurityOriginDetails          *SecurityOriginDetails         `json:"securityOriginDetails,omitempty"`
 	MimeType                       string                         `json:"mimeType"`
 	UnreachableUrl                 string                         `json:"unreachableUrl,omitempty"`
 	AdFrameStatus                  *AdFrameStatus                 `json:"adFrameStatus,omitempty"`
@@ -331,6 +330,114 @@ type CompilationCacheParams struct {
 }
 
 /*
+ */
+type FileFilter struct {
+	Name    string   `json:"name,omitempty"`
+	Accepts []string `json:"accepts,omitempty"`
+}
+
+/*
+ */
+type FileHandler struct {
+	Action     string           `json:"action"`
+	Name       string           `json:"name"`
+	Icons      []*ImageResource `json:"icons,omitempty"`
+	Accepts    []*FileFilter    `json:"accepts,omitempty"`
+	LaunchType string           `json:"launchType"`
+}
+
+/*
+The image definition used in both icon and screenshot.
+*/
+type ImageResource struct {
+	Url   string `json:"url"`
+	Sizes string `json:"sizes,omitempty"`
+	Type  string `json:"type,omitempty"`
+}
+
+/*
+ */
+type LaunchHandler struct {
+	ClientMode string `json:"clientMode"`
+}
+
+/*
+ */
+type ProtocolHandler struct {
+	Protocol string `json:"protocol"`
+	Url      string `json:"url"`
+}
+
+/*
+ */
+type RelatedApplication struct {
+	Id  string `json:"id,omitempty"`
+	Url string `json:"url"`
+}
+
+/*
+ */
+type ScopeExtension struct {
+	Origin            string `json:"origin"`
+	HasOriginWildcard bool   `json:"hasOriginWildcard"`
+}
+
+/*
+ */
+type Screenshot struct {
+	Image      *ImageResource `json:"image"`
+	FormFactor string         `json:"formFactor"`
+	Label      string         `json:"label,omitempty"`
+}
+
+/*
+ */
+type ShareTarget struct {
+	Action  string        `json:"action"`
+	Method  string        `json:"method"`
+	Enctype string        `json:"enctype"`
+	Title   string        `json:"title,omitempty"`
+	Text    string        `json:"text,omitempty"`
+	Url     string        `json:"url,omitempty"`
+	Files   []*FileFilter `json:"files,omitempty"`
+}
+
+/*
+ */
+type Shortcut struct {
+	Name string `json:"name"`
+	Url  string `json:"url"`
+}
+
+/*
+ */
+type WebAppManifest struct {
+	BackgroundColor           string                `json:"backgroundColor,omitempty"`
+	Description               string                `json:"description,omitempty"`
+	Dir                       string                `json:"dir,omitempty"`
+	Display                   string                `json:"display,omitempty"`
+	DisplayOverrides          []string              `json:"displayOverrides,omitempty"`
+	FileHandlers              []*FileHandler        `json:"fileHandlers,omitempty"`
+	Icons                     []*ImageResource      `json:"icons,omitempty"`
+	Id                        string                `json:"id,omitempty"`
+	Lang                      string                `json:"lang,omitempty"`
+	LaunchHandler             *LaunchHandler        `json:"launchHandler,omitempty"`
+	Name                      string                `json:"name,omitempty"`
+	Orientation               string                `json:"orientation,omitempty"`
+	PreferRelatedApplications bool                  `json:"preferRelatedApplications,omitempty"`
+	ProtocolHandlers          []*ProtocolHandler    `json:"protocolHandlers,omitempty"`
+	RelatedApplications       []*RelatedApplication `json:"relatedApplications,omitempty"`
+	Scope                     string                `json:"scope,omitempty"`
+	ScopeExtensions           []*ScopeExtension     `json:"scopeExtensions,omitempty"`
+	Screenshots               []*Screenshot         `json:"screenshots,omitempty"`
+	ShareTarget               *ShareTarget          `json:"shareTarget,omitempty"`
+	ShortName                 string                `json:"shortName,omitempty"`
+	Shortcuts                 []*Shortcut           `json:"shortcuts,omitempty"`
+	StartUrl                  string                `json:"startUrl,omitempty"`
+	ThemeColor                string                `json:"themeColor,omitempty"`
+}
+
+/*
 The type of a frameNavigated event.
 */
 type NavigationType string
@@ -347,10 +454,20 @@ type BackForwardCacheNotRestoredReasonType string
 
 /*
  */
+type BackForwardCacheBlockingDetails struct {
+	Url          string `json:"url,omitempty"`
+	Function     string `json:"function,omitempty"`
+	LineNumber   int    `json:"lineNumber"`
+	ColumnNumber int    `json:"columnNumber"`
+}
+
+/*
+ */
 type BackForwardCacheNotRestoredExplanation struct {
 	Type    BackForwardCacheNotRestoredReasonType `json:"type"`
 	Reason  BackForwardCacheNotRestoredReason     `json:"reason"`
 	Context string                                `json:"context,omitempty"`
+	Details []*BackForwardCacheBlockingDetails    `json:"details,omitempty"`
 }
 
 /*
@@ -361,15 +478,11 @@ type BackForwardCacheNotRestoredExplanationTree struct {
 	Children     []*BackForwardCacheNotRestoredExplanationTree `json:"children"`
 }
 
-/*
-List of FinalStatus reasons for Prerender2.
-*/
-type PrerenderFinalStatus string
-
 type AddScriptToEvaluateOnNewDocumentArgs struct {
 	Source                string `json:"source"`
 	WorldName             string `json:"worldName,omitempty"`
 	IncludeCommandLineAPI bool   `json:"includeCommandLineAPI,omitempty"`
+	RunImmediately        bool   `json:"runImmediately,omitempty"`
 }
 
 type AddScriptToEvaluateOnNewDocumentVal struct {
@@ -407,19 +520,23 @@ type CreateIsolatedWorldVal struct {
 	ExecutionContextId runtime.ExecutionContextId `json:"executionContextId"`
 }
 
+type EnableArgs struct {
+	EnableFileChooserOpenedEvent bool `json:"enableFileChooserOpenedEvent,omitempty"`
+}
+
+type GetAppManifestArgs struct {
+	ManifestId string `json:"manifestId,omitempty"`
+}
+
 type GetAppManifestVal struct {
-	Url    string                       `json:"url"`
-	Errors []*AppManifestError          `json:"errors"`
-	Data   string                       `json:"data,omitempty"`
-	Parsed *AppManifestParsedProperties `json:"parsed,omitempty"`
+	Url      string              `json:"url"`
+	Errors   []*AppManifestError `json:"errors"`
+	Data     string              `json:"data,omitempty"`
+	Manifest *WebAppManifest     `json:"manifest"`
 }
 
 type GetInstallabilityErrorsVal struct {
 	InstallabilityErrors []*InstallabilityError `json:"installabilityErrors"`
-}
-
-type GetManifestIconsVal struct {
-	PrimaryIcon []byte `json:"primaryIcon,omitempty"`
 }
 
 type GetAppIdVal struct {
@@ -427,12 +544,12 @@ type GetAppIdVal struct {
 	RecommendedId string `json:"recommendedId,omitempty"`
 }
 
-type GetAdScriptIdArgs struct {
+type GetAdScriptAncestryArgs struct {
 	FrameId common.FrameId `json:"frameId"`
 }
 
-type GetAdScriptIdVal struct {
-	AdScriptId *AdScriptId `json:"adScriptId,omitempty"`
+type GetAdScriptAncestryVal struct {
+	AdScriptAncestry *network.AdAncestry `json:"adScriptAncestry,omitempty"`
 }
 
 type GetFrameTreeVal struct {
@@ -478,9 +595,10 @@ type NavigateArgs struct {
 }
 
 type NavigateVal struct {
-	FrameId   common.FrameId   `json:"frameId"`
-	LoaderId  network.LoaderId `json:"loaderId,omitempty"`
-	ErrorText string           `json:"errorText,omitempty"`
+	FrameId    common.FrameId   `json:"frameId"`
+	LoaderId   network.LoaderId `json:"loaderId,omitempty"`
+	ErrorText  string           `json:"errorText,omitempty"`
+	IsDownload bool             `json:"isDownload,omitempty"`
 }
 
 type NavigateToHistoryEntryArgs struct {
@@ -488,21 +606,23 @@ type NavigateToHistoryEntryArgs struct {
 }
 
 type PrintToPDFArgs struct {
-	Landscape           bool    `json:"landscape,omitempty"`
-	DisplayHeaderFooter bool    `json:"displayHeaderFooter,omitempty"`
-	PrintBackground     bool    `json:"printBackground,omitempty"`
-	Scale               float64 `json:"scale,omitempty"`
-	PaperWidth          float64 `json:"paperWidth,omitempty"`
-	PaperHeight         float64 `json:"paperHeight,omitempty"`
-	MarginTop           float64 `json:"marginTop,omitempty"`
-	MarginBottom        float64 `json:"marginBottom,omitempty"`
-	MarginLeft          float64 `json:"marginLeft,omitempty"`
-	MarginRight         float64 `json:"marginRight,omitempty"`
-	PageRanges          string  `json:"pageRanges,omitempty"`
-	HeaderTemplate      string  `json:"headerTemplate,omitempty"`
-	FooterTemplate      string  `json:"footerTemplate,omitempty"`
-	PreferCSSPageSize   bool    `json:"preferCSSPageSize,omitempty"`
-	TransferMode        string  `json:"transferMode,omitempty"`
+	Landscape               bool    `json:"landscape,omitempty"`
+	DisplayHeaderFooter     bool    `json:"displayHeaderFooter,omitempty"`
+	PrintBackground         bool    `json:"printBackground,omitempty"`
+	Scale                   float64 `json:"scale,omitempty"`
+	PaperWidth              float64 `json:"paperWidth,omitempty"`
+	PaperHeight             float64 `json:"paperHeight,omitempty"`
+	MarginTop               float64 `json:"marginTop,omitempty"`
+	MarginBottom            float64 `json:"marginBottom,omitempty"`
+	MarginLeft              float64 `json:"marginLeft,omitempty"`
+	MarginRight             float64 `json:"marginRight,omitempty"`
+	PageRanges              string  `json:"pageRanges,omitempty"`
+	HeaderTemplate          string  `json:"headerTemplate,omitempty"`
+	FooterTemplate          string  `json:"footerTemplate,omitempty"`
+	PreferCSSPageSize       bool    `json:"preferCSSPageSize,omitempty"`
+	TransferMode            string  `json:"transferMode,omitempty"`
+	GenerateTaggedPDF       bool    `json:"generateTaggedPDF,omitempty"`
+	GenerateDocumentOutline bool    `json:"generateDocumentOutline,omitempty"`
 }
 
 type PrintToPDFVal struct {
@@ -511,8 +631,9 @@ type PrintToPDFVal struct {
 }
 
 type ReloadArgs struct {
-	IgnoreCache            bool   `json:"ignoreCache,omitempty"`
-	ScriptToEvaluateOnLoad string `json:"scriptToEvaluateOnLoad,omitempty"`
+	IgnoreCache            bool             `json:"ignoreCache,omitempty"`
+	ScriptToEvaluateOnLoad string           `json:"scriptToEvaluateOnLoad,omitempty"`
+	LoaderId               network.LoaderId `json:"loaderId,omitempty"`
 }
 
 type RemoveScriptToEvaluateOnNewDocumentArgs struct {
@@ -602,6 +723,10 @@ type SetSPCTransactionModeArgs struct {
 	Mode string `json:"mode"`
 }
 
+type SetRPHRegistrationModeArgs struct {
+	Mode string `json:"mode"`
+}
+
 type GenerateTestReportArgs struct {
 	Message string `json:"message"`
 	Group   string `json:"group,omitempty"`
@@ -609,4 +734,17 @@ type GenerateTestReportArgs struct {
 
 type SetInterceptFileChooserDialogArgs struct {
 	Enabled bool `json:"enabled"`
+	Cancel  bool `json:"cancel,omitempty"`
+}
+
+type SetPrerenderingAllowedArgs struct {
+	IsAllowed bool `json:"isAllowed"`
+}
+
+type GetAnnotatedPageContentArgs struct {
+	IncludeActionableInformation bool `json:"includeActionableInformation,omitempty"`
+}
+
+type GetAnnotatedPageContentVal struct {
+	Content []byte `json:"content"`
 }

@@ -54,7 +54,7 @@ type ExecutionContextDestroyed struct {
 /*
 Issued when all executionContexts were cleared in browser
 */
-type ExecutionContextsCleared interface{}
+type ExecutionContextsCleared any
 
 /*
 	Issued when object should be inspected (for example, as a result of inspect() command line API
@@ -63,6 +63,6 @@ call).
 */
 type InspectRequested struct {
 	Object             *RemoteObject      `json:"object"`
-	Hints              interface{}        `json:"hints"`
+	Hints              any                `json:"hints"`
 	ExecutionContextId ExecutionContextId `json:"executionContextId,omitempty"`
 }

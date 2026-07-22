@@ -98,3 +98,12 @@ The default is true.
 func SetAutomaticPresenceSimulation(c protocol.Caller, args SetAutomaticPresenceSimulationArgs) error {
 	return c.Call("WebAuthn.setAutomaticPresenceSimulation", args, nil)
 }
+
+/*
+	Allows setting credential properties.
+
+https://w3c.github.io/webauthn/#sctn-automation-set-credential-properties
+*/
+func SetCredentialProperties(c protocol.Caller, args SetCredentialPropertiesArgs) error {
+	return c.Call("WebAuthn.setCredentialProperties", args, nil)
+}

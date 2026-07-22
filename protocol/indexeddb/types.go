@@ -2,6 +2,7 @@ package indexeddb
 
 import (
 	"github.com/ecwid/control/protocol/runtime"
+	"github.com/ecwid/control/protocol/storage"
 )
 
 /*
@@ -73,35 +74,39 @@ type KeyPath struct {
 }
 
 type ClearObjectStoreArgs struct {
-	SecurityOrigin  string `json:"securityOrigin,omitempty"`
-	StorageKey      string `json:"storageKey,omitempty"`
-	DatabaseName    string `json:"databaseName"`
-	ObjectStoreName string `json:"objectStoreName"`
+	SecurityOrigin  string                 `json:"securityOrigin,omitempty"`
+	StorageKey      string                 `json:"storageKey,omitempty"`
+	StorageBucket   *storage.StorageBucket `json:"storageBucket,omitempty"`
+	DatabaseName    string                 `json:"databaseName"`
+	ObjectStoreName string                 `json:"objectStoreName"`
 }
 
 type DeleteDatabaseArgs struct {
-	SecurityOrigin string `json:"securityOrigin,omitempty"`
-	StorageKey     string `json:"storageKey,omitempty"`
-	DatabaseName   string `json:"databaseName"`
+	SecurityOrigin string                 `json:"securityOrigin,omitempty"`
+	StorageKey     string                 `json:"storageKey,omitempty"`
+	StorageBucket  *storage.StorageBucket `json:"storageBucket,omitempty"`
+	DatabaseName   string                 `json:"databaseName"`
 }
 
 type DeleteObjectStoreEntriesArgs struct {
-	SecurityOrigin  string    `json:"securityOrigin,omitempty"`
-	StorageKey      string    `json:"storageKey,omitempty"`
-	DatabaseName    string    `json:"databaseName"`
-	ObjectStoreName string    `json:"objectStoreName"`
-	KeyRange        *KeyRange `json:"keyRange"`
+	SecurityOrigin  string                 `json:"securityOrigin,omitempty"`
+	StorageKey      string                 `json:"storageKey,omitempty"`
+	StorageBucket   *storage.StorageBucket `json:"storageBucket,omitempty"`
+	DatabaseName    string                 `json:"databaseName"`
+	ObjectStoreName string                 `json:"objectStoreName"`
+	KeyRange        *KeyRange              `json:"keyRange"`
 }
 
 type RequestDataArgs struct {
-	SecurityOrigin  string    `json:"securityOrigin,omitempty"`
-	StorageKey      string    `json:"storageKey,omitempty"`
-	DatabaseName    string    `json:"databaseName"`
-	ObjectStoreName string    `json:"objectStoreName"`
-	IndexName       string    `json:"indexName"`
-	SkipCount       int       `json:"skipCount"`
-	PageSize        int       `json:"pageSize"`
-	KeyRange        *KeyRange `json:"keyRange,omitempty"`
+	SecurityOrigin  string                 `json:"securityOrigin,omitempty"`
+	StorageKey      string                 `json:"storageKey,omitempty"`
+	StorageBucket   *storage.StorageBucket `json:"storageBucket,omitempty"`
+	DatabaseName    string                 `json:"databaseName"`
+	ObjectStoreName string                 `json:"objectStoreName"`
+	IndexName       string                 `json:"indexName,omitempty"`
+	SkipCount       int                    `json:"skipCount"`
+	PageSize        int                    `json:"pageSize"`
+	KeyRange        *KeyRange              `json:"keyRange,omitempty"`
 }
 
 type RequestDataVal struct {
@@ -110,10 +115,11 @@ type RequestDataVal struct {
 }
 
 type GetMetadataArgs struct {
-	SecurityOrigin  string `json:"securityOrigin,omitempty"`
-	StorageKey      string `json:"storageKey,omitempty"`
-	DatabaseName    string `json:"databaseName"`
-	ObjectStoreName string `json:"objectStoreName"`
+	SecurityOrigin  string                 `json:"securityOrigin,omitempty"`
+	StorageKey      string                 `json:"storageKey,omitempty"`
+	StorageBucket   *storage.StorageBucket `json:"storageBucket,omitempty"`
+	DatabaseName    string                 `json:"databaseName"`
+	ObjectStoreName string                 `json:"objectStoreName"`
 }
 
 type GetMetadataVal struct {
@@ -122,9 +128,10 @@ type GetMetadataVal struct {
 }
 
 type RequestDatabaseArgs struct {
-	SecurityOrigin string `json:"securityOrigin,omitempty"`
-	StorageKey     string `json:"storageKey,omitempty"`
-	DatabaseName   string `json:"databaseName"`
+	SecurityOrigin string                 `json:"securityOrigin,omitempty"`
+	StorageKey     string                 `json:"storageKey,omitempty"`
+	StorageBucket  *storage.StorageBucket `json:"storageBucket,omitempty"`
+	DatabaseName   string                 `json:"databaseName"`
 }
 
 type RequestDatabaseVal struct {
@@ -132,8 +139,9 @@ type RequestDatabaseVal struct {
 }
 
 type RequestDatabaseNamesArgs struct {
-	SecurityOrigin string `json:"securityOrigin,omitempty"`
-	StorageKey     string `json:"storageKey,omitempty"`
+	SecurityOrigin string                 `json:"securityOrigin,omitempty"`
+	StorageKey     string                 `json:"storageKey,omitempty"`
+	StorageBucket  *storage.StorageBucket `json:"storageBucket,omitempty"`
 }
 
 type RequestDatabaseNamesVal struct {

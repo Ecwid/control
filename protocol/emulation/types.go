@@ -7,6 +7,19 @@ import (
 )
 
 /*
+ */
+type SafeAreaInsets struct {
+	Top       int `json:"top,omitempty"`
+	TopMax    int `json:"topMax,omitempty"`
+	Left      int `json:"left,omitempty"`
+	LeftMax   int `json:"leftMax,omitempty"`
+	Bottom    int `json:"bottom,omitempty"`
+	BottomMax int `json:"bottomMax,omitempty"`
+	Right     int `json:"right,omitempty"`
+	RightMax  int `json:"rightMax,omitempty"`
+}
+
+/*
 Screen orientation.
 */
 type ScreenOrientation struct {
@@ -20,6 +33,12 @@ type DisplayFeature struct {
 	Orientation string `json:"orientation"`
 	Offset      int    `json:"offset"`
 	MaskLength  int    `json:"maskLength"`
+}
+
+/*
+ */
+type DevicePosture struct {
+	Type string `json:"type"`
 }
 
 /*
@@ -39,7 +58,7 @@ resource fetches.
 type VirtualTimePolicy string
 
 /*
-Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
+Used to specify User Agent Client Hints to emulate. See https://wicg.github.io/ua-client-hints
 */
 type UserAgentBrandVersion struct {
 	Brand   string `json:"brand"`
@@ -47,7 +66,7 @@ type UserAgentBrandVersion struct {
 }
 
 /*
-	Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
+	Used to specify User Agent Client Hints to emulate. See https://wicg.github.io/ua-client-hints
 
 Missing optional values will be filled in by the target with what it would normally use.
 */
@@ -61,16 +80,110 @@ type UserAgentMetadata struct {
 	Mobile          bool                            `json:"mobile"`
 	Bitness         string                          `json:"bitness,omitempty"`
 	Wow64           bool                            `json:"wow64,omitempty"`
+	FormFactors     []string                        `json:"formFactors,omitempty"`
+}
+
+/*
+	Used to specify sensor types to emulate.
+
+See https://w3c.github.io/sensors/#automation for more information.
+*/
+type SensorType string
+
+/*
+ */
+type SensorMetadata struct {
+	Available        bool    `json:"available,omitempty"`
+	MinimumFrequency float64 `json:"minimumFrequency,omitempty"`
+	MaximumFrequency float64 `json:"maximumFrequency,omitempty"`
+}
+
+/*
+ */
+type SensorReadingSingle struct {
+	Value float64 `json:"value"`
+}
+
+/*
+ */
+type SensorReadingXYZ struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
+}
+
+/*
+ */
+type SensorReadingQuaternion struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
+	W float64 `json:"w"`
+}
+
+/*
+ */
+type SensorReading struct {
+	Single     *SensorReadingSingle     `json:"single,omitempty"`
+	Xyz        *SensorReadingXYZ        `json:"xyz,omitempty"`
+	Quaternion *SensorReadingQuaternion `json:"quaternion,omitempty"`
+}
+
+/*
+ */
+type PressureSource string
+
+/*
+ */
+type PressureState string
+
+/*
+ */
+type PressureMetadata struct {
+	Available bool `json:"available,omitempty"`
+}
+
+/*
+ */
+type WorkAreaInsets struct {
+	Top    int `json:"top,omitempty"`
+	Left   int `json:"left,omitempty"`
+	Bottom int `json:"bottom,omitempty"`
+	Right  int `json:"right,omitempty"`
+}
+
+/*
+ */
+type ScreenId string
+
+/*
+	Screen information similar to the one returned by window.getScreenDetails() method,
+
+see https://w3c.github.io/window-management/#screendetailed.
+*/
+type ScreenInfo struct {
+	Left             int                `json:"left"`
+	Top              int                `json:"top"`
+	Width            int                `json:"width"`
+	Height           int                `json:"height"`
+	AvailLeft        int                `json:"availLeft"`
+	AvailTop         int                `json:"availTop"`
+	AvailWidth       int                `json:"availWidth"`
+	AvailHeight      int                `json:"availHeight"`
+	DevicePixelRatio float64            `json:"devicePixelRatio"`
+	Orientation      *ScreenOrientation `json:"orientation"`
+	ColorDepth       int                `json:"colorDepth"`
+	IsExtended       bool               `json:"isExtended"`
+	IsInternal       bool               `json:"isInternal"`
+	IsPrimary        bool               `json:"isPrimary"`
+	Label            string             `json:"label"`
+	Id               ScreenId           `json:"id"`
 }
 
 /*
 Enum of image types that can be disabled.
 */
 type DisabledImageType string
-
-type CanEmulateVal struct {
-	Result bool `json:"result"`
-}
 
 type SetFocusEmulationEnabledArgs struct {
 	Enabled bool `json:"enabled"`
@@ -88,20 +201,33 @@ type SetDefaultBackgroundColorOverrideArgs struct {
 	Color *dom.RGBA `json:"color,omitempty"`
 }
 
+type SetSafeAreaInsetsOverrideArgs struct {
+	Insets *SafeAreaInsets `json:"insets"`
+}
+
 type SetDeviceMetricsOverrideArgs struct {
-	Width              int                `json:"width"`
-	Height             int                `json:"height"`
-	DeviceScaleFactor  float64            `json:"deviceScaleFactor"`
-	Mobile             bool               `json:"mobile"`
-	Scale              float64            `json:"scale,omitempty"`
-	ScreenWidth        int                `json:"screenWidth,omitempty"`
-	ScreenHeight       int                `json:"screenHeight,omitempty"`
-	PositionX          int                `json:"positionX,omitempty"`
-	PositionY          int                `json:"positionY,omitempty"`
-	DontSetVisibleSize bool               `json:"dontSetVisibleSize,omitempty"`
-	ScreenOrientation  *ScreenOrientation `json:"screenOrientation,omitempty"`
-	Viewport           *page.Viewport     `json:"viewport,omitempty"`
-	DisplayFeature     *DisplayFeature    `json:"displayFeature,omitempty"`
+	Width                          int                `json:"width"`
+	Height                         int                `json:"height"`
+	DeviceScaleFactor              float64            `json:"deviceScaleFactor"`
+	Mobile                         bool               `json:"mobile"`
+	Scale                          float64            `json:"scale,omitempty"`
+	ScreenWidth                    int                `json:"screenWidth,omitempty"`
+	ScreenHeight                   int                `json:"screenHeight,omitempty"`
+	PositionX                      int                `json:"positionX,omitempty"`
+	PositionY                      int                `json:"positionY,omitempty"`
+	DontSetVisibleSize             bool               `json:"dontSetVisibleSize,omitempty"`
+	ScreenOrientation              *ScreenOrientation `json:"screenOrientation,omitempty"`
+	Viewport                       *page.Viewport     `json:"viewport,omitempty"`
+	ScrollbarType                  string             `json:"scrollbarType,omitempty"`
+	ScreenOrientationLockEmulation bool               `json:"screenOrientationLockEmulation,omitempty"`
+}
+
+type SetDevicePostureOverrideArgs struct {
+	Posture *DevicePosture `json:"posture"`
+}
+
+type SetDisplayFeaturesOverrideArgs struct {
+	Features []*DisplayFeature `json:"features"`
 }
 
 type SetScrollbarsHiddenArgs struct {
@@ -126,10 +252,48 @@ type SetEmulatedVisionDeficiencyArgs struct {
 	Type string `json:"type"`
 }
 
+type SetEmulatedOSTextScaleArgs struct {
+	Scale float64 `json:"scale,omitempty"`
+}
+
 type SetGeolocationOverrideArgs struct {
-	Latitude  float64 `json:"latitude,omitempty"`
-	Longitude float64 `json:"longitude,omitempty"`
-	Accuracy  float64 `json:"accuracy,omitempty"`
+	Latitude         float64 `json:"latitude,omitempty"`
+	Longitude        float64 `json:"longitude,omitempty"`
+	Accuracy         float64 `json:"accuracy,omitempty"`
+	Altitude         float64 `json:"altitude,omitempty"`
+	AltitudeAccuracy float64 `json:"altitudeAccuracy,omitempty"`
+	Heading          float64 `json:"heading,omitempty"`
+	Speed            float64 `json:"speed,omitempty"`
+}
+
+type GetOverriddenSensorInformationArgs struct {
+	Type SensorType `json:"type"`
+}
+
+type GetOverriddenSensorInformationVal struct {
+	RequestedSamplingFrequency float64 `json:"requestedSamplingFrequency"`
+}
+
+type SetSensorOverrideEnabledArgs struct {
+	Enabled  bool            `json:"enabled"`
+	Type     SensorType      `json:"type"`
+	Metadata *SensorMetadata `json:"metadata,omitempty"`
+}
+
+type SetSensorOverrideReadingsArgs struct {
+	Type    SensorType     `json:"type"`
+	Reading *SensorReading `json:"reading"`
+}
+
+type SetPressureSourceOverrideEnabledArgs struct {
+	Enabled  bool              `json:"enabled"`
+	Source   PressureSource    `json:"source"`
+	Metadata *PressureMetadata `json:"metadata,omitempty"`
+}
+
+type SetPressureStateOverrideArgs struct {
+	Source PressureSource `json:"source"`
+	State  PressureState  `json:"state"`
 }
 
 type SetIdleOverrideArgs struct {
@@ -173,6 +337,10 @@ type SetDisabledImageTypesArgs struct {
 	ImageTypes []DisabledImageType `json:"imageTypes"`
 }
 
+type SetDataSaverOverrideArgs struct {
+	DataSaverEnabled bool `json:"dataSaverEnabled,omitempty"`
+}
+
 type SetHardwareConcurrencyOverrideArgs struct {
 	HardwareConcurrency int `json:"hardwareConcurrency"`
 }
@@ -186,4 +354,55 @@ type SetUserAgentOverrideArgs struct {
 
 type SetAutomationOverrideArgs struct {
 	Enabled bool `json:"enabled"`
+}
+
+type SetSmallViewportHeightDifferenceOverrideArgs struct {
+	Difference int `json:"difference"`
+}
+
+type GetScreenInfosVal struct {
+	ScreenInfos []*ScreenInfo `json:"screenInfos"`
+}
+
+type AddScreenArgs struct {
+	Left             int             `json:"left"`
+	Top              int             `json:"top"`
+	Width            int             `json:"width"`
+	Height           int             `json:"height"`
+	WorkAreaInsets   *WorkAreaInsets `json:"workAreaInsets,omitempty"`
+	DevicePixelRatio float64         `json:"devicePixelRatio,omitempty"`
+	Rotation         int             `json:"rotation,omitempty"`
+	ColorDepth       int             `json:"colorDepth,omitempty"`
+	Label            string          `json:"label,omitempty"`
+	IsInternal       bool            `json:"isInternal,omitempty"`
+}
+
+type AddScreenVal struct {
+	ScreenInfo *ScreenInfo `json:"screenInfo"`
+}
+
+type UpdateScreenArgs struct {
+	ScreenId         ScreenId        `json:"screenId"`
+	Left             int             `json:"left,omitempty"`
+	Top              int             `json:"top,omitempty"`
+	Width            int             `json:"width,omitempty"`
+	Height           int             `json:"height,omitempty"`
+	WorkAreaInsets   *WorkAreaInsets `json:"workAreaInsets,omitempty"`
+	DevicePixelRatio float64         `json:"devicePixelRatio,omitempty"`
+	Rotation         int             `json:"rotation,omitempty"`
+	ColorDepth       int             `json:"colorDepth,omitempty"`
+	Label            string          `json:"label,omitempty"`
+	IsInternal       bool            `json:"isInternal,omitempty"`
+}
+
+type UpdateScreenVal struct {
+	ScreenInfo *ScreenInfo `json:"screenInfo"`
+}
+
+type RemoveScreenArgs struct {
+	ScreenId ScreenId `json:"screenId"`
+}
+
+type SetPrimaryScreenArgs struct {
+	ScreenId ScreenId `json:"screenId"`
 }

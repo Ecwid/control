@@ -48,7 +48,7 @@ func RequestData(c protocol.Caller, args RequestDataArgs) (*RequestDataVal, erro
 }
 
 /*
-Gets metadata of an object store
+Gets metadata of an object store.
 */
 func GetMetadata(c protocol.Caller, args GetMetadataArgs) (*GetMetadataVal, error) {
 	var val = &GetMetadataVal{}

@@ -1,5 +1,9 @@
 package dom
 
+import (
+	"github.com/ecwid/control/protocol/network"
+)
+
 /*
 Fired when `Element`'s attribute is modified.
 */
@@ -7,6 +11,14 @@ type AttributeModified struct {
 	NodeId NodeId `json:"nodeId"`
 	Name   string `json:"name"`
 	Value  string `json:"value"`
+}
+
+/*
+Fired when `Element`'s adoptedStyleSheets are modified.
+*/
+type AdoptedStyleSheetsModified struct {
+	NodeId             NodeId         `json:"nodeId"`
+	AdoptedStyleSheets []StyleSheetId `json:"adoptedStyleSheets"`
 }
 
 /*
@@ -61,7 +73,7 @@ type DistributedNodesUpdated struct {
 /*
 Fired when `Document` has been totally updated. Node ids are no longer valid.
 */
-type DocumentUpdated interface{}
+type DocumentUpdated any
 
 /*
 Fired when `Element`'s inline style is modified via a CSS property modification.
@@ -81,7 +93,31 @@ type PseudoElementAdded struct {
 /*
 Called when top layer elements are changed.
 */
-type TopLayerElementsUpdated interface{}
+type TopLayerElementsUpdated any
+
+/*
+Fired when a node's scrollability state changes.
+*/
+type ScrollableFlagUpdated struct {
+	NodeId       NodeId `json:"nodeId"`
+	IsScrollable bool   `json:"isScrollable"`
+}
+
+/*
+Fired when a node's ad related state changes.
+*/
+type AdRelatedStateUpdated struct {
+	NodeId       NodeId                `json:"nodeId"`
+	AdProvenance *network.AdProvenance `json:"adProvenance,omitempty"`
+}
+
+/*
+Fired when a node's starting styles changes.
+*/
+type AffectedByStartingStylesFlagUpdated struct {
+	NodeId                   NodeId `json:"nodeId"`
+	AffectedByStartingStyles bool   `json:"affectedByStartingStyles"`
+}
 
 /*
 Called when a pseudo element is removed from an element.

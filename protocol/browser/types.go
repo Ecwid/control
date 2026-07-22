@@ -40,13 +40,14 @@ type PermissionSetting string
 /*
 	Definition of PermissionDescriptor defined in the Permissions API:
 
-https://w3c.github.io/permissions/#dictdef-permissiondescriptor.
+https://w3c.github.io/permissions/#dom-permissiondescriptor.
 */
 type PermissionDescriptor struct {
 	Name                     string `json:"name"`
 	Sysex                    bool   `json:"sysex,omitempty"`
 	UserVisibleOnly          bool   `json:"userVisibleOnly,omitempty"`
 	AllowWithoutSanitization bool   `json:"allowWithoutSanitization,omitempty"`
+	AllowWithoutGesture      bool   `json:"allowWithoutGesture,omitempty"`
 	PanTiltZoom              bool   `json:"panTiltZoom,omitempty"`
 }
 
@@ -74,16 +75,15 @@ type Histogram struct {
 	Buckets []*Bucket `json:"buckets"`
 }
 
+/*
+ */
+type PrivacySandboxAPI string
+
 type SetPermissionArgs struct {
 	Permission       *PermissionDescriptor   `json:"permission"`
 	Setting          PermissionSetting       `json:"setting"`
 	Origin           string                  `json:"origin,omitempty"`
-	BrowserContextId common.BrowserContextID `json:"browserContextId,omitempty"`
-}
-
-type GrantPermissionsArgs struct {
-	Permissions      []PermissionType        `json:"permissions"`
-	Origin           string                  `json:"origin,omitempty"`
+	EmbeddedOrigin   string                  `json:"embeddedOrigin,omitempty"`
 	BrowserContextId common.BrowserContextID `json:"browserContextId,omitempty"`
 }
 
@@ -155,6 +155,12 @@ type SetWindowBoundsArgs struct {
 	Bounds   *Bounds  `json:"bounds"`
 }
 
+type SetContentsSizeArgs struct {
+	WindowId WindowID `json:"windowId"`
+	Width    int      `json:"width,omitempty"`
+	Height   int      `json:"height,omitempty"`
+}
+
 type SetDockTileArgs struct {
 	BadgeLabel string `json:"badgeLabel,omitempty"`
 	Image      []byte `json:"image,omitempty"`
@@ -162,4 +168,15 @@ type SetDockTileArgs struct {
 
 type ExecuteBrowserCommandArgs struct {
 	CommandId BrowserCommandId `json:"commandId"`
+}
+
+type AddPrivacySandboxEnrollmentOverrideArgs struct {
+	Url string `json:"url"`
+}
+
+type AddPrivacySandboxCoordinatorKeyConfigArgs struct {
+	Api               PrivacySandboxAPI       `json:"api"`
+	CoordinatorOrigin string                  `json:"coordinatorOrigin"`
+	KeyConfig         string                  `json:"keyConfig"`
+	BrowserContextId  common.BrowserContextID `json:"browserContextId,omitempty"`
 }

@@ -5,9 +5,9 @@ import (
 )
 
 /*
-	This is either obtained from another method or specified as `blob:&lt;uuid&gt;` where
+	This is either obtained from another method or specified as `blob:<uuid>` where
 
-`&lt;uuid&gt` is an UUID of a Blob.
+`<uuid>` is an UUID of a Blob.
 */
 type StreamHandle string
 

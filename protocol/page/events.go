@@ -40,6 +40,15 @@ type FrameDetached struct {
 }
 
 /*
+	Fired before frame subtree is detached. Emitted before any frame of the
+
+subtree is actually detached.
+*/
+type FrameSubtreeWillBeDetached struct {
+	FrameId common.FrameId `json:"frameId"`
+}
+
+/*
 Fired once navigation of the frame has completed. Frame is now associated with the new loader.
 */
 type FrameNavigated struct {
@@ -56,7 +65,24 @@ type DocumentOpened struct {
 
 /*
  */
-type FrameResized interface{}
+type FrameResized any
+
+/*
+	Fired when a navigation starts. This event is fired for both
+
+renderer-initiated and browser-initiated navigations. For renderer-initiated
+navigations, the event is fired after `frameRequestedNavigation`.
+Navigation may still be cancelled after the event is issued. Multiple events
+can be fired for a single navigation, for example, when a same-document
+navigation becomes a cross-document navigation (such as in the case of a
+frameset).
+*/
+type FrameStartedNavigating struct {
+	FrameId        common.FrameId   `json:"frameId"`
+	Url            string           `json:"url"`
+	LoaderId       network.LoaderId `json:"loaderId"`
+	NavigationType string           `json:"navigationType"`
+}
 
 /*
 	Fired when a renderer-initiated navigation is requested.
@@ -87,12 +113,12 @@ type FrameStoppedLoading struct {
 /*
 Fired when interstitial page was hidden
 */
-type InterstitialHidden interface{}
+type InterstitialHidden any
 
 /*
 Fired when interstitial page was shown
 */
-type InterstitialShown interface{}
+type InterstitialShown any
 
 /*
 	Fired when a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload) has been
@@ -100,8 +126,9 @@ type InterstitialShown interface{}
 closed.
 */
 type JavascriptDialogClosed struct {
-	Result    bool   `json:"result"`
-	UserInput string `json:"userInput"`
+	FrameId   common.FrameId `json:"frameId"`
+	Result    bool           `json:"result"`
+	UserInput string         `json:"userInput"`
 }
 
 /*
@@ -110,15 +137,18 @@ type JavascriptDialogClosed struct {
 open.
 */
 type JavascriptDialogOpening struct {
-	Url               string     `json:"url"`
-	Message           string     `json:"message"`
-	Type              DialogType `json:"type"`
-	HasBrowserHandler bool       `json:"hasBrowserHandler"`
-	DefaultPrompt     string     `json:"defaultPrompt,omitempty"`
+	Url               string         `json:"url"`
+	FrameId           common.FrameId `json:"frameId"`
+	Message           string         `json:"message"`
+	Type              DialogType     `json:"type"`
+	HasBrowserHandler bool           `json:"hasBrowserHandler"`
+	DefaultPrompt     string         `json:"defaultPrompt,omitempty"`
 }
 
 /*
-Fired for top level page lifecycle events such as navigation, load, paint, etc.
+	Fired for lifecycle events (navigation, load, paint, etc) in the current
+
+target (including local frames).
 */
 type LifecycleEvent struct {
 	FrameId   common.FrameId        `json:"frameId"`
@@ -142,16 +172,6 @@ type BackForwardCacheNotUsed struct {
 }
 
 /*
-Fired when a prerender attempt is completed.
-*/
-type PrerenderAttemptCompleted struct {
-	InitiatingFrameId   common.FrameId       `json:"initiatingFrameId"`
-	PrerenderingUrl     string               `json:"prerenderingUrl"`
-	FinalStatus         PrerenderFinalStatus `json:"finalStatus"`
-	DisallowedApiMethod string               `json:"disallowedApiMethod,omitempty"`
-}
-
-/*
  */
 type LoadEventFired struct {
 	Timestamp network.MonotonicTime `json:"timestamp"`
@@ -161,8 +181,9 @@ type LoadEventFired struct {
 Fired when same-document navigation happens, e.g. due to history API usage or anchor navigation.
 */
 type NavigatedWithinDocument struct {
-	FrameId common.FrameId `json:"frameId"`
-	Url     string         `json:"url"`
+	FrameId        common.FrameId `json:"frameId"`
+	Url            string         `json:"url"`
+	NavigationType string         `json:"navigationType"`
 }
 
 /*
@@ -194,9 +215,7 @@ type WindowOpen struct {
 }
 
 /*
-	Issued for every compilation cache generated. Is only available
-
-if Page.setGenerateCompilationCache is enabled.
+Issued for every compilation cache generated.
 */
 type CompilationCacheProduced struct {
 	Url  string `json:"url"`

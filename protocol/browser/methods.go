@@ -5,17 +5,10 @@ import (
 )
 
 /*
-Set permission settings for given origin.
+Set permission settings for given embedding and embedded origins.
 */
 func SetPermission(c protocol.Caller, args SetPermissionArgs) error {
 	return c.Call("Browser.setPermission", args, nil)
-}
-
-/*
-Grant specific permissions to the given origin and reject all others.
-*/
-func GrantPermissions(c protocol.Caller, args GrantPermissionsArgs) error {
-	return c.Call("Browser.grantPermissions", args, nil)
 }
 
 /*
@@ -118,6 +111,13 @@ func SetWindowBounds(c protocol.Caller, args SetWindowBoundsArgs) error {
 }
 
 /*
+Set size of the browser contents resizing browser window as necessary.
+*/
+func SetContentsSize(c protocol.Caller, args SetContentsSizeArgs) error {
+	return c.Call("Browser.setContentsSize", args, nil)
+}
+
+/*
 Set dock tile details, platform-specific.
 */
 func SetDockTile(c protocol.Caller, args SetDockTileArgs) error {
@@ -129,4 +129,24 @@ Invoke custom browser commands used by telemetry.
 */
 func ExecuteBrowserCommand(c protocol.Caller, args ExecuteBrowserCommandArgs) error {
 	return c.Call("Browser.executeBrowserCommand", args, nil)
+}
+
+/*
+	Allows a site to use privacy sandbox features that require enrollment
+
+without the site actually being enrolled. Only supported on page targets.
+*/
+func AddPrivacySandboxEnrollmentOverride(c protocol.Caller, args AddPrivacySandboxEnrollmentOverrideArgs) error {
+	return c.Call("Browser.addPrivacySandboxEnrollmentOverride", args, nil)
+}
+
+/*
+	Configures encryption keys used with a given privacy sandbox API to talk
+
+to a trusted coordinator.  Since this is intended for test automation only,
+coordinatorOrigin must be a .test domain. No existing coordinator
+configuration for the origin may exist.
+*/
+func AddPrivacySandboxCoordinatorKeyConfig(c protocol.Caller, args AddPrivacySandboxCoordinatorKeyConfigArgs) error {
+	return c.Call("Browser.addPrivacySandboxCoordinatorKeyConfig", args, nil)
 }

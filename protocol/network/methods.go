@@ -33,7 +33,7 @@ func ClearBrowserCookies(c protocol.Caller) error {
 }
 
 /*
-Deletes browser cookies with matching name and url or domain/path pair.
+Deletes browser cookies with matching name and url or domain/path/partitionKey pair.
 */
 func DeleteCookies(c protocol.Caller, args DeleteCookiesArgs) error {
 	return c.Call("Network.deleteCookies", args, nil)
@@ -47,10 +47,21 @@ func Disable(c protocol.Caller) error {
 }
 
 /*
-Activates emulation of network conditions.
+	Activates emulation of network conditions for individual requests using URL match patterns. Unlike the deprecated
+
+Network.emulateNetworkConditions this method does not affect `navigator` state. Use Network.overrideNetworkState to
+explicitly modify `navigator` behavior.
 */
-func EmulateNetworkConditions(c protocol.Caller, args EmulateNetworkConditionsArgs) error {
-	return c.Call("Network.emulateNetworkConditions", args, nil)
+func EmulateNetworkConditionsByRule(c protocol.Caller, args EmulateNetworkConditionsByRuleArgs) (*EmulateNetworkConditionsByRuleVal, error) {
+	var val = &EmulateNetworkConditionsByRuleVal{}
+	return val, c.Call("Network.emulateNetworkConditionsByRule", args, val)
+}
+
+/*
+Override the state of navigator.onLine and navigator.connection.
+*/
+func OverrideNetworkState(c protocol.Caller, args OverrideNetworkStateArgs) error {
+	return c.Call("Network.overrideNetworkState", args, nil)
 }
 
 /*
@@ -58,6 +69,16 @@ Enables network tracking, network events will now be delivered to the client.
 */
 func Enable(c protocol.Caller, args EnableArgs) error {
 	return c.Call("Network.enable", args, nil)
+}
+
+/*
+	Configures storing response bodies outside of renderer, so that these survive
+
+a cross-process navigation.
+If maxTotalBufferSize is not set, durable messages are disabled.
+*/
+func ConfigureDurableMessages(c protocol.Caller, args ConfigureDurableMessagesArgs) error {
+	return c.Call("Network.configureDurableMessages", args, nil)
 }
 
 /*
@@ -189,6 +210,16 @@ func SetUserAgentOverride(c protocol.Caller, args SetUserAgentOverrideArgs) erro
 }
 
 /*
+	Enables streaming of the response for the given requestId.
+
+If enabled, the dataReceived event contains the data that was received during streaming.
+*/
+func StreamResourceContent(c protocol.Caller, args StreamResourceContentArgs) (*StreamResourceContentVal, error) {
+	var val = &StreamResourceContentVal{}
+	return val, c.Call("Network.streamResourceContent", args, val)
+}
+
+/*
 Returns information about the COEP/COOP isolation status.
 */
 func GetSecurityIsolationStatus(c protocol.Caller, args GetSecurityIsolationStatusArgs) (*GetSecurityIsolationStatusVal, error) {
@@ -206,9 +237,40 @@ func EnableReportingApi(c protocol.Caller, args EnableReportingApiArgs) error {
 }
 
 /*
+Sets up tracking device bound sessions and fetching of initial set of sessions.
+*/
+func EnableDeviceBoundSessions(c protocol.Caller, args EnableDeviceBoundSessionsArgs) error {
+	return c.Call("Network.enableDeviceBoundSessions", args, nil)
+}
+
+/*
+Deletes a device bound session.
+*/
+func DeleteDeviceBoundSession(c protocol.Caller, args DeleteDeviceBoundSessionArgs) error {
+	return c.Call("Network.deleteDeviceBoundSession", args, nil)
+}
+
+/*
+Fetches the schemeful site for a specific origin.
+*/
+func FetchSchemefulSite(c protocol.Caller, args FetchSchemefulSiteArgs) (*FetchSchemefulSiteVal, error) {
+	var val = &FetchSchemefulSiteVal{}
+	return val, c.Call("Network.fetchSchemefulSite", args, val)
+}
+
+/*
 Fetches the resource and returns the content.
 */
 func LoadNetworkResource(c protocol.Caller, args LoadNetworkResourceArgs) (*LoadNetworkResourceVal, error) {
 	var val = &LoadNetworkResourceVal{}
 	return val, c.Call("Network.loadNetworkResource", args, val)
+}
+
+/*
+	Sets Controls for third-party cookie access
+
+Page reload is required before the new cookie behavior will be observed
+*/
+func SetCookieControls(c protocol.Caller, args SetCookieControlsArgs) error {
+	return c.Call("Network.setCookieControls", args, nil)
 }

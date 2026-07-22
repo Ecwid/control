@@ -31,10 +31,11 @@ func Enable(c protocol.Caller) error {
 }
 
 /*
-	Runs the contrast check for the target page. Found issues are reported
+	Runs the form issues check for the target page. Found issues are reported
 
 using Audits.issueAdded event.
 */
-func CheckContrast(c protocol.Caller, args CheckContrastArgs) error {
-	return c.Call("Audits.checkContrast", args, nil)
+func CheckFormsIssues(c protocol.Caller) (*CheckFormsIssuesVal, error) {
+	var val = &CheckFormsIssuesVal{}
+	return val, c.Call("Audits.checkFormsIssues", nil, val)
 }

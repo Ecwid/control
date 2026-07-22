@@ -20,8 +20,8 @@ type AffectedCookie struct {
 Information about a request that is affected by an inspector issue.
 */
 type AffectedRequest struct {
-	RequestId network.RequestId `json:"requestId"`
-	Url       string            `json:"url,omitempty"`
+	RequestId network.RequestId `json:"requestId,omitempty"`
+	Url       string            `json:"url"`
 }
 
 /*
@@ -44,6 +44,19 @@ type CookieWarningReason string
 type CookieOperation string
 
 /*
+Represents the category of insight that a cookie issue falls under.
+*/
+type InsightType string
+
+/*
+Information about the suggested solution to a cookie issue.
+*/
+type CookieIssueInsight struct {
+	Type          InsightType `json:"type"`
+	TableEntryUrl string      `json:"tableEntryUrl,omitempty"`
+}
+
+/*
 	This information is currently necessary, as the front-end has a difficult
 
 time finding a specific cookie. With this, we can convey specific error
@@ -58,6 +71,19 @@ type CookieIssueDetails struct {
 	SiteForCookies         string                  `json:"siteForCookies,omitempty"`
 	CookieUrl              string                  `json:"cookieUrl,omitempty"`
 	Request                *AffectedRequest        `json:"request,omitempty"`
+	Insight                *CookieIssueInsight     `json:"insight,omitempty"`
+}
+
+/*
+ */
+type PerformanceIssueType string
+
+/*
+Details for a performance issue.
+*/
+type PerformanceIssueDetails struct {
+	PerformanceIssueType PerformanceIssueType `json:"performanceIssueType"`
+	SourceCodeLocation   *SourceCodeLocation  `json:"sourceCodeLocation,omitempty"`
 }
 
 /*
@@ -156,32 +182,6 @@ type SharedArrayBufferIssueDetails struct {
 }
 
 /*
- */
-type TwaQualityEnforcementViolationType string
-
-/*
- */
-type TrustedWebActivityIssueDetails struct {
-	Url            string                             `json:"url"`
-	ViolationType  TwaQualityEnforcementViolationType `json:"violationType"`
-	HttpStatusCode int                                `json:"httpStatusCode,omitempty"`
-	PackageName    string                             `json:"packageName,omitempty"`
-	Signature      string                             `json:"signature,omitempty"`
-}
-
-/*
- */
-type LowTextContrastIssueDetails struct {
-	ViolatingNodeId       dom.BackendNodeId `json:"violatingNodeId"`
-	ViolatingNodeSelector string            `json:"violatingNodeSelector"`
-	ContrastRatio         float64           `json:"contrastRatio"`
-	ThresholdAA           float64           `json:"thresholdAA"`
-	ThresholdAAA          float64           `json:"thresholdAAA"`
-	FontSize              string            `json:"fontSize"`
-	FontWeight            string            `json:"fontWeight"`
-}
-
-/*
 	Details for a CORS related issue, e.g. a warning or error related to
 
 CORS RFC1918 enforcement.
@@ -199,6 +199,22 @@ type CorsIssueDetails struct {
 /*
  */
 type AttributionReportingIssueType string
+
+/*
+ */
+type SharedDictionaryError string
+
+/*
+ */
+type SRIMessageSignatureError string
+
+/*
+ */
+type UnencodedDigestError string
+
+/*
+ */
+type ConnectionAllowlistError string
 
 /*
 	Details for issues around "Attribution Reporting API" usage.
@@ -227,9 +243,32 @@ type QuirksModeIssueDetails struct {
 
 /*
  */
-type NavigatorUserAgentIssueDetails struct {
-	Url      string              `json:"url"`
-	Location *SourceCodeLocation `json:"location,omitempty"`
+type SharedDictionaryIssueDetails struct {
+	SharedDictionaryError SharedDictionaryError `json:"sharedDictionaryError"`
+	Request               *AffectedRequest      `json:"request"`
+}
+
+/*
+ */
+type SRIMessageSignatureIssueDetails struct {
+	Error               SRIMessageSignatureError `json:"error"`
+	SignatureBase       string                   `json:"signatureBase"`
+	IntegrityAssertions []string                 `json:"integrityAssertions"`
+	Request             *AffectedRequest         `json:"request"`
+}
+
+/*
+ */
+type UnencodedDigestIssueDetails struct {
+	Error   UnencodedDigestError `json:"error"`
+	Request *AffectedRequest     `json:"request"`
+}
+
+/*
+ */
+type ConnectionAllowlistIssueDetails struct {
+	Error   ConnectionAllowlistError `json:"error"`
+	Request *AffectedRequest         `json:"request"`
 }
 
 /*
@@ -240,14 +279,12 @@ type GenericIssueErrorType string
 Depending on the concrete errorType, different properties are set.
 */
 type GenericIssueDetails struct {
-	ErrorType       GenericIssueErrorType `json:"errorType"`
-	FrameId         common.FrameId        `json:"frameId,omitempty"`
-	ViolatingNodeId dom.BackendNodeId     `json:"violatingNodeId,omitempty"`
+	ErrorType              GenericIssueErrorType `json:"errorType"`
+	FrameId                common.FrameId        `json:"frameId,omitempty"`
+	ViolatingNodeId        dom.BackendNodeId     `json:"violatingNodeId,omitempty"`
+	ViolatingNodeAttribute string                `json:"violatingNodeAttribute,omitempty"`
+	Request                *AffectedRequest      `json:"request,omitempty"`
 }
-
-/*
- */
-type DeprecationIssueType string
 
 /*
 	This issue tracks information needed to print a deprecation message.
@@ -255,9 +292,36 @@ type DeprecationIssueType string
 https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/core/frame/third_party/blink/renderer/core/frame/deprecation/README.md
 */
 type DeprecationIssueDetails struct {
-	AffectedFrame      *AffectedFrame       `json:"affectedFrame,omitempty"`
-	SourceCodeLocation *SourceCodeLocation  `json:"sourceCodeLocation"`
-	Type               DeprecationIssueType `json:"type"`
+	AffectedFrame      *AffectedFrame      `json:"affectedFrame,omitempty"`
+	SourceCodeLocation *SourceCodeLocation `json:"sourceCodeLocation"`
+	Type               string              `json:"type"`
+}
+
+/*
+	This issue warns about sites in the redirect chain of a finished navigation
+
+that may be flagged as trackers and have their state cleared if they don't
+receive a user interaction. Note that in this context 'site' means eTLD+1.
+For example, if the URL `https://example.test:80/bounce` was in the
+redirect chain, the site reported would be `example.test`.
+*/
+type BounceTrackingIssueDetails struct {
+	TrackingSites []string `json:"trackingSites"`
+}
+
+/*
+	This issue warns about third-party sites that are accessing cookies on the
+
+current page, and have been permitted due to having a global metadata grant.
+Note that in this context 'site' means eTLD+1. For example, if the URL
+`https://example.test:80/web_page` was accessing cookies, the site reported
+would be `example.test`.
+*/
+type CookieDeprecationMetadataIssueDetails struct {
+	AllowedSites     []string        `json:"allowedSites"`
+	OptOutPercentage float64         `json:"optOutPercentage"`
+	IsOptOutTopLevel bool            `json:"isOptOutTopLevel"`
+	Operation        CookieOperation `json:"operation"`
 }
 
 /*
@@ -280,6 +344,34 @@ all cases except for success.
 type FederatedAuthRequestIssueReason string
 
 /*
+ */
+type FederatedAuthUserInfoRequestIssueDetails struct {
+	FederatedAuthUserInfoRequestIssueReason FederatedAuthUserInfoRequestIssueReason `json:"federatedAuthUserInfoRequestIssueReason"`
+}
+
+/*
+	Represents the failure reason when a getUserInfo() call fails.
+
+Should be updated alongside FederatedAuthUserInfoRequestResult in
+third_party/blink/public/mojom/devtools/inspector_issue.mojom.
+*/
+type FederatedAuthUserInfoRequestIssueReason string
+
+/*
+ */
+type EmailVerificationRequestIssueDetails struct {
+	EmailVerificationRequestIssueReason EmailVerificationRequestIssueReason `json:"emailVerificationRequestIssueReason"`
+}
+
+/*
+	Represents the failure reason when an email verification request fails.
+
+Should be updated alongside EmailVerificationRequestResult in
+third_party/blink/public/mojom/devtools/inspector_issue.mojom.
+*/
+type EmailVerificationRequestIssueReason string
+
+/*
 	This issue tracks client hints related issues. It's used to deprecate old
 
 features, encourage the use of new ones, and provide general guidance.
@@ -287,6 +379,110 @@ features, encourage the use of new ones, and provide general guidance.
 type ClientHintIssueDetails struct {
 	SourceCodeLocation    *SourceCodeLocation   `json:"sourceCodeLocation"`
 	ClientHintIssueReason ClientHintIssueReason `json:"clientHintIssueReason"`
+}
+
+/*
+ */
+type FailedRequestInfo struct {
+	Url            string            `json:"url"`
+	FailureMessage string            `json:"failureMessage"`
+	RequestId      network.RequestId `json:"requestId,omitempty"`
+}
+
+/*
+ */
+type PartitioningBlobURLInfo string
+
+/*
+ */
+type PartitioningBlobURLIssueDetails struct {
+	Url                     string                  `json:"url"`
+	PartitioningBlobURLInfo PartitioningBlobURLInfo `json:"partitioningBlobURLInfo"`
+}
+
+/*
+ */
+type ElementAccessibilityIssueReason string
+
+/*
+This issue warns about errors in the select or summary element content model.
+*/
+type ElementAccessibilityIssueDetails struct {
+	NodeId                          dom.BackendNodeId               `json:"nodeId"`
+	ElementAccessibilityIssueReason ElementAccessibilityIssueReason `json:"elementAccessibilityIssueReason"`
+	HasDisallowedAttributes         bool                            `json:"hasDisallowedAttributes"`
+}
+
+/*
+ */
+type StyleSheetLoadingIssueReason string
+
+/*
+This issue warns when a referenced stylesheet couldn't be loaded.
+*/
+type StylesheetLoadingIssueDetails struct {
+	SourceCodeLocation           *SourceCodeLocation          `json:"sourceCodeLocation"`
+	StyleSheetLoadingIssueReason StyleSheetLoadingIssueReason `json:"styleSheetLoadingIssueReason"`
+	FailedRequestInfo            *FailedRequestInfo           `json:"failedRequestInfo,omitempty"`
+}
+
+/*
+ */
+type PropertyRuleIssueReason string
+
+/*
+	This issue warns about errors in property rules that lead to property
+
+registrations being ignored.
+*/
+type PropertyRuleIssueDetails struct {
+	SourceCodeLocation      *SourceCodeLocation     `json:"sourceCodeLocation"`
+	PropertyRuleIssueReason PropertyRuleIssueReason `json:"propertyRuleIssueReason"`
+	PropertyValue           string                  `json:"propertyValue,omitempty"`
+}
+
+/*
+ */
+type UserReidentificationIssueType string
+
+/*
+	This issue warns about uses of APIs that may be considered misuse to
+
+re-identify users.
+*/
+type UserReidentificationIssueDetails struct {
+	Type               UserReidentificationIssueType `json:"type"`
+	Request            *AffectedRequest              `json:"request,omitempty"`
+	SourceCodeLocation *SourceCodeLocation           `json:"sourceCodeLocation,omitempty"`
+}
+
+/*
+ */
+type PermissionElementIssueType string
+
+/*
+This issue warns about improper usage of the <permission> element.
+*/
+type PermissionElementIssueDetails struct {
+	IssueType              PermissionElementIssueType `json:"issueType"`
+	Type                   string                     `json:"type,omitempty"`
+	NodeId                 dom.BackendNodeId          `json:"nodeId,omitempty"`
+	IsWarning              bool                       `json:"isWarning,omitempty"`
+	PermissionName         string                     `json:"permissionName,omitempty"`
+	OccluderNodeInfo       string                     `json:"occluderNodeInfo,omitempty"`
+	OccluderParentNodeInfo string                     `json:"occluderParentNodeInfo,omitempty"`
+	DisableReason          string                     `json:"disableReason,omitempty"`
+}
+
+/*
+	The issue warns about blocked calls to privacy sensitive APIs via the
+
+Selective Permissions Intervention.
+*/
+type SelectivePermissionsInterventionIssueDetails struct {
+	ApiName    string              `json:"apiName"`
+	AdAncestry *network.AdAncestry `json:"adAncestry"`
+	StackTrace *runtime.StackTrace `json:"stackTrace,omitempty"`
 }
 
 /*
@@ -304,22 +500,35 @@ specific to the kind of issue. When adding a new issue code, please also
 add a new optional field to this type.
 */
 type InspectorIssueDetails struct {
-	CookieIssueDetails                *CookieIssueDetails                `json:"cookieIssueDetails,omitempty"`
-	MixedContentIssueDetails          *MixedContentIssueDetails          `json:"mixedContentIssueDetails,omitempty"`
-	BlockedByResponseIssueDetails     *BlockedByResponseIssueDetails     `json:"blockedByResponseIssueDetails,omitempty"`
-	HeavyAdIssueDetails               *HeavyAdIssueDetails               `json:"heavyAdIssueDetails,omitempty"`
-	ContentSecurityPolicyIssueDetails *ContentSecurityPolicyIssueDetails `json:"contentSecurityPolicyIssueDetails,omitempty"`
-	SharedArrayBufferIssueDetails     *SharedArrayBufferIssueDetails     `json:"sharedArrayBufferIssueDetails,omitempty"`
-	TwaQualityEnforcementDetails      *TrustedWebActivityIssueDetails    `json:"twaQualityEnforcementDetails,omitempty"`
-	LowTextContrastIssueDetails       *LowTextContrastIssueDetails       `json:"lowTextContrastIssueDetails,omitempty"`
-	CorsIssueDetails                  *CorsIssueDetails                  `json:"corsIssueDetails,omitempty"`
-	AttributionReportingIssueDetails  *AttributionReportingIssueDetails  `json:"attributionReportingIssueDetails,omitempty"`
-	QuirksModeIssueDetails            *QuirksModeIssueDetails            `json:"quirksModeIssueDetails,omitempty"`
-	NavigatorUserAgentIssueDetails    *NavigatorUserAgentIssueDetails    `json:"navigatorUserAgentIssueDetails,omitempty"`
-	GenericIssueDetails               *GenericIssueDetails               `json:"genericIssueDetails,omitempty"`
-	DeprecationIssueDetails           *DeprecationIssueDetails           `json:"deprecationIssueDetails,omitempty"`
-	ClientHintIssueDetails            *ClientHintIssueDetails            `json:"clientHintIssueDetails,omitempty"`
-	FederatedAuthRequestIssueDetails  *FederatedAuthRequestIssueDetails  `json:"federatedAuthRequestIssueDetails,omitempty"`
+	CookieIssueDetails                           *CookieIssueDetails                           `json:"cookieIssueDetails,omitempty"`
+	MixedContentIssueDetails                     *MixedContentIssueDetails                     `json:"mixedContentIssueDetails,omitempty"`
+	BlockedByResponseIssueDetails                *BlockedByResponseIssueDetails                `json:"blockedByResponseIssueDetails,omitempty"`
+	HeavyAdIssueDetails                          *HeavyAdIssueDetails                          `json:"heavyAdIssueDetails,omitempty"`
+	ContentSecurityPolicyIssueDetails            *ContentSecurityPolicyIssueDetails            `json:"contentSecurityPolicyIssueDetails,omitempty"`
+	SharedArrayBufferIssueDetails                *SharedArrayBufferIssueDetails                `json:"sharedArrayBufferIssueDetails,omitempty"`
+	CorsIssueDetails                             *CorsIssueDetails                             `json:"corsIssueDetails,omitempty"`
+	AttributionReportingIssueDetails             *AttributionReportingIssueDetails             `json:"attributionReportingIssueDetails,omitempty"`
+	QuirksModeIssueDetails                       *QuirksModeIssueDetails                       `json:"quirksModeIssueDetails,omitempty"`
+	PartitioningBlobURLIssueDetails              *PartitioningBlobURLIssueDetails              `json:"partitioningBlobURLIssueDetails,omitempty"`
+	GenericIssueDetails                          *GenericIssueDetails                          `json:"genericIssueDetails,omitempty"`
+	DeprecationIssueDetails                      *DeprecationIssueDetails                      `json:"deprecationIssueDetails,omitempty"`
+	ClientHintIssueDetails                       *ClientHintIssueDetails                       `json:"clientHintIssueDetails,omitempty"`
+	FederatedAuthRequestIssueDetails             *FederatedAuthRequestIssueDetails             `json:"federatedAuthRequestIssueDetails,omitempty"`
+	BounceTrackingIssueDetails                   *BounceTrackingIssueDetails                   `json:"bounceTrackingIssueDetails,omitempty"`
+	CookieDeprecationMetadataIssueDetails        *CookieDeprecationMetadataIssueDetails        `json:"cookieDeprecationMetadataIssueDetails,omitempty"`
+	StylesheetLoadingIssueDetails                *StylesheetLoadingIssueDetails                `json:"stylesheetLoadingIssueDetails,omitempty"`
+	PropertyRuleIssueDetails                     *PropertyRuleIssueDetails                     `json:"propertyRuleIssueDetails,omitempty"`
+	FederatedAuthUserInfoRequestIssueDetails     *FederatedAuthUserInfoRequestIssueDetails     `json:"federatedAuthUserInfoRequestIssueDetails,omitempty"`
+	SharedDictionaryIssueDetails                 *SharedDictionaryIssueDetails                 `json:"sharedDictionaryIssueDetails,omitempty"`
+	ElementAccessibilityIssueDetails             *ElementAccessibilityIssueDetails             `json:"elementAccessibilityIssueDetails,omitempty"`
+	SriMessageSignatureIssueDetails              *SRIMessageSignatureIssueDetails              `json:"sriMessageSignatureIssueDetails,omitempty"`
+	UnencodedDigestIssueDetails                  *UnencodedDigestIssueDetails                  `json:"unencodedDigestIssueDetails,omitempty"`
+	ConnectionAllowlistIssueDetails              *ConnectionAllowlistIssueDetails              `json:"connectionAllowlistIssueDetails,omitempty"`
+	UserReidentificationIssueDetails             *UserReidentificationIssueDetails             `json:"userReidentificationIssueDetails,omitempty"`
+	PermissionElementIssueDetails                *PermissionElementIssueDetails                `json:"permissionElementIssueDetails,omitempty"`
+	PerformanceIssueDetails                      *PerformanceIssueDetails                      `json:"performanceIssueDetails,omitempty"`
+	SelectivePermissionsInterventionIssueDetails *SelectivePermissionsInterventionIssueDetails `json:"selectivePermissionsInterventionIssueDetails,omitempty"`
+	EmailVerificationRequestIssueDetails         *EmailVerificationRequestIssueDetails         `json:"emailVerificationRequestIssueDetails,omitempty"`
 }
 
 /*
@@ -351,6 +560,6 @@ type GetEncodedResponseVal struct {
 	EncodedSize  int    `json:"encodedSize"`
 }
 
-type CheckContrastArgs struct {
-	ReportAAA bool `json:"reportAAA,omitempty"`
+type CheckFormsIssuesVal struct {
+	FormIssues []*GenericIssueDetails `json:"formIssues"`
 }

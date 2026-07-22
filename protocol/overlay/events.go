@@ -29,6 +29,20 @@ type ScreenshotRequested struct {
 }
 
 /*
+Fired when user asks to show the Inspect panel.
+*/
+type InspectPanelShowRequested struct {
+	BackendNodeId dom.BackendNodeId `json:"backendNodeId"`
+}
+
+/*
+Fired when user asks to restore the Inspected Element floating window.
+*/
+type InspectedElementWindowRestored struct {
+	BackendNodeId dom.BackendNodeId `json:"backendNodeId"`
+}
+
+/*
 Fired when user cancels the inspect mode.
 */
-type InspectModeCanceled interface{}
+type InspectModeCanceled any

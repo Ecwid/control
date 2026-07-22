@@ -6,7 +6,10 @@ import (
 )
 
 /*
-Unique request identifier.
+	Unique request identifier.
+
+Note that this does not identify individual HTTP requests that are part of
+a network request.
 */
 type RequestId string
 

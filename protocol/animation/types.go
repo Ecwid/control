@@ -9,16 +9,28 @@ import (
 Animation instance.
 */
 type Animation struct {
-	Id           string           `json:"id"`
-	Name         string           `json:"name"`
-	PausedState  bool             `json:"pausedState"`
-	PlayState    string           `json:"playState"`
-	PlaybackRate float64          `json:"playbackRate"`
-	StartTime    float64          `json:"startTime"`
-	CurrentTime  float64          `json:"currentTime"`
-	Type         string           `json:"type"`
-	Source       *AnimationEffect `json:"source,omitempty"`
-	CssId        string           `json:"cssId,omitempty"`
+	Id                   string                `json:"id"`
+	Name                 string                `json:"name"`
+	PausedState          bool                  `json:"pausedState"`
+	PlayState            string                `json:"playState"`
+	PlaybackRate         float64               `json:"playbackRate"`
+	StartTime            float64               `json:"startTime"`
+	CurrentTime          float64               `json:"currentTime"`
+	Type                 string                `json:"type"`
+	Source               *AnimationEffect      `json:"source,omitempty"`
+	CssId                string                `json:"cssId,omitempty"`
+	ViewOrScrollTimeline *ViewOrScrollTimeline `json:"viewOrScrollTimeline,omitempty"`
+}
+
+/*
+Timeline instance
+*/
+type ViewOrScrollTimeline struct {
+	SourceNodeId  dom.BackendNodeId     `json:"sourceNodeId,omitempty"`
+	StartOffset   float64               `json:"startOffset,omitempty"`
+	EndOffset     float64               `json:"endOffset,omitempty"`
+	SubjectNodeId dom.BackendNodeId     `json:"subjectNodeId,omitempty"`
+	Axis          dom.ScrollOrientation `json:"axis"`
 }
 
 /*
@@ -28,7 +40,7 @@ type AnimationEffect struct {
 	Delay          float64           `json:"delay"`
 	EndDelay       float64           `json:"endDelay"`
 	IterationStart float64           `json:"iterationStart"`
-	Iterations     float64           `json:"iterations"`
+	Iterations     float64           `json:"iterations,omitempty"`
 	Duration       float64           `json:"duration"`
 	Direction      string            `json:"direction"`
 	Fill           string            `json:"fill"`

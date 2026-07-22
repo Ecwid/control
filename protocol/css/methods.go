@@ -56,6 +56,13 @@ func ForcePseudoState(c protocol.Caller, args ForcePseudoStateArgs) error {
 }
 
 /*
+Ensures that the given node is in its starting-style state.
+*/
+func ForceStartingStyle(c protocol.Caller, args ForceStartingStyleArgs) error {
+	return c.Call("CSS.forceStartingStyle", args, nil)
+}
+
+/*
  */
 func GetBackgroundColors(c protocol.Caller, args GetBackgroundColorsArgs) (*GetBackgroundColorsVal, error) {
 	var val = &GetBackgroundColorsVal{}
@@ -71,6 +78,32 @@ func GetComputedStyleForNode(c protocol.Caller, args GetComputedStyleForNodeArgs
 }
 
 /*
+	Resolve the specified values in the context of the provided element.
+
+For example, a value of '1em' is evaluated according to the computed
+'font-size' of the element and a value 'calc(1px + 2px)' will be
+resolved to '3px'.
+If the `propertyName` was specified the `values` are resolved as if
+they were property's declaration. If a value cannot be parsed according
+to the provided property syntax, the value is parsed using combined
+syntax as if null `propertyName` was provided. If the value cannot be
+resolved even then, return the provided value without any changes.
+Note: this function currently does not resolve CSS random() function,
+it returns unmodified random() function parts.`
+*/
+func ResolveValues(c protocol.Caller, args ResolveValuesArgs) (*ResolveValuesVal, error) {
+	var val = &ResolveValuesVal{}
+	return val, c.Call("CSS.resolveValues", args, val)
+}
+
+/*
+ */
+func GetLonghandProperties(c protocol.Caller, args GetLonghandPropertiesArgs) (*GetLonghandPropertiesVal, error) {
+	var val = &GetLonghandPropertiesVal{}
+	return val, c.Call("CSS.getLonghandProperties", args, val)
+}
+
+/*
 	Returns the styles defined inline (explicitly in the "style" attribute and implicitly, using DOM
 
 attributes) for a DOM node identified by `nodeId`.
@@ -81,11 +114,29 @@ func GetInlineStylesForNode(c protocol.Caller, args GetInlineStylesForNodeArgs) 
 }
 
 /*
+	Returns the styles coming from animations & transitions
+
+including the animation & transition styles coming from inheritance chain.
+*/
+func GetAnimatedStylesForNode(c protocol.Caller, args GetAnimatedStylesForNodeArgs) (*GetAnimatedStylesForNodeVal, error) {
+	var val = &GetAnimatedStylesForNodeVal{}
+	return val, c.Call("CSS.getAnimatedStylesForNode", args, val)
+}
+
+/*
 Returns requested styles for a DOM node identified by `nodeId`.
 */
 func GetMatchedStylesForNode(c protocol.Caller, args GetMatchedStylesForNodeArgs) (*GetMatchedStylesForNodeVal, error) {
 	var val = &GetMatchedStylesForNodeVal{}
 	return val, c.Call("CSS.getMatchedStylesForNode", args, val)
+}
+
+/*
+Returns the values of the default UA-defined environment variables used in env()
+*/
+func GetEnvironmentVariables(c protocol.Caller) (*GetEnvironmentVariablesVal, error) {
+	var val = &GetEnvironmentVariablesVal{}
+	return val, c.Call("CSS.getEnvironmentVariables", nil, val)
 }
 
 /*
@@ -127,6 +178,29 @@ func GetLayersForNode(c protocol.Caller, args GetLayersForNodeArgs) (*GetLayersF
 }
 
 /*
+	Given a CSS selector text and a style sheet ID, getLocationForSelector
+
+returns an array of locations of the CSS selector in the style sheet.
+*/
+func GetLocationForSelector(c protocol.Caller, args GetLocationForSelectorArgs) (*GetLocationForSelectorVal, error) {
+	var val = &GetLocationForSelectorVal{}
+	return val, c.Call("CSS.getLocationForSelector", args, val)
+}
+
+/*
+	Starts tracking the given node for the computed style updates
+
+and whenever the computed style is updated for node, it queues
+a `computedStyleUpdated` event with throttling.
+There can only be 1 node tracked for computed style updates
+so passing a new node id removes tracking from the previous node.
+Pass `undefined` to disable tracking.
+*/
+func TrackComputedStyleUpdatesForNode(c protocol.Caller, args TrackComputedStyleUpdatesForNodeArgs) error {
+	return c.Call("CSS.trackComputedStyleUpdatesForNode", args, nil)
+}
+
+/*
 	Starts tracking the given computed styles for updates. The specified array of properties
 
 replaces the one previously specified. Pass empty array to disable tracking.
@@ -157,6 +231,14 @@ func SetEffectivePropertyValueForNode(c protocol.Caller, args SetEffectiveProper
 }
 
 /*
+Modifies the property rule property name.
+*/
+func SetPropertyRulePropertyName(c protocol.Caller, args SetPropertyRulePropertyNameArgs) (*SetPropertyRulePropertyNameVal, error) {
+	var val = &SetPropertyRulePropertyNameVal{}
+	return val, c.Call("CSS.setPropertyRulePropertyName", args, val)
+}
+
+/*
 Modifies the keyframe rule key text.
 */
 func SetKeyframeKey(c protocol.Caller, args SetKeyframeKeyArgs) (*SetKeyframeKeyVal, error) {
@@ -173,11 +255,10 @@ func SetMediaText(c protocol.Caller, args SetMediaTextArgs) (*SetMediaTextVal, e
 }
 
 /*
-Modifies the expression of a container query.
-*/
-func SetContainerQueryText(c protocol.Caller, args SetContainerQueryTextArgs) (*SetContainerQueryTextVal, error) {
-	var val = &SetContainerQueryTextVal{}
-	return val, c.Call("CSS.setContainerQueryText", args, val)
+ */
+func SetContainerQueryConditionText(c protocol.Caller, args SetContainerQueryConditionTextArgs) (*SetContainerQueryConditionTextVal, error) {
+	var val = &SetContainerQueryConditionTextVal{}
+	return val, c.Call("CSS.setContainerQueryConditionText", args, val)
 }
 
 /*
@@ -186,6 +267,14 @@ Modifies the expression of a supports at-rule.
 func SetSupportsText(c protocol.Caller, args SetSupportsTextArgs) (*SetSupportsTextVal, error) {
 	var val = &SetSupportsTextVal{}
 	return val, c.Call("CSS.setSupportsText", args, val)
+}
+
+/*
+Modifies the expression of a navigation at-rule.
+*/
+func SetNavigationText(c protocol.Caller, args SetNavigationTextArgs) (*SetNavigationTextVal, error) {
+	var val = &SetNavigationTextVal{}
+	return val, c.Call("CSS.setNavigationText", args, val)
 }
 
 /*
@@ -230,7 +319,7 @@ func StartRuleUsageTracking(c protocol.Caller) error {
 /*
 	Stop tracking rule usage and return the list of rules that were used since last call to
 
-`takeCoverageDelta` (or since start of coverage instrumentation)
+`takeCoverageDelta` (or since start of coverage instrumentation).
 */
 func StopRuleUsageTracking(c protocol.Caller) (*StopRuleUsageTrackingVal, error) {
 	var val = &StopRuleUsageTrackingVal{}
@@ -240,7 +329,7 @@ func StopRuleUsageTracking(c protocol.Caller) (*StopRuleUsageTrackingVal, error)
 /*
 	Obtain list of rules that became used since last call to this method (or since start of coverage
 
-instrumentation)
+instrumentation).
 */
 func TakeCoverageDelta(c protocol.Caller) (*TakeCoverageDeltaVal, error) {
 	var val = &TakeCoverageDeltaVal{}

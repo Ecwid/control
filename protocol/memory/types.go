@@ -32,10 +32,22 @@ type Module struct {
 	Size        float64 `json:"size"`
 }
 
+/*
+DOM object counter data.
+*/
+type DOMCounter struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
 type GetDOMCountersVal struct {
 	Documents        int `json:"documents"`
 	Nodes            int `json:"nodes"`
 	JsEventListeners int `json:"jsEventListeners"`
+}
+
+type GetDOMCountersForLeakDetectionVal struct {
+	Counters []*DOMCounter `json:"counters"`
 }
 
 type SetPressureNotificationsSuppressedArgs struct {

@@ -36,12 +36,6 @@ func Enable(c protocol.Caller) error {
 
 /*
  */
-func InspectWorker(c protocol.Caller, args InspectWorkerArgs) error {
-	return c.Call("ServiceWorker.inspectWorker", args, nil)
-}
-
-/*
- */
 func SetForceUpdateOnPageLoad(c protocol.Caller, args SetForceUpdateOnPageLoadArgs) error {
 	return c.Call("ServiceWorker.setForceUpdateOnPageLoad", args, nil)
 }

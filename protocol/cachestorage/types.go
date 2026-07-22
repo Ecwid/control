@@ -1,5 +1,9 @@
 package cachestorage
 
+import (
+	"github.com/ecwid/control/protocol/storage"
+)
+
 /*
 Unique identifier of the Cache object.
 */
@@ -28,10 +32,11 @@ type DataEntry struct {
 Cache identifier.
 */
 type Cache struct {
-	CacheId        CacheId `json:"cacheId"`
-	SecurityOrigin string  `json:"securityOrigin"`
-	StorageKey     string  `json:"storageKey"`
-	CacheName      string  `json:"cacheName"`
+	CacheId        CacheId                `json:"cacheId"`
+	SecurityOrigin string                 `json:"securityOrigin"`
+	StorageKey     string                 `json:"storageKey"`
+	StorageBucket  *storage.StorageBucket `json:"storageBucket,omitempty"`
+	CacheName      string                 `json:"cacheName"`
 }
 
 /*
@@ -58,8 +63,9 @@ type DeleteEntryArgs struct {
 }
 
 type RequestCacheNamesArgs struct {
-	SecurityOrigin string `json:"securityOrigin,omitempty"`
-	StorageKey     string `json:"storageKey,omitempty"`
+	SecurityOrigin string                 `json:"securityOrigin,omitempty"`
+	StorageKey     string                 `json:"storageKey,omitempty"`
+	StorageBucket  *storage.StorageBucket `json:"storageBucket,omitempty"`
 }
 
 type RequestCacheNamesVal struct {

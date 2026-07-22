@@ -18,7 +18,7 @@ type BufferUsage struct {
 sent as a sequence of dataCollected events followed by tracingComplete event.
 */
 type DataCollected struct {
-	Value []interface{} `json:"value"`
+	Value []any `json:"value"`
 }
 
 /*

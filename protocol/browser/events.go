@@ -22,4 +22,5 @@ type DownloadProgress struct {
 	TotalBytes    float64 `json:"totalBytes"`
 	ReceivedBytes float64 `json:"receivedBytes"`
 	State         string  `json:"state"`
+	FilePath      string  `json:"filePath,omitempty"`
 }

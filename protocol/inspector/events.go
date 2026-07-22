@@ -10,9 +10,14 @@ type Detached struct {
 /*
 Fired when debugging target has crashed
 */
-type TargetCrashed interface{}
+type TargetCrashed any
 
 /*
 Fired when debugging target has reloaded after crash
 */
-type TargetReloadedAfterCrash interface{}
+type TargetReloadedAfterCrash any
+
+/*
+Fired on worker targets when main worker script and any imported scripts have been evaluated.
+*/
+type WorkerScriptLoaded any

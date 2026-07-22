@@ -102,6 +102,13 @@ type DebugSymbols struct {
 	ExternalURL string `json:"externalURL,omitempty"`
 }
 
+/*
+ */
+type ResolvedBreakpoint struct {
+	BreakpointId BreakpointId `json:"breakpointId"`
+	Location     *Location    `json:"location"`
+}
+
 type ContinueToLocationArgs struct {
 	Location         *Location `json:"location"`
 	TargetCallFrames string    `json:"targetCallFrames,omitempty"`
@@ -206,8 +213,13 @@ type SetAsyncCallStackDepthArgs struct {
 	MaxDepth int `json:"maxDepth"`
 }
 
+type SetBlackboxExecutionContextsArgs struct {
+	UniqueIds []string `json:"uniqueIds"`
+}
+
 type SetBlackboxPatternsArgs struct {
-	Patterns []string `json:"patterns"`
+	Patterns      []string `json:"patterns"`
+	SkipAnonymous bool     `json:"skipAnonymous,omitempty"`
 }
 
 type SetBlackboxedRangesArgs struct {

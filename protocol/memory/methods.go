@@ -5,14 +5,26 @@ import (
 )
 
 /*
- */
+Retruns current DOM object counters.
+*/
 func GetDOMCounters(c protocol.Caller) (*GetDOMCountersVal, error) {
 	var val = &GetDOMCountersVal{}
 	return val, c.Call("Memory.getDOMCounters", nil, val)
 }
 
 /*
- */
+Retruns DOM object counters after preparing renderer for leak detection.
+*/
+func GetDOMCountersForLeakDetection(c protocol.Caller) (*GetDOMCountersForLeakDetectionVal, error) {
+	var val = &GetDOMCountersForLeakDetectionVal{}
+	return val, c.Call("Memory.getDOMCountersForLeakDetection", nil, val)
+}
+
+/*
+	Prepares for leak detection by terminating workers, stopping spellcheckers,
+
+dropping non-essential internal caches, running garbage collections, etc.
+*/
 func PrepareForLeakDetection(c protocol.Caller) error {
 	return c.Call("Memory.prepareForLeakDetection", nil, nil)
 }

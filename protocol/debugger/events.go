@@ -5,20 +5,12 @@ import (
 )
 
 /*
-Fired when breakpoint is resolved to an actual script and location.
-*/
-type BreakpointResolved struct {
-	BreakpointId BreakpointId `json:"breakpointId"`
-	Location     *Location    `json:"location"`
-}
-
-/*
 Fired when the virtual machine stopped on breakpoint or exception or any other stop criteria.
 */
 type Paused struct {
 	CallFrames        []*CallFrame          `json:"callFrames"`
 	Reason            string                `json:"reason"`
-	Data              interface{}           `json:"data,omitempty"`
+	Data              any                   `json:"data,omitempty"`
 	HitBreakpoints    []string              `json:"hitBreakpoints,omitempty"`
 	AsyncStackTrace   *runtime.StackTrace   `json:"asyncStackTrace,omitempty"`
 	AsyncStackTraceId *runtime.StackTraceId `json:"asyncStackTraceId,omitempty"`
@@ -27,7 +19,7 @@ type Paused struct {
 /*
 Fired when the virtual machine resumed execution.
 */
-type Resumed interface{}
+type Resumed any
 
 /*
 Fired when virtual machine fails to parse the script.
@@ -41,7 +33,8 @@ type ScriptFailedToParse struct {
 	EndColumn               int                        `json:"endColumn"`
 	ExecutionContextId      runtime.ExecutionContextId `json:"executionContextId"`
 	Hash                    string                     `json:"hash"`
-	ExecutionContextAuxData interface{}                `json:"executionContextAuxData,omitempty"`
+	BuildId                 string                     `json:"buildId"`
+	ExecutionContextAuxData any                        `json:"executionContextAuxData,omitempty"`
 	SourceMapURL            string                     `json:"sourceMapURL,omitempty"`
 	HasSourceURL            bool                       `json:"hasSourceURL,omitempty"`
 	IsModule                bool                       `json:"isModule,omitempty"`
@@ -66,7 +59,8 @@ type ScriptParsed struct {
 	EndColumn               int                        `json:"endColumn"`
 	ExecutionContextId      runtime.ExecutionContextId `json:"executionContextId"`
 	Hash                    string                     `json:"hash"`
-	ExecutionContextAuxData interface{}                `json:"executionContextAuxData,omitempty"`
+	BuildId                 string                     `json:"buildId"`
+	ExecutionContextAuxData any                        `json:"executionContextAuxData,omitempty"`
 	IsLiveEdit              bool                       `json:"isLiveEdit,omitempty"`
 	SourceMapURL            string                     `json:"sourceMapURL,omitempty"`
 	HasSourceURL            bool                       `json:"hasSourceURL,omitempty"`
@@ -75,6 +69,7 @@ type ScriptParsed struct {
 	StackTrace              *runtime.StackTrace        `json:"stackTrace,omitempty"`
 	CodeOffset              int                        `json:"codeOffset,omitempty"`
 	ScriptLanguage          ScriptLanguage             `json:"scriptLanguage,omitempty"`
-	DebugSymbols            *DebugSymbols              `json:"debugSymbols,omitempty"`
+	DebugSymbols            []*DebugSymbols            `json:"debugSymbols,omitempty"`
 	EmbedderName            string                     `json:"embedderName,omitempty"`
+	ResolvedBreakpoints     []*ResolvedBreakpoint      `json:"resolvedBreakpoints,omitempty"`
 }

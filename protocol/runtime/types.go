@@ -6,9 +6,16 @@ Unique script identifier.
 type ScriptId string
 
 /*
-	Represents the value serialiazed by the WebDriver BiDi specification
+Represents options for serialization. Overrides `generatePreview` and `returnByValue`.
+*/
+type SerializationOptions struct {
+	Serialization        string `json:"serialization"`
+	MaxDepth             int    `json:"maxDepth,omitempty"`
+	AdditionalParameters any    `json:"additionalParameters,omitempty"`
+}
 
-https://w3c.github.io/webdriver-bidi.
+/*
+Represents deep serialized value.
 */
 type DeepSerializedValue struct {
 	Type                     string `json:"type"`
@@ -121,7 +128,7 @@ type PrivatePropertyDescriptor struct {
 unserializable primitive value or neither of (for undefined) them should be specified.
 */
 type CallArgument struct {
-	Value               interface{}         `json:"value,omitempty"`
+	Value               any                 `json:"value,omitempty"`
 	UnserializableValue UnserializableValue `json:"unserializableValue,omitempty"`
 	ObjectId            RemoteObjectId      `json:"objectId,omitempty"`
 }
@@ -139,7 +146,7 @@ type ExecutionContextDescription struct {
 	Origin   string             `json:"origin"`
 	Name     string             `json:"name"`
 	UniqueId string             `json:"uniqueId"`
-	AuxData  interface{}        `json:"auxData,omitempty"`
+	AuxData  any                `json:"auxData,omitempty"`
 }
 
 /*
@@ -157,7 +164,7 @@ type ExceptionDetails struct {
 	StackTrace         *StackTrace        `json:"stackTrace,omitempty"`
 	Exception          *RemoteObject      `json:"exception,omitempty"`
 	ExecutionContextId ExecutionContextId `json:"executionContextId,omitempty"`
-	ExceptionMetaData  interface{}        `json:"exceptionMetaData,omitempty"`
+	ExceptionMetaData  any                `json:"exceptionMetaData,omitempty"`
 }
 
 /*
@@ -250,11 +257,6 @@ type CompileScriptVal struct {
 	ExceptionDetails *ExceptionDetails `json:"exceptionDetails,omitempty"`
 }
 
-type SerializationOptions struct {
-	Serialization string `json:"serialization,omitempty"`
-	MaxDepth      int    `json:"maxDepth,omitempty"`
-}
-
 type EvaluateArgs struct {
 	Expression                  string                `json:"expression"`
 	ObjectGroup                 string                `json:"objectGroup,omitempty"`
@@ -284,8 +286,10 @@ type GetIsolateIdVal struct {
 }
 
 type GetHeapUsageVal struct {
-	UsedSize  float64 `json:"usedSize"`
-	TotalSize float64 `json:"totalSize"`
+	UsedSize             float64 `json:"usedSize"`
+	TotalSize            float64 `json:"totalSize"`
+	EmbedderHeapUsedSize float64 `json:"embedderHeapUsedSize"`
+	BackingStorageSize   float64 `json:"backingStorageSize"`
 }
 
 type GetPropertiesArgs struct {

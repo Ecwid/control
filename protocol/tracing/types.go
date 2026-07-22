@@ -3,7 +3,7 @@ package tracing
 /*
 Configuration for memory dump. Used only when "memory-infra" category is enabled.
 */
-type MemoryDumpConfig interface{}
+type MemoryDumpConfig any
 
 /*
  */
@@ -51,6 +51,10 @@ type TracingBackend string
 
 type GetCategoriesVal struct {
 	Categories []string `json:"categories"`
+}
+
+type GetTrackEventDescriptorVal struct {
+	Descriptor []byte `json:"descriptor"`
 }
 
 type RecordClockSyncMarkerArgs struct {

@@ -27,13 +27,6 @@ func RemoveEventListenerBreakpoint(c protocol.Caller, args RemoveEventListenerBr
 }
 
 /*
-Removes breakpoint on particular native event.
-*/
-func RemoveInstrumentationBreakpoint(c protocol.Caller, args RemoveInstrumentationBreakpointArgs) error {
-	return c.Call("DOMDebugger.removeInstrumentationBreakpoint", args, nil)
-}
-
-/*
 Removes breakpoint from XMLHttpRequest.
 */
 func RemoveXHRBreakpoint(c protocol.Caller, args RemoveXHRBreakpointArgs) error {
@@ -59,13 +52,6 @@ Sets breakpoint on particular DOM event.
 */
 func SetEventListenerBreakpoint(c protocol.Caller, args SetEventListenerBreakpointArgs) error {
 	return c.Call("DOMDebugger.setEventListenerBreakpoint", args, nil)
-}
-
-/*
-Sets breakpoint on particular native event.
-*/
-func SetInstrumentationBreakpoint(c protocol.Caller, args SetInstrumentationBreakpointArgs) error {
-	return c.Call("DOMDebugger.setInstrumentationBreakpoint", args, nil)
 }
 
 /*

@@ -34,4 +34,4 @@ type ReportHeapSnapshotProgress struct {
 
 /*
  */
-type ResetProfiles interface{}
+type ResetProfiles any

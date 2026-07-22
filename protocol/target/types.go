@@ -21,11 +21,14 @@ type TargetInfo struct {
 	Title            string                  `json:"title"`
 	Url              string                  `json:"url"`
 	Attached         bool                    `json:"attached"`
+	ParentId         TargetID                `json:"parentId,omitempty"`
 	OpenerId         TargetID                `json:"openerId,omitempty"`
 	CanAccessOpener  bool                    `json:"canAccessOpener"`
 	OpenerFrameId    common.FrameId          `json:"openerFrameId,omitempty"`
+	ParentFrameId    common.FrameId          `json:"parentFrameId,omitempty"`
 	BrowserContextId common.BrowserContextID `json:"browserContextId,omitempty"`
 	Subtype          string                  `json:"subtype,omitempty"`
+	EmbedderData     any                     `json:"embedderData,omitempty"`
 }
 
 /*
@@ -54,6 +57,11 @@ type RemoteLocation struct {
 	Port int    `json:"port"`
 }
 
+/*
+The state of the target window.
+*/
+type WindowState string
+
 type ActivateTargetArgs struct {
 	TargetId TargetID `json:"targetId"`
 }
@@ -76,8 +84,9 @@ type CloseTargetArgs struct {
 }
 
 type ExposeDevToolsProtocolArgs struct {
-	TargetId    TargetID `json:"targetId"`
-	BindingName string   `json:"bindingName,omitempty"`
+	TargetId           TargetID `json:"targetId"`
+	BindingName        string   `json:"bindingName,omitempty"`
+	InheritPermissions bool     `json:"inheritPermissions,omitempty"`
 }
 
 type CreateBrowserContextArgs struct {
@@ -92,18 +101,24 @@ type CreateBrowserContextVal struct {
 }
 
 type GetBrowserContextsVal struct {
-	BrowserContextIds []common.BrowserContextID `json:"browserContextIds"`
+	BrowserContextIds       []common.BrowserContextID `json:"browserContextIds"`
+	DefaultBrowserContextId common.BrowserContextID   `json:"defaultBrowserContextId,omitempty"`
 }
 
 type CreateTargetArgs struct {
 	Url                     string                  `json:"url"`
+	Left                    int                     `json:"left,omitempty"`
+	Top                     int                     `json:"top,omitempty"`
 	Width                   int                     `json:"width,omitempty"`
 	Height                  int                     `json:"height,omitempty"`
+	WindowState             WindowState             `json:"windowState,omitempty"`
 	BrowserContextId        common.BrowserContextID `json:"browserContextId,omitempty"`
 	EnableBeginFrameControl bool                    `json:"enableBeginFrameControl,omitempty"`
 	NewWindow               bool                    `json:"newWindow,omitempty"`
 	Background              bool                    `json:"background,omitempty"`
 	ForTab                  bool                    `json:"forTab,omitempty"`
+	Hidden                  bool                    `json:"hidden,omitempty"`
+	Focus                   bool                    `json:"focus,omitempty"`
 }
 
 type CreateTargetVal struct {
@@ -154,4 +169,21 @@ type SetDiscoverTargetsArgs struct {
 
 type SetRemoteLocationsArgs struct {
 	Locations []*RemoteLocation `json:"locations"`
+}
+
+type GetDevToolsTargetArgs struct {
+	TargetId TargetID `json:"targetId"`
+}
+
+type GetDevToolsTargetVal struct {
+	TargetId TargetID `json:"targetId,omitempty"`
+}
+
+type OpenDevToolsArgs struct {
+	TargetId TargetID `json:"targetId"`
+	PanelId  string   `json:"panelId,omitempty"`
+}
+
+type OpenDevToolsVal struct {
+	TargetId TargetID `json:"targetId"`
 }

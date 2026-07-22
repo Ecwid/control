@@ -20,6 +20,14 @@ func GetCategories(c protocol.Caller) (*GetCategoriesVal, error) {
 }
 
 /*
+Return a descriptor for all available tracing categories.
+*/
+func GetTrackEventDescriptor(c protocol.Caller) (*GetTrackEventDescriptorVal, error) {
+	var val = &GetTrackEventDescriptorVal{}
+	return val, c.Call("Tracing.getTrackEventDescriptor", nil, val)
+}
+
+/*
 Record a clock sync marker in the trace.
 */
 func RecordClockSyncMarker(c protocol.Caller, args RecordClockSyncMarkerArgs) error {

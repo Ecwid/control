@@ -51,10 +51,6 @@ type RemoveEventListenerBreakpointArgs struct {
 	TargetName string `json:"targetName,omitempty"`
 }
 
-type RemoveInstrumentationBreakpointArgs struct {
-	EventName string `json:"eventName"`
-}
-
 type RemoveXHRBreakpointArgs struct {
 	Url string `json:"url"`
 }
@@ -71,10 +67,6 @@ type SetDOMBreakpointArgs struct {
 type SetEventListenerBreakpointArgs struct {
 	EventName  string `json:"eventName"`
 	TargetName string `json:"targetName,omitempty"`
-}
-
-type SetInstrumentationBreakpointArgs struct {
-	EventName string `json:"eventName"`
 }
 
 type SetXHRBreakpointArgs struct {

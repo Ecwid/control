@@ -28,7 +28,7 @@ func InsertText(c protocol.Caller, args InsertTextArgs) error {
 }
 
 /*
-	This method sets the current candidate text for ime.
+	This method sets the current candidate text for IME.
 
 Use imeCommitComposition to commit the final text.
 Use imeSetComposition with empty string as text to cancel composition.
@@ -49,6 +49,13 @@ Dispatches a touch event to the page.
 */
 func DispatchTouchEvent(c protocol.Caller, args DispatchTouchEventArgs) error {
 	return c.Call("Input.dispatchTouchEvent", args, nil)
+}
+
+/*
+Cancels any active dragging in the page.
+*/
+func CancelDragging(c protocol.Caller) error {
+	return c.Call("Input.cancelDragging", nil, nil)
 }
 
 /*

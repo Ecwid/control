@@ -63,6 +63,7 @@ type GetSamplingProfileVal struct {
 
 type StartSamplingArgs struct {
 	SamplingInterval                 float64 `json:"samplingInterval,omitempty"`
+	StackDepth                       float64 `json:"stackDepth,omitempty"`
 	IncludeObjectsCollectedByMajorGC bool    `json:"includeObjectsCollectedByMajorGC,omitempty"`
 	IncludeObjectsCollectedByMinorGC bool    `json:"includeObjectsCollectedByMinorGC,omitempty"`
 }

@@ -5,11 +5,13 @@ import (
 )
 
 /*
-Returns a storage key given a frame id.
+	Returns storage key for the given frame. If no frame ID is provided,
+
+the storage key of the target executing this command is returned.
 */
-func GetStorageKeyForFrame(c protocol.Caller, args GetStorageKeyForFrameArgs) (*GetStorageKeyForFrameVal, error) {
-	var val = &GetStorageKeyForFrameVal{}
-	return val, c.Call("Storage.getStorageKeyForFrame", args, val)
+func GetStorageKey(c protocol.Caller, args GetStorageKeyArgs) (*GetStorageKeyVal, error) {
+	var val = &GetStorageKeyVal{}
+	return val, c.Call("Storage.getStorageKey", args, val)
 }
 
 /*
@@ -155,6 +157,15 @@ func SetInterestGroupTracking(c protocol.Caller, args SetInterestGroupTrackingAr
 }
 
 /*
+	Enables/Disables issuing of interestGroupAuctionEventOccurred and
+
+interestGroupAuctionNetworkRequestCreated.
+*/
+func SetInterestGroupAuctionTracking(c protocol.Caller, args SetInterestGroupAuctionTrackingArgs) error {
+	return c.Call("Storage.setInterestGroupAuctionTracking", args, nil)
+}
+
+/*
 Gets metadata for an origin's shared storage.
 */
 func GetSharedStorageMetadata(c protocol.Caller, args GetSharedStorageMetadataArgs) (*GetSharedStorageMetadataVal, error) {
@@ -203,4 +214,42 @@ Enables/disables issuing of sharedStorageAccessed events.
 */
 func SetSharedStorageTracking(c protocol.Caller, args SetSharedStorageTrackingArgs) error {
 	return c.Call("Storage.setSharedStorageTracking", args, nil)
+}
+
+/*
+Set tracking for a storage key's buckets.
+*/
+func SetStorageBucketTracking(c protocol.Caller, args SetStorageBucketTrackingArgs) error {
+	return c.Call("Storage.setStorageBucketTracking", args, nil)
+}
+
+/*
+Deletes the Storage Bucket with the given storage key and bucket name.
+*/
+func DeleteStorageBucket(c protocol.Caller, args DeleteStorageBucketArgs) error {
+	return c.Call("Storage.deleteStorageBucket", args, nil)
+}
+
+/*
+Deletes state for sites identified as potential bounce trackers, immediately.
+*/
+func RunBounceTrackingMitigations(c protocol.Caller) (*RunBounceTrackingMitigationsVal, error) {
+	var val = &RunBounceTrackingMitigationsVal{}
+	return val, c.Call("Storage.runBounceTrackingMitigations", nil, val)
+}
+
+/*
+	Returns the effective Related Website Sets in use by this profile for the browser
+
+session. The effective Related Website Sets will not change during a browser session.
+*/
+func GetRelatedWebsiteSets(c protocol.Caller) (*GetRelatedWebsiteSetsVal, error) {
+	var val = &GetRelatedWebsiteSetsVal{}
+	return val, c.Call("Storage.getRelatedWebsiteSets", nil, val)
+}
+
+/*
+ */
+func SetProtectedAudienceKAnonymity(c protocol.Caller, args SetProtectedAudienceKAnonymityArgs) error {
+	return c.Call("Storage.setProtectedAudienceKAnonymity", args, nil)
 }
