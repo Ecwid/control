@@ -9,67 +9,76 @@ _Warning_ This is an experimental project, backward compatibility is not guarant
 ## How to use
 
 Here is an example of using:
-
 ```go
-func main() {
-	session, cancel, err := control.Take("--no-startup-window")
-	if err != nil {
-		panic(err)
-	}
-	defer cancel()
+	package main
 
-	retrier := retry.Static{
-		Timeout: 10 * time.Second,
-		Delay:   500 * time.Millisecond, // delay between attempts
-	}
+	import (
+		"context"
+		"log"
+		"log/slog"
+		"time"
 
-	session.Frame.MustNavigate("https://zoid.ecwid.com")
+		"github.com/ecwid/control"
+		"github.com/ecwid/control/retry"
+	)
 
-	var products []string
-	err = retry.Func(retrier, func() error {
-		products = []string{}
-		return session.Frame.QueryAll(".grid-product__title-inner").Then(func(nl control.NodeList) error {
-			return nl.Foreach(func(n *control.Node) error {
-				return n.GetText().Then(func(s string) error {
-					products = append(products, s)
-					return nil
+	func main() {
+		logger := slog.Default()
+		browser, err := control.Launch(context.Background(), logger, "--no-startup-window")
+		if err != nil {
+			panic(err)
+		}
+		defer func() {
+			if err := browser.Close(); err != nil {
+				log.Println("browser close error:", err)
+			}
+		}()
+
+		tab, err := browser.NewTab()
+		if err != nil {
+			panic(err)
+		}
+
+		session, err := browser.NewSession(tab)
+		if err != nil {
+			panic(err)
+		}
+
+		session.Frame.MustNavigate("https://zoid.ecwid.com")
+
+		retrier := retry.Static{
+			Timeout: 10 * time.Second,
+			Delay:   500 * time.Millisecond,
+		}
+
+		var products []string
+		err = retry.Func(retrier, func() error {
+			products = []string{}
+			return session.Frame.QueryAll(".grid-product__title-inner").Then(func(nl control.NodeList) error {
+				return nl.Foreach(func(n *control.Node) error {
+					return n.GetText().Then(func(s string) error {
+						products = append(products, s)
+						return nil
+					})
 				})
 			})
 		})
-	})
-	if err != nil {
-		panic(err)
-	}
+		if err != nil {
+			panic(err)
+		}
 
-    // "must way" throws panic on an error
-
-	for _, node := range session.Frame.MustQueryAll(".grid-product__title-inner") {
-		log.Println(node.MustGetText())
+		for _, node := range session.Frame.MustQueryAll(".grid-product__title-inner") {
+			log.Println(node.MustGetText())
+		}
 	}
-}
 ```
-
 You can call any CDP method implemented in protocol package using a session
 ```go
-err = security.SetIgnoreCertificateErrors(session, security.SetIgnoreCertificateErrorsArgs{
-    Ignore: true,
-})
+	err = security.SetIgnoreCertificateErrors(session, security.SetIgnoreCertificateErrorsArgs{
+		Ignore: true,
+	})
 ```
-
 or call a custom unimplemented method
 ```go
-err = session.Call("Security.setIgnoreCertificateErrors", sendStruct, receiveStruct)
-```
-
-Subscribe on the domain event
-```go
-future := control.Subscribe(session, "Target.targetCreated", func(t target.TargetCreated) bool {
-    return t.TargetInfo.Type == "page"
-})
-defer future.Cancel()
-
-// do something here ...
-
-ctx, cancel := context.WithTimeout(context.TODO(), time.Second*10)
-result /* target.TargetCreated */, err := future.Get(ctx)
+	err = session.Call("Security.setIgnoreCertificateErrors", sendStruct, receiveStruct)
 ```

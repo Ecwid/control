@@ -5,8 +5,7 @@ import (
 )
 
 /*
-	Returns the response body and size if it were re-encoded with the specified settings. Only
-
+Returns the response body and size if it were re-encoded with the specified settings. Only
 applies to images.
 */
 func GetEncodedResponse(c protocol.Caller, args GetEncodedResponseArgs) (*GetEncodedResponseVal, error) {
@@ -22,18 +21,14 @@ func Disable(c protocol.Caller) error {
 }
 
 /*
-	Enables issues domain, sends the issues collected so far to the client by means of the
-
-`issueAdded` event.
+Enables issues domain, sends the issues collected so far to the client by means of the `issueAdded` event.
 */
 func Enable(c protocol.Caller) error {
 	return c.Call("Audits.enable", nil, nil)
 }
 
 /*
-	Runs the form issues check for the target page. Found issues are reported
-
-using Audits.issueAdded event.
+Runs the form issues check for the target page. Found issues are reported using Audits.issueAdded event.
 */
 func CheckFormsIssues(c protocol.Caller) (*CheckFormsIssuesVal, error) {
 	var val = &CheckFormsIssuesVal{}

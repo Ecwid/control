@@ -68,21 +68,24 @@ func RecoverFunc(function func()) func() error {
 }
 
 func FuncPanic(t Timing, function func()) error {
-	return BaseRerty(t, RecoverFunc(function))
+	return BaseRetry(t, RecoverFunc(function))
 }
 
 func Func(t Timing, function func() error) error {
-	return BaseRerty(t, function)
+	return BaseRetry(t, function)
 }
 
-func BaseRerty(t Timing, function func() error) error {
+func BaseRetry(t Timing, function func() error) error {
 	var (
 		err      error
 		retry    = 0
 		start    = time.Now()
 		deadline = t.GetTimeout()
 	)
-	for time.Since(start) < deadline {
+	for {
+		if retry > 0 && time.Since(start) >= deadline {
+			break
+		}
 		t.Before(retry)
 		if err = function(); err == nil {
 			return nil

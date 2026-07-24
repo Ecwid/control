@@ -1,4 +1,4 @@
-package cdp
+package transport
 
 import (
 	"encoding/json"
@@ -47,7 +47,6 @@ func (e Error) Error() string {
 
 type Untyped []byte
 
-// MarshalJSON returns m as the JSON encoding of m.
 func (m Untyped) MarshalJSON() ([]byte, error) {
 	if m == nil {
 		return []byte("null"), nil
@@ -55,11 +54,18 @@ func (m Untyped) MarshalJSON() ([]byte, error) {
 	return m, nil
 }
 
-// UnmarshalJSON sets *m to a copy of data.
 func (m *Untyped) UnmarshalJSON(data []byte) error {
 	if m == nil {
-		return errors.New("cdp.Untyped: UnmarshalJSON on nil pointer")
+		return errors.New("cdpnext.Untyped: UnmarshalJSON on nil pointer")
 	}
 	*m = append((*m)[0:0], data...)
 	return nil
+}
+
+func Unmarshal[T any](m Message) (T, error) {
+	var zero T
+	if err := json.Unmarshal(m.Params, &zero); err != nil {
+		return zero, err
+	}
+	return zero, nil
 }

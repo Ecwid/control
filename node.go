@@ -1,7 +1,6 @@
 package control
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -279,9 +278,6 @@ func (e Node) query(cssSelector string) (*Node, error) {
 		return nil, NoSuchSelectorError(cssSelector)
 	}
 	node := value.(*Node)
-	if e.frame.session.highlightEnabled {
-		_ = node.Highlight()
-	}
 	node.requestedSelector = cssSelector
 	return node, nil
 }
@@ -428,8 +424,8 @@ func (e Node) Click() (err error) {
 		return err
 	}
 
-	future := e.frame.session.funcCalled(hitCheckFunc)
-	defer future.Cancel()
+	futureBindingCalled := e.frame.session.awaitBindingCalled(hitCheckFunc)
+	defer futureBindingCalled.Cancel()
 	_, err = e.eval(`function(func) {
 		let a = window[func],
 			d = (b) => {
@@ -450,7 +446,7 @@ func (e Node) Click() (err error) {
 				}
 			}
 		this.ownerDocument.addEventListener("click", f, { capture: true, once: true })
-		window.addEventListener("beforeunload", () => a('document unloaded before click'))
+		window.addEventListener("beforeunload", () => a(''), { once: true })
 	}`, hitCheckFunc)
 	if err != nil {
 		return err
@@ -458,9 +454,7 @@ func (e Node) Click() (err error) {
 	if err = e.frame.session.Click(point); err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(e.frame.session.context, e.frame.session.timeout)
-	defer cancel()
-	call, err := future.Get(ctx)
+	call, err := getWithTimeout(e.frame.session, futureBindingCalled)
 	if err != nil {
 		return err
 	}
@@ -482,8 +476,8 @@ func (e Node) Down() (err error) {
 	if err != nil {
 		return err
 	}
-	future := e.frame.session.funcCalled(hitCheckFunc)
-	defer future.Cancel()
+	futureBindingCalled := e.frame.session.awaitBindingCalled(hitCheckFunc)
+	defer futureBindingCalled.Cancel()
 
 	_, err = e.eval(`function(func) {
 		let a = window[func],
@@ -505,13 +499,13 @@ func (e Node) Down() (err error) {
 			}
 		this.ownerDocument.addEventListener("mousedown", f, { capture: true, once: true })
 	}`, hitCheckFunc)
-
+	if err != nil {
+		return err
+	}
 	if err = e.frame.session.MouseDown(point); err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(e.frame.session.context, e.frame.session.timeout)
-	defer cancel()
-	call, err := future.Get(ctx)
+	call, err := getWithTimeout(e.frame.session, futureBindingCalled)
 	if err != nil {
 		return err
 	}

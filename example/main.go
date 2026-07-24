@@ -54,11 +54,20 @@ func (h Handler) WithGroup(name string) slog.Handler {
 
 func main() {
 	sl := slog.New(Handler{h: slog.Default().Handler()})
-	session, dfr, err := control.TakeWithContext(context.TODO(), sl, "--no-startup-window")
+
+	browser, err := control.Launch(context.TODO(), sl, "--no-startup-window")
 	if err != nil {
 		panic(err)
 	}
-	defer dfr()
+	defer browser.Close()
+	tab, err := browser.NewTab()
+	if err != nil {
+		panic(err)
+	}
+	session, err := browser.NewSession(tab)
+	if err != nil {
+		panic(err)
+	}
 
 	err = session.Frame.Navigate("https://zoid.ecwid.com")
 	if err != nil {

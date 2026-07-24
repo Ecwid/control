@@ -48,10 +48,7 @@ func (f Frame) GetID() common.FrameId {
 }
 
 func (f Frame) executionContextID() string {
-	if value, ok := f.session.frames.Load(f.id); ok {
-		return value.(string)
-	}
-	return ""
+	return f.session.getFrameExecutionContextID(f.id)
 }
 
 func (f Frame) Call(method string, send, recv any) error {
