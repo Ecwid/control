@@ -101,19 +101,19 @@ func (c Chrome) Close(ctx context.Context, shutdown shutdowner) error {
 
 	if shutdown != nil {
 		if err := shutdown.Shutdown(ctx); err != nil {
-			errs = append(errs, errors.Join(err, errors.New("can't shutdown browser via CDP")))
+			errs = append(errs, errors.Join(err, errors.New("cannot shut down browser via cdp")))
 		}
 	} else {
 		_ = c.cmd.Process.Kill()
 	}
 
 	if err := c.Wait(); err != nil {
-		errs = append(errs, errors.Join(err, errors.New("can't close browser gracefully")))
+		errs = append(errs, errors.Join(err, errors.New("cannot close browser gracefully")))
 	}
 
 	if c.userDataDir != "" {
 		if err := os.RemoveAll(c.userDataDir); err != nil {
-			errs = append(errs, errors.Join(err, errors.New("can't clear user data dir")))
+			errs = append(errs, errors.Join(err, errors.New("cannot clear user data directory")))
 		}
 	}
 
@@ -153,7 +153,7 @@ func Launch(ctx context.Context, userFlags ...string) (value Chrome, err error) 
 	if !hasUserDataDir(flags) {
 		value.userDataDir, err = os.MkdirTemp("", "chrome-control-*")
 		if err != nil {
-			return value, errors.Join(err, errors.New("can't create temporary user data dir"))
+			return value, errors.Join(err, errors.New("cannot create temporary user data directory"))
 		}
 		flags = append(flags, "--user-data-dir="+value.userDataDir)
 		defer func() {

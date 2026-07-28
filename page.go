@@ -22,15 +22,7 @@ const (
 	LifecycleNetworkAlmostIdle             LifecycleEventType = "networkAlmostIdle"
 )
 
-var ErrNavigateNoLoader = errors.New("navigation to the same address")
-
-type Queryable interface {
-	Query(string) Optional[*Node]
-	MustQuery(string) *Node
-	QueryAll(string) Optional[NodeList]
-	MustQueryAll(string) NodeList
-	OwnerFrame() *Frame
-}
+var ErrNavigateNoLoader = errors.New("navigation to same address")
 
 type Frame struct {
 	node    *Node
@@ -85,12 +77,6 @@ func (f Frame) Navigate(url string) error {
 	return nil
 }
 
-func (f Frame) MustNavigate(url string) {
-	if err := f.Navigate(url); err != nil {
-		panic(err)
-	}
-}
-
 func (f Frame) Reload(ignoreCache bool, scriptToEvaluateOnLoad string) error {
 	return page.Reload(f, page.ReloadArgs{
 		IgnoreCache:            ignoreCache,
@@ -98,29 +84,23 @@ func (f Frame) Reload(ignoreCache bool, scriptToEvaluateOnLoad string) error {
 	})
 }
 
-func (f Frame) MustReload(ignoreCache bool, scriptToEvaluateOnLoad string) {
-	if err := f.Reload(ignoreCache, scriptToEvaluateOnLoad); err != nil {
-		panic(err)
-	}
-}
-
 func (f Frame) Evaluate(expression string, awaitPromise bool) Optional[any] {
-	return optional[any](f.evaluate(expression, awaitPromise))
+	return conv[any](f.evaluate(expression, awaitPromise))
 }
 
 func (f Frame) Document() Optional[*Node] {
-	opt := optional[*Node](f.evaluate("document", true))
-	if opt.err == nil && opt.value == nil {
-		opt.err = NoSuchSelectorError("document")
+	node, err := f.evaluate("document", true)
+	if err != nil {
+		return Optional[*Node]{err: err}
 	}
-	if opt.value != nil {
-		opt.value.requestedSelector = "document"
+	if node != nil {
+		if n, ok := node.(*Node); ok {
+			n.frame = &f
+			n.requestedSelector = "document"
+			return Optional[*Node]{value: n}
+		}
 	}
-	return opt
-}
-
-func (f Frame) MustQuery(cssSelector string) *Node {
-	return f.Query(cssSelector).MustGetValue()
+	return Optional[*Node]{err: NoSuchSelectorError("document")}
 }
 
 func (f Frame) Query(cssSelector string) Optional[*Node] {
@@ -129,10 +109,6 @@ func (f Frame) Query(cssSelector string) Optional[*Node] {
 		return Optional[*Node]{err: err}
 	}
 	return doc.Query(cssSelector)
-}
-
-func (f Frame) MustQueryAll(cssSelector string) NodeList {
-	return f.QueryAll(cssSelector).MustGetValue()
 }
 
 func (f Frame) QueryAll(cssSelector string) Optional[NodeList] {

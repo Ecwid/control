@@ -20,7 +20,7 @@ var DefaultDialer = websocket.Dialer{
 	Proxy:            http.ProxyFromEnvironment,
 }
 
-var ErrClosed = errors.New("cdp: closed")
+var ErrClosed = errors.New("transport: closed")
 
 const DefaultEventBuffer = 1024
 
@@ -175,10 +175,10 @@ func (c *Transport) Call(ctx context.Context, sessionID, method string, params a
 	if err != nil {
 		return err
 	}
-	if out == nil {
-		return nil
+	if out != nil {
+		return json.Unmarshal(res.Result, out)
 	}
-	return json.Unmarshal(res.Result, out)
+	return nil
 }
 
 func (c *Transport) Subscribe(sessionID string, buffer int) (<-chan Message, func()) {
@@ -310,7 +310,17 @@ func (h *subscriberHub) publish(msg Message) {
 		select {
 		case sub.ch <- msg:
 		default:
-			// Drop when subscriber is slow; transport stays healthy.
+			// Keep the latest event under backpressure by evicting one stale item.
+			// This avoids silently losing fresh events that short-lived waiters rely on.
+			select {
+			case <-sub.ch:
+			default:
+			}
+			select {
+			case sub.ch <- msg:
+			default:
+				// Subscriber is still saturated; skip this publish to keep transport healthy.
+			}
 		}
 	}
 }

@@ -1,29 +1,10 @@
 package control
 
-import (
-	"fmt"
-	"reflect"
-)
+import "fmt"
 
 type Optional[T any] struct {
 	value T
 	err   error
-}
-
-func optional[T any](value any, err error) Optional[T] {
-	var nilValue T
-	if err != nil {
-		return Optional[T]{err: err}
-	}
-	if value == nil {
-		return Optional[T]{}
-	}
-	switch typed := value.(type) {
-	case T:
-		return Optional[T]{value: typed}
-	default:
-		return Optional[T]{err: fmt.Errorf("can't cast %s to %s", reflect.TypeOf(value), reflect.TypeOf(nilValue))}
-	}
 }
 
 func (op Optional[T]) Unwrap() (T, error) {
@@ -59,4 +40,17 @@ func (op Optional[T]) IfPresent(f func(T)) {
 	if op.err == nil {
 		f(op.value)
 	}
+}
+
+func conv[T any](value any, err error) Optional[T] {
+	if err != nil {
+		return Optional[T]{err: err}
+	}
+	if value != nil {
+		if v, ok := value.(T); ok {
+			return Optional[T]{value: v}
+		}
+	}
+	var zero T
+	return Optional[T]{err: fmt.Errorf("interface conversion failed: got %T, want %T", value, zero)}
 }

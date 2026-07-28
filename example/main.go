@@ -64,41 +64,28 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	session, err := browser.NewSession(tab)
+
+	r := retry.Static{
+		Delay:   time.Second,
+		Timeout: 10 * time.Second,
+	}
+
+	session, err := browser.NewSession(tab, time.Second*10)
 	if err != nil {
 		panic(err)
 	}
 
-	err = session.Frame.Navigate("https://zoid.ecwid.com")
+	err = session.Frame.Navigate("https://mdemo.company.site/")
 	if err != nil {
 		panic(err)
 	}
 
-	retrier := retry.DefaultTiming
-
-	var values []string
-	err = retry.Func(retrier, func() error {
-		values = []string{}
-		return session.Frame.QueryAll(".grid-product__title-inner").Then(func(nl control.NodeList) error {
-			return nl.Foreach(func(n *control.Node) error {
-				return n.GetText().Then(func(s string) error {
-					values = append(values, s)
-					return nil
-				})
-			})
-		})
+	retry.FuncPanic(r, func() {
+		text := session.Frame.Query(`.cover__title a span`).MustGetValue().GetText()
+		log.Println(text, err)
 	})
 
-	log.Println(values, err)
-
-	err = retry.FuncPanic(retrier, func() {
-		node := session.Frame.MustQuery(`.pager__count-pages`)
-		node.MustGetBoundingClientRect()
-		node.MustClick()
-	})
-	log.Println(err)
-
-	p := session.Frame.Evaluate(`new Promise((a,b) => a('ok'))`, false).MustGetValue().(control.RemoteObject)
+	p := session.Frame.Evaluate(`new Promise((a,b) => a('ok'))`, false).MustGetValue().(control.ObjectHandle)
 	a, b := session.Frame.AwaitPromise(p)
 	log.Println(a, b)
 }

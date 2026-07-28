@@ -56,7 +56,7 @@ func (m Untyped) MarshalJSON() ([]byte, error) {
 
 func (m *Untyped) UnmarshalJSON(data []byte) error {
 	if m == nil {
-		return errors.New("cdpnext.Untyped: UnmarshalJSON on nil pointer")
+		return errors.New("transport.untyped: unmarshalJSON on nil pointer")
 	}
 	*m = append((*m)[0:0], data...)
 	return nil

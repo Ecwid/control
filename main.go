@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/ecwid/control/chrome"
 	"github.com/ecwid/control/protocol/target"
@@ -17,8 +18,8 @@ type Browser struct {
 	chrome    chrome.Chrome
 }
 
-func (b Browser) NewSession(t chrome.Target) (*Session, error) {
-	return NewSession(b.transport, target.TargetID(t.ID))
+func (b Browser) NewSession(t chrome.Target, timeout time.Duration) (*Session, error) {
+	return NewSession(b.transport, target.TargetID(t.ID), timeout)
 }
 
 func (b Browser) Close() error {
@@ -37,7 +38,7 @@ func Launch(ctx context.Context, logger *slog.Logger, args ...string) (Browser, 
 	cdp, err := transport.DefaultDial(ctx, browser.WebSocketUrl, logger)
 	if err != nil {
 		browser.Close(ctx, nil)
-		return Browser{}, errors.Join(err, errors.New("websocket dial failed"))
+		return Browser{}, errors.Join(err, errors.New("websocket connection failed"))
 	}
 	return Browser{ctx: ctx, transport: cdp, chrome: browser}, nil
 }

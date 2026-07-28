@@ -5,7 +5,6 @@ import (
 
 	"github.com/ecwid/control/future"
 	"github.com/ecwid/control/protocol/browser"
-	"github.com/ecwid/control/protocol/overlay"
 	"github.com/ecwid/control/protocol/page"
 	"github.com/ecwid/control/protocol/runtime"
 	"github.com/ecwid/control/protocol/target"
@@ -45,20 +44,14 @@ func (s *Session) SetDownloadBehavior(behavior string, downloadPath string, even
 	})
 }
 
-func (s *Session) MustSetDownloadBehavior(behavior string, downloadPath string, eventsEnabled bool) {
-	if err := s.SetDownloadBehavior(behavior, downloadPath, eventsEnabled); err != nil {
-		panic(err)
-	}
-}
-
-func (s *Session) awaitTargetCreated() future.Future[target.TargetCreated] {
+func (s *Session) GetTargetCreated() future.Future[target.TargetCreated] {
 	return awaitMethod(s, "Target.targetCreated", func(value target.TargetCreated) bool {
 		return value.TargetInfo.Type == "page" && value.TargetInfo.OpenerId == s.targetID
 	})
 }
 
 func (s *Session) AttachToTarget(id target.TargetID) (*Session, error) {
-	return NewSession(s.transport, id)
+	return NewSession(s.transport, id, s.timeout)
 }
 
 func (s *Session) CreatePageTargetTab(url string) (*Session, error) {
@@ -109,7 +102,7 @@ func (s *Session) GetNavigationEntry() Optional[page.NavigationEntry] {
 }
 
 func (s *Session) GetCurrentURL() Optional[string] {
-	return optional[string](s.getCurrentURL())
+	return conv[string](s.getCurrentURL())
 }
 
 func (s *Session) getCurrentURL() (string, error) {
@@ -134,7 +127,7 @@ func (s *Session) NavigateHistory(delta int) error {
 	return nil
 }
 
-func (s *Session) awaitBindingCalled(fn string) future.Future[runtime.BindingCalled] {
+func (s *Session) GetBindingCalled(fn string) future.Future[runtime.BindingCalled] {
 	return awaitMethod(s, "Runtime.bindingCalled", func(value runtime.BindingCalled) bool {
 		return value.Name == fn
 	})
@@ -148,36 +141,10 @@ func (s *Session) MouseDown(point Point) error {
 	return s.mouse.Down(MouseLeft, point)
 }
 
-func (s *Session) MustClick(point Point) {
-	if err := s.Click(point); err != nil {
-		panic(err)
-	}
-}
-
 func (s *Session) Swipe(from, to Point) error {
 	return s.touch.Swipe(from, to)
 }
 
-func (s *Session) MustSwipe(from, to Point) {
-	if err := s.Swipe(from, to); err != nil {
-		panic(err)
-	}
-}
-
 func (s *Session) Hover(point Point) error {
 	return s.mouse.Move(MouseNone, point)
-}
-
-func (s *Session) MustHover(point Point) {
-	if err := s.Hover(point); err != nil {
-		panic(err)
-	}
-}
-
-func (s *Session) EnableHighlight() error {
-	if err := overlay.Enable(s); err != nil {
-		return err
-	}
-	s.highlightEnabled = true
-	return nil
 }

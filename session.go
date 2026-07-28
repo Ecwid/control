@@ -39,28 +39,41 @@ func (t TargetCrashedError) Error() string {
 }
 
 type Session struct {
-	timeout           time.Duration
-	context           context.Context
-	cancel            context.CancelCauseFunc
-	teardown          sync.Once
+	// timeout defines default per-operation timeout for protocol calls.
+	timeout time.Duration
+	// context is canceled when the session closes or fails.
+	context context.Context
+	// cancel terminates the session context with a cause.
+	cancel context.CancelCauseFunc
+	// teardown guarantees fail/close sequence runs exactly once.
+	teardown sync.Once
+	// unsubscribeHandle detaches the main session event subscription.
 	unsubscribeHandle func()
-	transport         *transport.Transport
-	targetID          target.TargetID
-	sessionID         string
-	framesMu          sync.RWMutex
-	frames            map[common.FrameId]string
-	Frame             *Frame
-	highlightEnabled  bool
-	mouse             Mouse
-	kb                Keyboard
-	touch             Touch
+	// transport is the shared CDP transport used by the session.
+	transport *transport.Transport
+	// targetID is the browser target this session is attached to.
+	targetID target.TargetID
+	// sessionID is the CDP session identifier returned by attachToTarget.
+	sessionID string
+	// framesMu protects frames map concurrent access.
+	framesMu sync.RWMutex
+	// frames maps frame ID to runtime execution context unique ID.
+	frames map[common.FrameId]string
+	// Frame is the root frame wrapper for this session target.
+	Frame *Frame
+	// mouse provides mouse input actions scoped to this session.
+	mouse Mouse
+	// kb provides keyboard input actions scoped to this session.
+	kb Keyboard
+	// touch provides touch input actions scoped to this session.
+	touch Touch
 }
 
-func newSession(tp *transport.Transport, targetID target.TargetID) *Session {
+func newSession(tp *transport.Transport, targetID target.TargetID, timeout time.Duration) *Session {
 	var session = &Session{
 		transport: tp,
 		targetID:  targetID,
-		timeout:   60 * time.Second,
+		timeout:   timeout,
 		frames:    make(map[common.FrameId]string),
 	}
 	session.mouse = NewMouse(session)
@@ -86,13 +99,13 @@ func (s *Session) startContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(s.context, s.timeout)
 }
 
-func withTimeout(s *Session, run func(context.Context) error) error {
+func (s *Session) withTimeout(run func(context.Context) error) error {
 	ctxTo, cancel := s.startContext()
 	defer cancel()
 	return run(ctxTo)
 }
 
-func getWithTimeout[T any](s *Session, future future.Future[T]) (T, error) {
+func GetWithTimeout[T any](s *Session, future future.Future[T]) (T, error) {
 	ctxTo, cancel := s.startContext()
 	defer cancel()
 	return future.Get(ctxTo)
@@ -127,7 +140,7 @@ func (s *Session) IsDone() bool {
 }
 
 func (s *Session) Call(method string, send, recv any) error {
-	return withTimeout(s, func(ctx context.Context) error {
+	return s.withTimeout(func(ctx context.Context) error {
 		return s.transport.Call(ctx, s.sessionID, method, send, recv)
 	})
 }
@@ -170,8 +183,8 @@ func (s *Session) getFrameExecutionContextID(id common.FrameId) string {
 	return s.frames[id]
 }
 
-func NewSession(transport *transport.Transport, targetID target.TargetID) (*Session, error) {
-	session := newSession(transport, targetID)
+func NewSession(transport *transport.Transport, targetID target.TargetID, timeout time.Duration) (*Session, error) {
+	session := newSession(transport, targetID, timeout)
 	session.context, session.cancel = context.WithCancelCause(transport.Context())
 	sessionID, err := session.attachToTarget(targetID)
 	if err != nil {
@@ -230,20 +243,20 @@ func handleExecutionContextCreated(s *Session, message transport.Message) error 
 	}
 	aux, ok := executionContextCreated.Context.AuxData.(map[string]any)
 	if !ok {
-		return fmt.Errorf("runtime executionContextCreated: invalid auxData type %T", executionContextCreated.Context.AuxData)
+		return fmt.Errorf("runtime.executionContextCreated: invalid auxData type %T", executionContextCreated.Context.AuxData)
 	}
 
 	frameIDRaw, ok := aux["frameId"]
 	if !ok {
-		return errors.New("runtime executionContextCreated: frameId is missing")
+		return errors.New("runtime.executionContextCreated: frameId is missing")
 	}
 
 	frameID, ok := frameIDRaw.(string)
 	if !ok {
-		return fmt.Errorf("runtime executionContextCreated: invalid frameId type %T", frameIDRaw)
+		return fmt.Errorf("runtime.executionContextCreated: invalid frameId type %T", frameIDRaw)
 	}
 	if frameID == "" {
-		return errors.New("runtime executionContextCreated: frameId is empty")
+		return errors.New("runtime.executionContextCreated: frameId is empty")
 	}
 
 	s.setFrameExecutionContextID(common.FrameId(frameID), executionContextCreated.Context.UniqueId)
