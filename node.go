@@ -277,7 +277,7 @@ func (e Node) pointerAction(eventName string, preventDefault bool, dispatch func
 		}`
 	*/
 
-	const minified = `function(e,t,n,r){const o=window[e],i=e=>{o(JSON.stringify({id:t,error:e??null}))},a=e=>{for(let t=e;t;t=t.parentNode)if(t===this)return!0;return!1};this.ownerDocument.addEventListener(n,e=>{e.isTrusted&&a(e.target)?i(null):(r&&e.preventDefault(),e.stopImmediatePropagation(),i("target overlapped"))},{capture:!0,once:!0}),window.addEventListener("beforeunload",()=>i(null),{once:!0})};`
+	const minified = `function(e,t,n,r){const o=window[e],i=e=>{o(JSON.stringify({id:t,error:e??null}))},a=e=>{for(let t=e;t;t=t.parentNode)if(t===this)return!0;return!1};this.ownerDocument.addEventListener(n,e=>{e.isTrusted&&a(e.target)?i(null):(r&&e.preventDefault(),e.stopImmediatePropagation(),i("target overlapped"))},{capture:!0,once:!0}),window.addEventListener("beforeunload",()=>i(null),{once:!0})}`
 	_, err = e.eval(minified, hitCheckFunc, actionID, eventName, preventDefault)
 	if err != nil {
 		return err
