@@ -12,23 +12,23 @@ import (
 	"github.com/ecwid/control/protocol/runtime"
 )
 
-type pointerActionAck struct {
-	ID    string  `json:"id"`
-	Error *string `json:"error,omitempty"`
+type clkAck struct {
+	ID    string `json:"id"`
+	Error string `json:"error,omitempty"`
 }
 
-func parsePointerActionAck(payload string) (pointerActionAck, bool) {
-	var ack pointerActionAck
+func parseAck(payload string) (clkAck, error) {
+	var ack clkAck
 	if payload == "" {
-		return ack, false
+		return ack, errors.New("empty payload")
 	}
 	if err := json.Unmarshal([]byte(payload), &ack); err != nil {
-		return ack, false
+		return ack, err
 	}
 	if ack.ID == "" {
-		return ack, false
+		return ack, errors.New("missing id in payload")
 	}
-	return ack, true
+	return ack, nil
 }
 
 type (
@@ -39,19 +39,19 @@ type (
 )
 
 func (n NodeNonClickableError) Error() string {
-	return fmt.Sprintf("selector %q is not clickable", string(n))
+	return fmt.Sprintf("selector %s is not clickable", string(n))
 }
 
 func (n NodeInvisibleError) Error() string {
-	return fmt.Sprintf("selector %q is not visible", string(n))
+	return fmt.Sprintf("selector %s is not visible", string(n))
 }
 
 func (n NodeNonFocusableError) Error() string {
-	return fmt.Sprintf("selector %q is not focusable", string(n))
+	return fmt.Sprintf("selector %s is not focusable", string(n))
 }
 
 func (s NoSuchSelectorError) Error() string {
-	return fmt.Sprintf("no such selector: %q", string(s))
+	return fmt.Sprintf("no such selector: %s", string(s))
 }
 
 type Node struct {
@@ -235,12 +235,12 @@ func (e Node) pointerAction(eventName string, preventDefault bool, dispatch func
 	}
 	actionID := fmt.Sprintf("%d", time.Now().UnixNano())
 
-	futureBindingCalled := awaitMethod(e.frame.session, "Runtime.bindingCalled", func(value runtime.BindingCalled) bool {
-		if value.Name != hitCheckFunc {
-			return false
+	futureBindingCalled := awaitMethod(e.frame.session, "Runtime.bindingCalled", func(value runtime.BindingCalled) (bool, error) {
+		if value.Name == hitCheckFunc {
+			ack, err := parseAck(value.Payload)
+			return ack.ID == actionID, err
 		}
-		ack, ok := parsePointerActionAck(value.Payload)
-		return ok && ack.ID == actionID
+		return false, nil
 	})
 	defer futureBindingCalled.Cancel()
 
@@ -291,12 +291,12 @@ func (e Node) pointerAction(eventName string, preventDefault bool, dispatch func
 	if err != nil {
 		return err
 	}
-	ack, ok := parsePointerActionAck(call.Payload)
-	if !ok {
-		return errors.New("pointer action failed: invalid binding payload")
+	ack, err := parseAck(call.Payload)
+	if err != nil {
+		return err
 	}
-	if ack.Error != nil && *ack.Error != "" {
-		return errors.New(*ack.Error)
+	if ack.Error != "" {
+		return errors.New(ack.Error)
 	}
 	return nil
 }

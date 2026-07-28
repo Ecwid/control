@@ -366,18 +366,21 @@ func awaitMessage[T any](s *Session, watcher func(transport.Message) (T, bool, e
 	})
 }
 
-func awaitMethod[T any](s *Session, method string, match func(T) bool) future.Future[T] {
+func awaitMethod[T any](s *Session, method string, match func(T) (bool, error)) future.Future[T] {
 	return awaitMessage(s, func(value transport.Message) (T, bool, error) {
 		var zero T
 		if value.Method != method {
 			return zero, false, nil
 		}
-
 		result, err := transport.Unmarshal[T](value)
 		if err != nil {
 			return zero, false, err
 		}
-		if !match(result) {
+		isMatched, err := match(result)
+		if err != nil {
+			return zero, false, err
+		}
+		if !isMatched {
 			return zero, false, nil
 		}
 

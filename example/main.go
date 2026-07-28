@@ -85,6 +85,10 @@ func main() {
 		log.Println(text, err)
 	})
 
+	req := `function() { return new Promise( _r => requestIdleCallback(_r) ) }`
+	b := session.Frame.Query(`.cover__title a span`).MustGetValue().CallFunctionOn(req).MustGetValue()
+	log.Println(b)
+
 	p := session.Frame.Evaluate(`new Promise((a,b) => a('ok'))`, false).MustGetValue().(control.ObjectHandle)
 	a, b := session.Frame.AwaitPromise(p)
 	log.Println(a, b)
