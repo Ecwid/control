@@ -46,10 +46,12 @@ func conv[T any](value any, err error) Optional[T] {
 	if err != nil {
 		return Optional[T]{err: err}
 	}
-	if value != nil {
-		if v, ok := value.(T); ok {
-			return Optional[T]{value: v}
-		}
+	if value == nil {
+		var zero T
+		return Optional[T]{value: zero}
+	}
+	if v, ok := value.(T); ok {
+		return Optional[T]{value: v}
 	}
 	var zero T
 	return Optional[T]{err: fmt.Errorf("interface conversion failed: got %T, want %T", value, zero)}
