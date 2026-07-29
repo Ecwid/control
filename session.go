@@ -108,9 +108,6 @@ func (s *Session) Subscribe() (channel <-chan transport.Message, cancel func()) 
 
 func (s *Session) fatal(err error) {
 	s.close.Do(func() {
-		if err != nil {
-			s.Log("session closed", "targetId", s.targetID, "error", err)
-		}
 		if s.unsubscribe != nil {
 			s.unsubscribe()
 		}
@@ -296,6 +293,9 @@ func (s *Session) handle(channel <-chan transport.Message) error {
 			}
 		}
 	}
+	if err := context.Cause(s.Context()); err != nil {
+		return err
+	}
 	return ErrSubscriptionClosed
 }
 
@@ -314,6 +314,10 @@ func subscribeMessage[T any](s *Session, finder func(transport.Message) (T, bool
 
 			case value, ok := <-channel:
 				if !ok {
+					if err := context.Cause(s.Context()); err != nil {
+						reject(err)
+						return
+					}
 					reject(ErrSubscriptionClosed)
 					return
 				}

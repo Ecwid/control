@@ -14,7 +14,6 @@ import (
 
 const (
 	startTimeout = 10 * time.Second
-	stopTimeout  = 10 * time.Second
 )
 
 type Chrome struct {
@@ -56,18 +55,11 @@ func (c Chrome) Wait() error {
 	return c.cmd.Wait()
 }
 
-func (c Chrome) Close(shutdown shutdowner) error {
+func (c Chrome) Close(kill bool) error {
 	var errs []error
 
-	ctxTo, cancel := context.WithTimeout(c.ctx, stopTimeout)
-	defer cancel()
-
-	if shutdown != nil {
-		if err := shutdown.Shutdown(ctxTo); err != nil {
-			errs = append(errs, errors.Join(err, errors.New("cannot shut down browser via cdp")))
-		}
-	} else {
-		_ = c.cmd.Process.Kill()
+	if kill {
+		errs = append(errs, c.cmd.Process.Kill())
 	}
 
 	if err := c.Wait(); err != nil {

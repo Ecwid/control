@@ -92,20 +92,12 @@ func (c *Transport) Context() context.Context {
 }
 
 func (c *Transport) Close() error {
-	c.closeOnce.Do(func() {
-		c.cancel(ErrClosed)
-		_ = c.conn.Close()
-	})
+	c.shutdown(ErrClosed)
 	cause := context.Cause(c.ctx)
 	if errors.Is(cause, ErrClosed) {
 		return nil
 	}
 	return cause
-}
-
-func (c *Transport) Shutdown(ctx context.Context) error {
-	_, err := c.Do(ctx, Request{Method: "Browser.close"})
-	return errors.Join(err, c.Close())
 }
 
 func (c *Transport) Do(ctx context.Context, req Request) (Response, error) {
@@ -201,7 +193,7 @@ func (c *Transport) writeLoop() {
 			err := c.conn.WriteJSON(wr.request)
 			if err != nil {
 				wr.ack <- err
-				c.fail(err)
+				c.shutdown(err)
 				continue
 			}
 			wr.ack <- nil
@@ -214,7 +206,7 @@ func (c *Transport) readLoop() {
 	for {
 		var response Response
 		if err := c.conn.ReadJSON(&response); err != nil {
-			c.fail(err)
+			c.shutdown(err)
 			return
 		}
 
@@ -243,7 +235,7 @@ func (c *Transport) readLoop() {
 	}
 }
 
-func (c *Transport) fail(err error) {
+func (c *Transport) shutdown(err error) {
 	c.closeOnce.Do(func() {
 		c.cancel(err)
 		_ = c.conn.Close()

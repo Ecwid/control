@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ecwid/control/chrome"
+	"github.com/ecwid/control/protocol/browser"
 	"github.com/ecwid/control/protocol/target"
 	"github.com/ecwid/control/transport"
 )
@@ -19,7 +20,10 @@ type Browser struct {
 }
 
 func (b Browser) Close() error {
-	return b.chrome.Close(b.caller.transport)
+	browserErr := browser.Close(b.caller)
+	transportErr := b.caller.transport.Close()
+	chromeErr := b.chrome.Close(browserErr != nil || transportErr != nil)
+	return errors.Join(browserErr, transportErr, chromeErr)
 }
 
 func (b *Browser) NewTab(url string) (*Session, error) {
@@ -51,7 +55,7 @@ func Launch(ctx context.Context, logger *slog.Logger, args ...string) (Browser, 
 	}
 	cdp, err := transport.DefaultDial(ctx, chromeBrowser.WebSocketUrl, logger)
 	if err != nil {
-		_ = chromeBrowser.Close(nil)
+		_ = chromeBrowser.Close(true)
 		return Browser{}, errors.Join(err, errors.New("websocket connection failed"))
 	}
 	browserCtx, browserCancel := context.WithCancelCause(cdp.Context())
