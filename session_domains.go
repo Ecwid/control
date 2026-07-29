@@ -34,7 +34,7 @@ func (s *Session) SetDownloadBehavior(behavior string, downloadPath string, even
 }
 
 func (s *Session) GetTargetCreated() future.Future[target.TargetCreated] {
-	return subscribeMethod(s, "Target.targetCreated", func(value target.TargetCreated) (bool, error) {
+	return subscribeToMethod(s, "Target.targetCreated", func(value target.TargetCreated) (bool, error) {
 		return value.TargetInfo.Type == "page" && value.TargetInfo.OpenerId == s.targetID, nil
 	})
 }
@@ -106,7 +106,7 @@ func (s *Session) NavigateHistory(delta int) error {
 }
 
 func (s *Session) GetBindingCalled(fn string) future.Future[runtime.BindingCalled] {
-	return subscribeMethod(s, "Runtime.bindingCalled", func(value runtime.BindingCalled) (bool, error) {
+	return subscribeToMethod(s, "Runtime.bindingCalled", func(value runtime.BindingCalled) (bool, error) {
 		return value.Name == fn, nil
 	})
 }

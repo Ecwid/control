@@ -199,7 +199,7 @@ func (s *Session) startHandleLoop() {
 	}()
 }
 
-func handleExecutionContextCreated(s *Session, message transport.Message) error {
+func (s *Session) handleExecutionContextCreated(message transport.Message) error {
 	executionContextCreated, err := transport.Unmarshal[runtime.ExecutionContextCreated](message)
 	if err != nil {
 		return err
@@ -226,7 +226,7 @@ func handleExecutionContextCreated(s *Session, message transport.Message) error 
 	return nil
 }
 
-func handleFrameDetached(s *Session, message transport.Message) error {
+func (s *Session) handleFrameDetached(message transport.Message) error {
 	frameDetached, err := transport.Unmarshal[page.FrameDetached](message)
 	if err != nil {
 		return err
@@ -235,7 +235,7 @@ func handleFrameDetached(s *Session, message transport.Message) error {
 	return nil
 }
 
-func handleDetachedFromTarget(s *Session, message transport.Message) error {
+func (s *Session) handleDetachedFromTarget(message transport.Message) error {
 	detachedFromTarget, err := transport.Unmarshal[target.DetachedFromTarget](message)
 	if err != nil {
 		return err
@@ -246,7 +246,7 @@ func handleDetachedFromTarget(s *Session, message transport.Message) error {
 	return nil
 }
 
-func handleTargetDestroyed(s *Session, message transport.Message) error {
+func (s *Session) handleTargetDestroyed(message transport.Message) error {
 	targetDestroyed, err := transport.Unmarshal[target.TargetDestroyed](message)
 	if err != nil {
 		return err
@@ -257,7 +257,7 @@ func handleTargetDestroyed(s *Session, message transport.Message) error {
 	return nil
 }
 
-func handleTargetCrashed(s *Session, message transport.Message) error {
+func (s *Session) handleTargetCrashed(message transport.Message) error {
 	targetCrashed, err := transport.Unmarshal[target.TargetCrashed](message)
 	if err != nil {
 		return err
@@ -272,23 +272,23 @@ func (s *Session) handle(channel <-chan transport.Message) error {
 	for message := range channel {
 		switch message.Method {
 		case "Runtime.executionContextCreated":
-			if err := handleExecutionContextCreated(s, message); err != nil {
+			if err := s.handleExecutionContextCreated(message); err != nil {
 				return err
 			}
 		case "Page.frameDetached":
-			if err := handleFrameDetached(s, message); err != nil {
+			if err := s.handleFrameDetached(message); err != nil {
 				return err
 			}
 		case "Target.detachedFromTarget":
-			if err := handleDetachedFromTarget(s, message); err != nil {
+			if err := s.handleDetachedFromTarget(message); err != nil {
 				return err
 			}
 		case "Target.targetDestroyed":
-			if err := handleTargetDestroyed(s, message); err != nil {
+			if err := s.handleTargetDestroyed(message); err != nil {
 				return err
 			}
 		case "Target.targetCrashed":
-			if err := handleTargetCrashed(s, message); err != nil {
+			if err := s.handleTargetCrashed(message); err != nil {
 				return err
 			}
 		}
@@ -299,12 +299,13 @@ func (s *Session) handle(channel <-chan transport.Message) error {
 	return ErrSubscriptionClosed
 }
 
-func subscribeMessage[T any](s *Session, finder func(transport.Message) (T, bool, error)) future.Future[T] {
+func subscribeToMethod[T any](s *Session, method string, matcher func(T) (bool, error)) future.Future[T] {
 	return future.Execute(func(resolve func(T), reject func(error), canceled <-chan struct{}) {
 		channel, unsubscribe := s.Subscribe()
 		defer unsubscribe()
 		for {
 			select {
+
 			case <-canceled:
 				return
 
@@ -313,6 +314,7 @@ func subscribeMessage[T any](s *Session, finder func(transport.Message) (T, bool
 				return
 
 			case value, ok := <-channel:
+
 				if !ok {
 					if err := context.Cause(s.Context()); err != nil {
 						reject(err)
@@ -321,38 +323,24 @@ func subscribeMessage[T any](s *Session, finder func(transport.Message) (T, bool
 					reject(ErrSubscriptionClosed)
 					return
 				}
-				result, ok, err := finder(value)
-				if err != nil {
-					reject(err)
-					return
-				}
-				if ok {
-					resolve(result)
-					return
+
+				if value.Method == method {
+					result, err := transport.Unmarshal[T](value)
+					if err != nil {
+						reject(err)
+						return
+					}
+					ok, err := matcher(result)
+					if err != nil {
+						reject(err)
+						return
+					}
+					if ok {
+						resolve(result)
+						return
+					}
 				}
 			}
 		}
-	})
-}
-
-func subscribeMethod[T any](s *Session, method string, match func(T) (bool, error)) future.Future[T] {
-	return subscribeMessage(s, func(value transport.Message) (T, bool, error) {
-		var zero T
-		if value.Method != method {
-			return zero, false, nil
-		}
-		result, err := transport.Unmarshal[T](value)
-		if err != nil {
-			return zero, false, err
-		}
-		isMatched, err := match(result)
-		if err != nil {
-			return zero, false, err
-		}
-		if !isMatched {
-			return zero, false, nil
-		}
-
-		return result, true, nil
 	})
 }

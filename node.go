@@ -234,7 +234,7 @@ func (e Node) pointerAction(eventName string, preventDefault bool, dispatch func
 	}
 	actionID := fmt.Sprintf("%d", time.Now().UnixNano())
 
-	futureBindingCalled := subscribeMethod(e.frame.session, "Runtime.bindingCalled", func(value runtime.BindingCalled) (bool, error) {
+	futureBindingCalled := subscribeToMethod(e.frame.session, "Runtime.bindingCalled", func(value runtime.BindingCalled) (bool, error) {
 		if value.Name == hitCheckFunc {
 			ack, err := parseAck(value.Payload)
 			return ack.ID == actionID, err
