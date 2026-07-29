@@ -10,17 +10,6 @@ import (
 	"github.com/ecwid/control/protocol/target"
 )
 
-func (s *Session) attachToTarget(targetID target.TargetID) (target.SessionID, error) {
-	val, err := target.AttachToTarget(s, target.AttachToTargetArgs{
-		TargetId: targetID,
-		Flatten:  true,
-	})
-	if err != nil {
-		return "", err
-	}
-	return val.SessionId, nil
-}
-
 func (s *Session) CaptureScreenshot(format string, quality int, clip *page.Viewport, fromSurface, captureBeyondViewport, optimizeForSpeed bool) ([]byte, error) {
 	val, err := page.CaptureScreenshot(s, page.CaptureScreenshotArgs{
 		Format:                format,
@@ -45,24 +34,13 @@ func (s *Session) SetDownloadBehavior(behavior string, downloadPath string, even
 }
 
 func (s *Session) GetTargetCreated() future.Future[target.TargetCreated] {
-	return awaitMethod(s, "Target.targetCreated", func(value target.TargetCreated) (bool, error) {
+	return subscribeMethod(s, "Target.targetCreated", func(value target.TargetCreated) (bool, error) {
 		return value.TargetInfo.Type == "page" && value.TargetInfo.OpenerId == s.targetID, nil
 	})
 }
 
-func (s *Session) AttachToTarget(id target.TargetID) (*Session, error) {
-	return NewSession(s.transport, id, s.timeout)
-}
-
 func (s *Session) CreatePageTargetTab(url string) (*Session, error) {
-	if url == "" {
-		url = Blank // headless chrome crash when url is empty
-	}
-	r, err := target.CreateTarget(s, target.CreateTargetArgs{Url: url})
-	if err != nil {
-		return nil, err
-	}
-	return s.AttachToTarget(r.TargetId)
+	return s.browser.NewTab(url)
 }
 
 func (s *Session) Activate() error {
@@ -128,23 +106,23 @@ func (s *Session) NavigateHistory(delta int) error {
 }
 
 func (s *Session) GetBindingCalled(fn string) future.Future[runtime.BindingCalled] {
-	return awaitMethod(s, "Runtime.bindingCalled", func(value runtime.BindingCalled) (bool, error) {
+	return subscribeMethod(s, "Runtime.bindingCalled", func(value runtime.BindingCalled) (bool, error) {
 		return value.Name == fn, nil
 	})
 }
 
 func (s *Session) Click(point Point) error {
-	return s.mouse.Click(MouseLeft, point, time.Millisecond*85)
+	return NewMouse(s).Click(MouseLeft, point, time.Millisecond*85)
 }
 
 func (s *Session) MouseDown(point Point) error {
-	return s.mouse.Down(MouseLeft, point)
+	return NewMouse(s).Down(MouseLeft, point)
 }
 
 func (s *Session) Swipe(from, to Point) error {
-	return s.touch.Swipe(from, to)
+	return NewTouch(s).Swipe(from, to)
 }
 
 func (s *Session) Hover(point Point) error {
-	return s.mouse.Move(MouseNone, point)
+	return NewMouse(s).Move(MouseNone, point)
 }

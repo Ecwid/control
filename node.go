@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ecwid/control/key"
-	"github.com/ecwid/control/protocol/css"
 	"github.com/ecwid/control/protocol/dom"
 	"github.com/ecwid/control/protocol/runtime"
 )
@@ -188,7 +187,7 @@ func (e Node) clearInput() error {
 	if err != nil {
 		return err
 	}
-	return e.frame.session.kb.Press(key.Keys[key.Backspace], time.Millisecond*85)
+	return NewKeyboard(e.frame.session).Press(key.Keys[key.Backspace], time.Millisecond*85)
 }
 
 func (e Node) InsertText(value string) error {
@@ -208,7 +207,7 @@ func (e Node) setText(value string, clearBefore bool) (err error) {
 			return err
 		}
 	}
-	if err = e.frame.session.kb.Insert(value); err != nil {
+	if err = NewKeyboard(e.frame.session).Insert(value); err != nil {
 		return err
 	}
 	return nil
@@ -235,7 +234,7 @@ func (e Node) pointerAction(eventName string, preventDefault bool, dispatch func
 	}
 	actionID := fmt.Sprintf("%d", time.Now().UnixNano())
 
-	futureBindingCalled := awaitMethod(e.frame.session, "Runtime.bindingCalled", func(value runtime.BindingCalled) (bool, error) {
+	futureBindingCalled := subscribeMethod(e.frame.session, "Runtime.bindingCalled", func(value runtime.BindingCalled) (bool, error) {
 		if value.Name == hitCheckFunc {
 			ack, err := parseAck(value.Payload)
 			return ack.ID == actionID, err
@@ -452,19 +451,4 @@ func (e Node) SetCheckbox(check bool) error {
 
 func (e Node) IsChecked() Optional[bool] {
 	return conv[bool](e.eval(`function(){return this.checked}`))
-}
-
-func (e Node) SetForcePseudoState(classes []string) error {
-	value, err := e.frame.describeNode(e)
-	if err != nil {
-		return err
-	}
-	err = css.Enable(e)
-	if err != nil {
-		return err
-	}
-	return css.ForcePseudoState(e, css.ForcePseudoStateArgs{
-		NodeId:              value.NodeId,
-		ForcedPseudoClasses: classes,
-	})
 }

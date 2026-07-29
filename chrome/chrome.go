@@ -3,19 +3,19 @@ package chrome
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 )
 
-var MaxTimeToStart = 10 * time.Second
+const (
+	startTimeout = 10 * time.Second
+	stopTimeout  = 10 * time.Second
+)
 
 type Chrome struct {
 	ctx          context.Context
@@ -49,46 +49,6 @@ func hasUserDataDir(args []string) bool {
 	return false
 }
 
-func (c Chrome) NewTab(cli *http.Client, address string) (target Target, err error) {
-	u, err := url.Parse(c.WebSocketUrl)
-	if err != nil {
-		return target, err
-	}
-	endpoint := url.URL{Scheme: "http", Host: u.Host, Path: "/json/new"}
-	requestURL := endpoint.String()
-	if address != "" {
-		requestURL += "?" + url.QueryEscape(address)
-	}
-
-	request, err := http.NewRequest(http.MethodPut, requestURL, nil)
-	if err != nil {
-		return target, err
-	}
-	r, err := cli.Do(request)
-	if err != nil {
-		return target, err
-	}
-	defer func() {
-		closeErr := r.Body.Close()
-		if err == nil && closeErr != nil {
-			err = closeErr
-		}
-	}()
-
-	var b []byte
-	b, err = io.ReadAll(r.Body)
-	if err != nil {
-		return target, err
-	}
-	if r.StatusCode < http.StatusOK || r.StatusCode >= http.StatusMultipleChoices {
-		return target, fmt.Errorf("new tab request failed: status=%s body=%s", r.Status, strings.TrimSpace(string(b)))
-	}
-	if err = json.Unmarshal(b, &target); err != nil {
-		return
-	}
-	return
-}
-
 func (c Chrome) Wait() error {
 	if c.cmd == nil {
 		return errors.New("chrome process not started")
@@ -96,11 +56,14 @@ func (c Chrome) Wait() error {
 	return c.cmd.Wait()
 }
 
-func (c Chrome) Close(ctx context.Context, shutdown shutdowner) error {
+func (c Chrome) Close(shutdown shutdowner) error {
 	var errs []error
 
+	ctxTo, cancel := context.WithTimeout(c.ctx, stopTimeout)
+	defer cancel()
+
 	if shutdown != nil {
-		if err := shutdown.Shutdown(ctx); err != nil {
+		if err := shutdown.Shutdown(ctxTo); err != nil {
 			errs = append(errs, errors.Join(err, errors.New("cannot shut down browser via cdp")))
 		}
 	} else {
@@ -202,7 +165,7 @@ func Launch(ctx context.Context, userFlags ...string) (value Chrome, err error) 
 		return value, err
 	}
 
-	launchCtx, cancel := context.WithTimeout(ctx, MaxTimeToStart)
+	launchCtx, cancel := context.WithTimeout(ctx, startTimeout)
 	defer cancel()
 
 	select {
@@ -224,8 +187,8 @@ func Launch(ctx context.Context, userFlags ...string) (value Chrome, err error) 
 		_ = value.cmd.Wait()
 		stderrText := strings.Join(std, "\n")
 		if strings.TrimSpace(stderrText) == "" {
-			return value, fmt.Errorf("chrome launch timeout after %s: %w", MaxTimeToStart, context.Cause(launchCtx))
+			return value, fmt.Errorf("chrome launch timeout after %s: %w", startTimeout, context.Cause(launchCtx))
 		}
-		return value, fmt.Errorf("chrome launch timeout after %s: %w; stderr:\n%s", MaxTimeToStart, context.Cause(launchCtx), stderrText)
+		return value, fmt.Errorf("chrome launch timeout after %s: %w; stderr:\n%s", startTimeout, context.Cause(launchCtx), stderrText)
 	}
 }

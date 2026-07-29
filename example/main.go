@@ -60,7 +60,7 @@ func main() {
 		panic(err)
 	}
 	defer browser.Close()
-	tab, err := browser.NewTab()
+	session, err := browser.NewTab("")
 	if err != nil {
 		panic(err)
 	}
@@ -68,11 +68,6 @@ func main() {
 	r := retry.Static{
 		Delay:   time.Second,
 		Timeout: 10 * time.Second,
-	}
-
-	session, err := browser.NewSession(tab, time.Second*10)
-	if err != nil {
-		panic(err)
 	}
 
 	err = session.Frame.Navigate("https://mdemo.company.site/")

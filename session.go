@@ -29,7 +29,7 @@ const hitCheckFunc = `__control_clk_backend_hit`
 var (
 	ErrTargetDestroyed    error = errors.New("target destroyed")
 	ErrTargetDetached     error = errors.New("session detached from target")
-	ErrSubscriptionClosed error = errors.New("event subscription closed")
+	ErrSubscriptionClosed error = errors.New("event subscription channel closed")
 )
 
 type TargetCrashedError []byte
@@ -39,81 +39,49 @@ func (t TargetCrashedError) Error() string {
 }
 
 type Session struct {
-	// timeout defines default per-operation timeout for protocol calls.
-	timeout time.Duration
-	// context is canceled when the session closes or fails.
-	context context.Context
-	// cancel terminates the session context with a cause.
-	cancel context.CancelCauseFunc
-	// teardown guarantees fail/close sequence runs exactly once.
-	teardown sync.Once
-	// unsubscribeHandle detaches the main session event subscription.
-	unsubscribeHandle func()
-	// transport is the shared CDP transport used by the session.
-	transport *transport.Transport
-	// targetID is the browser target this session is attached to.
-	targetID target.TargetID
-	// sessionID is the CDP session identifier returned by attachToTarget.
-	sessionID string
-	// framesMu protects frames map concurrent access.
-	framesMu sync.RWMutex
-	// frames maps frame ID to runtime execution context unique ID.
-	frames map[common.FrameId]string
-	// Frame is the root frame wrapper for this session target.
-	Frame *Frame
-	// mouse provides mouse input actions scoped to this session.
-	mouse Mouse
-	// kb provides keyboard input actions scoped to this session.
-	kb Keyboard
-	// touch provides touch input actions scoped to this session.
-	touch Touch
+	browser     *Browser
+	caller      CdpCaller
+	close       sync.Once
+	unsubscribe func()
+	targetID    target.TargetID
+	framesMu    sync.RWMutex
+	frames      map[common.FrameId]string
+	Frame       *Frame
 }
 
-func newSession(tp *transport.Transport, targetID target.TargetID, timeout time.Duration) *Session {
-	var session = &Session{
-		transport: tp,
-		targetID:  targetID,
-		timeout:   timeout,
-		frames:    make(map[common.FrameId]string),
-	}
-	session.mouse = NewMouse(session)
-	session.kb = NewKeyboard(session)
-	session.touch = NewTouch(session)
-	session.Frame = &Frame{session: session, id: common.FrameId(session.targetID)}
-	return session
+func (s *Session) GetBrowser() *Browser {
+	return s.browser
 }
 
 func (s *Session) SetTimeout(timeout time.Duration) {
-	s.timeout = timeout
+	s.caller.timeout = timeout
 }
 
-func (s *Session) Transport() *transport.Transport {
-	return s.transport
+func (s *Session) GetCaller() CdpCaller {
+	return s.caller
+}
+
+func (s *Session) Call(method string, send, recv any) error {
+	return s.caller.Call(method, send, recv)
 }
 
 func (s *Session) Context() context.Context {
-	return s.context
+	return s.GetCaller().Context()
 }
 
-func (s *Session) startContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(s.context, s.timeout)
-}
-
-func (s *Session) withTimeout(run func(context.Context) error) error {
-	ctxTo, cancel := s.startContext()
-	defer cancel()
-	return run(ctxTo)
+func (s *Session) Timeout() time.Duration {
+	return s.GetCaller().timeout
 }
 
 func GetWithTimeout[T any](s *Session, future future.Future[T]) (T, error) {
-	ctxTo, cancel := s.startContext()
+	ctxTo, cancel := context.WithTimeout(s.Context(), s.Timeout())
 	defer cancel()
 	return future.Get(ctxTo)
 }
 
 func (s *Session) Log(msg string, args ...any) {
 	level := slog.LevelInfo
-	args = append(args, "sessionId", s.sessionID)
+	args = append(args, "sessionId", s.GetCaller().sessionID)
 	for n := range args {
 		switch a := args[n].(type) {
 		case error:
@@ -123,45 +91,30 @@ func (s *Session) Log(msg string, args ...any) {
 			}
 		}
 	}
-	s.transport.Log(level, msg, args...)
+	s.GetCaller().transport.Log(level, msg, args...)
 }
 
 func (s *Session) GetID() string {
-	return s.sessionID
+	return s.GetCaller().sessionID
 }
 
 func (s *Session) IsDone() bool {
-	select {
-	case <-s.context.Done():
-		return true
-	default:
-		return false
-	}
-}
-
-func (s *Session) Call(method string, send, recv any) error {
-	return s.withTimeout(func(ctx context.Context) error {
-		return s.transport.Call(ctx, s.sessionID, method, send, recv)
-	})
+	return s.GetCaller().IsDone()
 }
 
 func (s *Session) Subscribe() (channel <-chan transport.Message, cancel func()) {
-	return s.transport.Subscribe(s.sessionID, transport.DefaultEventBuffer)
+	return s.GetCaller().Subscribe()
 }
 
-func (s *Session) fail(err error) {
-	s.teardown.Do(func() {
+func (s *Session) fatal(err error) {
+	s.close.Do(func() {
 		if err != nil {
-			s.Log("session failed", "targetId", s.targetID, "error", err)
-		} else {
-			s.Log("session closed", "targetId", s.targetID)
+			s.Log("session closed", "targetId", s.targetID, "error", err)
 		}
-		if s.unsubscribeHandle != nil {
-			s.unsubscribeHandle()
+		if s.unsubscribe != nil {
+			s.unsubscribe()
 		}
-		if s.cancel != nil {
-			s.cancel(err)
-		}
+		s.caller.Cancel(err)
 	})
 }
 
@@ -183,19 +136,32 @@ func (s *Session) getFrameExecutionContextID(id common.FrameId) string {
 	return s.frames[id]
 }
 
-func NewSession(transport *transport.Transport, targetID target.TargetID, timeout time.Duration) (*Session, error) {
-	session := newSession(transport, targetID, timeout)
-	session.context, session.cancel = context.WithCancelCause(transport.Context())
-	sessionID, err := session.attachToTarget(targetID)
+func (b *Browser) NewSession(targetID target.TargetID) (*Session, error) {
+	sessionCtx, sessionCancel := context.WithCancelCause(b.caller.ctx)
+	cdpCaller := CdpCaller{
+		ctx:       sessionCtx,
+		cancel:    sessionCancel,
+		timeout:   b.caller.timeout,
+		transport: b.caller.transport,
+	}
+	var session = &Session{
+		browser:  b,
+		caller:   cdpCaller,
+		targetID: targetID,
+		frames:   make(map[common.FrameId]string),
+	}
+	session.Frame = &Frame{session: session, id: common.FrameId(session.targetID)}
+
+	sessionID, err := b.attachToTarget(targetID)
 	if err != nil {
-		session.fail(err)
+		session.fatal(err)
 		return nil, err
 	}
-	session.sessionID = string(sessionID)
+	session.caller.sessionID = string(sessionID)
 	session.startHandleLoop()
 	if err = session.enableDefaults(); err != nil {
 		// non necessary to detach from target, because session will be closed on error
-		session.fail(err)
+		session.fatal(err)
 		return nil, err
 	}
 	return session, nil
@@ -228,10 +194,10 @@ func (s *Session) enableDefaults() error {
 
 func (s *Session) startHandleLoop() {
 	channel, unsubscribe := s.Subscribe()
-	s.unsubscribeHandle = unsubscribe
+	s.unsubscribe = unsubscribe
 	go func() {
 		if err := s.handle(channel); err != nil {
-			s.fail(err)
+			s.fatal(err)
 		}
 	}()
 }
@@ -277,7 +243,7 @@ func handleDetachedFromTarget(s *Session, message transport.Message) error {
 	if err != nil {
 		return err
 	}
-	if s.sessionID == string(detachedFromTarget.SessionId) {
+	if s.caller.sessionID == string(detachedFromTarget.SessionId) {
 		return ErrTargetDetached
 	}
 	return nil
@@ -333,18 +299,17 @@ func (s *Session) handle(channel <-chan transport.Message) error {
 	return ErrSubscriptionClosed
 }
 
-func awaitMessage[T any](s *Session, watcher func(transport.Message) (T, bool, error)) future.Future[T] {
+func subscribeMessage[T any](s *Session, finder func(transport.Message) (T, bool, error)) future.Future[T] {
 	return future.Execute(func(resolve func(T), reject func(error), canceled <-chan struct{}) {
 		channel, unsubscribe := s.Subscribe()
 		defer unsubscribe()
-
 		for {
 			select {
 			case <-canceled:
 				return
 
-			case <-s.context.Done():
-				reject(context.Cause(s.context))
+			case <-s.Context().Done():
+				reject(context.Cause(s.Context()))
 				return
 
 			case value, ok := <-channel:
@@ -352,12 +317,12 @@ func awaitMessage[T any](s *Session, watcher func(transport.Message) (T, bool, e
 					reject(ErrSubscriptionClosed)
 					return
 				}
-				result, isMatched, err := watcher(value)
+				result, ok, err := finder(value)
 				if err != nil {
 					reject(err)
 					return
 				}
-				if isMatched {
+				if ok {
 					resolve(result)
 					return
 				}
@@ -366,8 +331,8 @@ func awaitMessage[T any](s *Session, watcher func(transport.Message) (T, bool, e
 	})
 }
 
-func awaitMethod[T any](s *Session, method string, match func(T) (bool, error)) future.Future[T] {
-	return awaitMessage(s, func(value transport.Message) (T, bool, error) {
+func subscribeMethod[T any](s *Session, method string, match func(T) (bool, error)) future.Future[T] {
+	return subscribeMessage(s, func(value transport.Message) (T, bool, error) {
 		var zero T
 		if value.Method != method {
 			return zero, false, nil
