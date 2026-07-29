@@ -3,6 +3,7 @@ package future
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 )
 
@@ -17,7 +18,20 @@ func Execute[T any](executor func(resolve func(T), reject func(error), canceled 
 	value := &future[T]{
 		fulfilled: make(chan struct{}),
 	}
-	go executor(value.resolve, value.reject, value.fulfilled)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				uncatchErr := fmt.Errorf("future: panic")
+				switch errorValue := r.(type) {
+				case error:
+					value.reject(errors.Join(uncatchErr, errorValue))
+				default:
+					value.reject(errors.Join(uncatchErr, errors.New(fmt.Sprint(r))))
+				}
+			}
+		}()
+		executor(value.resolve, value.reject, value.fulfilled)
+	}()
 	return value
 }
 
