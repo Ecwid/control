@@ -22,8 +22,6 @@ var DefaultDialer = websocket.Dialer{
 
 var ErrClosed = errors.New("transport: closed")
 
-const DefaultEventBuffer = 1024
-
 type Transport struct {
 	// Root lifecycle context for all transport goroutines and operations.
 	ctx context.Context
@@ -98,13 +96,16 @@ func (c *Transport) Close() error {
 		c.cancel(ErrClosed)
 		_ = c.conn.Close()
 	})
-	return context.Cause(c.ctx)
+	cause := context.Cause(c.ctx)
+	if errors.Is(cause, ErrClosed) {
+		return nil
+	}
+	return cause
 }
 
 func (c *Transport) Shutdown(ctx context.Context) error {
 	_, err := c.Do(ctx, Request{Method: "Browser.close"})
-	closeErr := c.Close()
-	return errors.Join(err, closeErr)
+	return errors.Join(err, c.Close())
 }
 
 func (c *Transport) Do(ctx context.Context, req Request) (Response, error) {
@@ -182,9 +183,6 @@ func (c *Transport) Call(ctx context.Context, sessionID, method string, params a
 }
 
 func (c *Transport) Subscribe(sessionID string, buffer int) (<-chan Message, func()) {
-	if buffer <= 0 {
-		buffer = DefaultEventBuffer
-	}
 	return c.subs.subscribe(sessionID, buffer)
 }
 
