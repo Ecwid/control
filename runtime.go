@@ -52,20 +52,6 @@ const (
 	nodeTypeFragment              nodeType = 11 // A DocumentFragment node
 )
 
-type ObjectHandle interface {
-	GetRemoteObjectID() runtime.RemoteObjectId
-}
-
-type objectHandleValue runtime.RemoteObjectId
-
-func (o objectHandleValue) GetRemoteObjectID() runtime.RemoteObjectId {
-	return runtime.RemoteObjectId(o)
-}
-
-func objectHandle(id runtime.RemoteObjectId) ObjectHandle {
-	return objectHandleValue(id)
-}
-
 func getNodeType(deepSerializedValue any) (nodeType, bool) {
 	obj, ok := deepSerializedValue.(map[string]any)
 	if !ok {
@@ -230,7 +216,7 @@ func decodeDeepKind(kind string, value any, objectID runtime.RemoteObjectId) (an
 		return deepUnserializeArray(value), nil
 	case "promise", "function", "weakmap", "weakset", "proxy", "window", "generator":
 		if objectID != "" {
-			return objectHandle(objectID), nil
+			return objectID, nil
 		}
 		return deepUnserializeValue(value), nil
 	default:
@@ -260,7 +246,7 @@ func (f *Frame) unserialize(value *runtime.RemoteObject) (any, error) {
 		switch nodeTypeValue {
 		case nodeTypeElement, nodeTypeDocument:
 			return &Node{
-				object: objectHandle(value.ObjectId),
+				object: value.ObjectId,
 				frame:  f,
 			}, nil
 		default:
@@ -282,7 +268,7 @@ func (f *Frame) unserialize(value *runtime.RemoteObject) (any, error) {
 }
 
 func (f *Frame) requestNodeList(objectId runtime.RemoteObjectId) (NodeList, error) {
-	descriptor, err := f.getProperties(objectHandle(objectId), true, false, false, false)
+	descriptor, err := f.getProperties(objectId, true, false, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +290,7 @@ func (f *Frame) requestNodeList(objectId runtime.RemoteObjectId) (NodeList, erro
 		entries = append(entries, nodeListEntry{
 			index: index,
 			node: &Node{
-				object:            objectHandle(d.Value.ObjectId),
+				object:            d.Value.ObjectId,
 				requestedSelector: fmt.Sprintf("NodeList[%d]", index),
 				frame:             f,
 			},
@@ -345,9 +331,9 @@ func (f Frame) evaluate(expression string, awaitPromise bool) (any, error) {
 	return f.unserialize(value.Result)
 }
 
-func (f Frame) AwaitPromise(promise ObjectHandle) (any, error) {
+func (f Frame) AwaitPromise(promise runtime.RemoteObjectId) (any, error) {
 	value, err := runtime.AwaitPromise(f, runtime.AwaitPromiseArgs{
-		PromiseObjectId: promise.GetRemoteObjectID(),
+		PromiseObjectId: promise,
 		ReturnByValue:   true,
 		GeneratePreview: false,
 	})
@@ -360,48 +346,9 @@ func (f Frame) AwaitPromise(promise ObjectHandle) (any, error) {
 	return f.unserialize(value.Result)
 }
 
-func toCallArgument(arg any) *runtime.CallArgument {
-	callArg := &runtime.CallArgument{}
-	switch a := arg.(type) {
-	case ObjectHandle:
-		callArg.ObjectId = a.GetRemoteObjectID()
-	case runtime.RemoteObjectId:
-		callArg.ObjectId = a
-	default:
-		callArg.Value = a
-	}
-	return callArg
-}
-
-func (f Frame) CallFunctionOn(self ObjectHandle, function string, awaitPromise bool, args ...any) (any, error) {
-	arguments := make([]*runtime.CallArgument, 0, len(args))
-	for _, arg := range args {
-		arguments = append(arguments, toCallArgument(arg))
-	}
-	if len(arguments) == 0 {
-		arguments = nil
-	}
-	value, err := runtime.CallFunctionOn(f, runtime.CallFunctionOnArgs{
-		FunctionDeclaration: function,
-		ObjectId:            self.GetRemoteObjectID(),
-		AwaitPromise:        awaitPromise,
-		Arguments:           arguments,
-		SerializationOptions: &runtime.SerializationOptions{
-			Serialization: "deep",
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if hasException(value.ExceptionDetails) {
-		return nil, RuntimeExceptionError{value: value.ExceptionDetails}
-	}
-	return f.unserialize(value.Result)
-}
-
-func (f Frame) getProperties(self ObjectHandle, ownProperties, accessorPropertiesOnly, generatePreview, nonIndexedPropertiesOnly bool) (*runtime.GetPropertiesVal, error) {
+func (f Frame) getProperties(self runtime.RemoteObjectId, ownProperties, accessorPropertiesOnly, generatePreview, nonIndexedPropertiesOnly bool) (*runtime.GetPropertiesVal, error) {
 	value, err := runtime.GetProperties(f, runtime.GetPropertiesArgs{
-		ObjectId:                 self.GetRemoteObjectID(),
+		ObjectId:                 self,
 		OwnProperties:            ownProperties,
 		AccessorPropertiesOnly:   accessorPropertiesOnly,
 		GeneratePreview:          generatePreview,
@@ -416,9 +363,9 @@ func (f Frame) getProperties(self ObjectHandle, ownProperties, accessorPropertie
 	return value, nil
 }
 
-func (f Frame) describeNode(self ObjectHandle) (*dom.Node, error) {
+func (f Frame) describeNode(self Node) (*dom.Node, error) {
 	value, err := dom.DescribeNode(f, dom.DescribeNodeArgs{
-		ObjectId: self.GetRemoteObjectID(),
+		ObjectId: self.object,
 	})
 	if err != nil {
 		return nil, err

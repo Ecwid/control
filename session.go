@@ -134,27 +134,28 @@ func (s *Session) getFrameExecutionContextID(id common.FrameId) string {
 }
 
 func (b *Browser) NewSession(targetID target.TargetID) (*Session, error) {
-	sessionCtx, sessionCancel := context.WithCancelCause(b.caller.ctx)
+	sessionID, err := b.attachToTarget(targetID)
+	if err != nil {
+		return nil, err
+	}
+
+	sessionCtx, sessionCancel := context.WithCancelCause(b.Context())
 	cdpCaller := CdpCaller{
 		ctx:       sessionCtx,
 		cancel:    sessionCancel,
 		timeout:   b.caller.timeout,
 		transport: b.caller.transport,
+		sessionID: string(sessionID),
 	}
+
 	var session = &Session{
 		browser:  b,
 		caller:   cdpCaller,
 		targetID: targetID,
 		frames:   make(map[common.FrameId]string),
 	}
-	session.Frame = &Frame{session: session, id: common.FrameId(session.targetID)}
 
-	sessionID, err := b.attachToTarget(targetID)
-	if err != nil {
-		session.fatal(err)
-		return nil, err
-	}
-	session.caller.sessionID = string(sessionID)
+	session.Frame = &Frame{session: session, id: common.FrameId(session.targetID)}
 	session.startHandleLoop()
 	if err = session.enableDefaults(); err != nil {
 		// non necessary to detach from target, because session will be closed on error

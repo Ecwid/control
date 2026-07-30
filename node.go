@@ -31,21 +31,21 @@ func parseAck(payload string) (clkAck, error) {
 }
 
 type (
-	NodeNonClickableError string
-	NodeNonFocusableError string
-	NodeInvisibleError    string
+	NodeNotClickableError string
+	NodeNotFocusableError string
+	NodeNotVisibleError   string
 	NoSuchSelectorError   string
 )
 
-func (n NodeNonClickableError) Error() string {
+func (n NodeNotClickableError) Error() string {
 	return fmt.Sprintf("selector %s is not clickable", string(n))
 }
 
-func (n NodeInvisibleError) Error() string {
+func (n NodeNotVisibleError) Error() string {
 	return fmt.Sprintf("selector %s is not visible", string(n))
 }
 
-func (n NodeNonFocusableError) Error() string {
+func (n NodeNotFocusableError) Error() string {
 	return fmt.Sprintf("selector %s is not focusable", string(n))
 }
 
@@ -54,7 +54,7 @@ func (s NoSuchSelectorError) Error() string {
 }
 
 type Node struct {
-	object            ObjectHandle
+	object            runtime.RemoteObjectId
 	requestedSelector string
 	frame             *Frame
 }
@@ -68,10 +68,6 @@ func (nl NodeList) Foreach(predicate func(*Node) error) error {
 		}
 	}
 	return nil
-}
-
-func (e Node) GetRemoteObjectID() runtime.RemoteObjectId {
-	return e.object.GetRemoteObjectID()
 }
 
 func (e Node) OwnerFrame() *Frame {
@@ -93,8 +89,40 @@ func (e Node) IsConnected() bool {
 	return false
 }
 
+func (e Node) callFunctionOn(function string, awaitPromise bool, args ...any) (any, error) {
+	arguments := make([]*runtime.CallArgument, 0, len(args))
+	for _, arg := range args {
+		carg := &runtime.CallArgument{}
+		if roId, ok := arg.(runtime.RemoteObjectId); ok {
+			carg.ObjectId = roId
+		} else {
+			carg.Value = arg
+		}
+		arguments = append(arguments, carg)
+	}
+	if len(arguments) == 0 {
+		arguments = nil
+	}
+	value, err := runtime.CallFunctionOn(e.frame, runtime.CallFunctionOnArgs{
+		FunctionDeclaration: function,
+		ObjectId:            e.object,
+		AwaitPromise:        awaitPromise,
+		Arguments:           arguments,
+		SerializationOptions: &runtime.SerializationOptions{
+			Serialization: "deep",
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if hasException(value.ExceptionDetails) {
+		return nil, RuntimeExceptionError{value: value.ExceptionDetails}
+	}
+	return e.frame.unserialize(value.Result)
+}
+
 func (e Node) eval(function string, args ...any) (any, error) {
-	return e.frame.CallFunctionOn(e, function, true, args...)
+	return e.callFunctionOn(function, true, args...)
 }
 
 func (e Node) dispatchEvents(events ...any) error {
@@ -108,11 +136,11 @@ func (e Node) Log(msg string, args ...any) {
 }
 
 func (e Node) HasClass(class string) Optional[bool] {
-	return conv[bool](e.eval(`function(c){return this.classList.contains(c)}`, class))
+	return optional[bool](e.eval(`function(c){return this.classList.contains(c)}`, class))
 }
 
 func (e Node) CallFunctionOn(function string, args ...any) Optional[any] {
-	return conv[any](e.eval(function, args...))
+	return optional[any](e.eval(function, args...))
 }
 
 func (e Node) Query(cssSelector string) Optional[*Node] {
@@ -158,7 +186,7 @@ func (e Node) ContentFrame() Optional[*Frame] {
 }
 
 func (e Node) scrollIntoView() error {
-	return dom.ScrollIntoViewIfNeeded(e, dom.ScrollIntoViewIfNeededArgs{ObjectId: e.GetRemoteObjectID()})
+	return dom.ScrollIntoViewIfNeeded(e, dom.ScrollIntoViewIfNeededArgs{ObjectId: e.object})
 }
 
 func (e Node) ScrollIntoView() error {
@@ -166,13 +194,13 @@ func (e Node) ScrollIntoView() error {
 }
 
 func (e Node) GetText() Optional[string] {
-	return conv[string](e.eval(`function(){return ('INPUT'===this.nodeName||'TEXTAREA'===this.nodeName)?this.value:this.innerText}`))
+	return optional[string](e.eval(`function(){return ('INPUT'===this.nodeName||'TEXTAREA'===this.nodeName)?this.value:this.innerText}`))
 }
 
 func (e Node) Focus() error {
-	err := dom.Focus(e, dom.FocusArgs{ObjectId: e.GetRemoteObjectID()})
+	err := dom.Focus(e, dom.FocusArgs{ObjectId: e.object})
 	if err != nil && err.Error() == `Element is not focusable` {
-		return NodeNonFocusableError(e.requestedSelector)
+		return NodeNotFocusableError(e.requestedSelector)
 	}
 	return err
 }
@@ -214,12 +242,12 @@ func (e Node) setText(value string, clearBefore bool) (err error) {
 }
 
 func (e Node) CheckVisibility() Optional[bool] {
-	return conv[bool](e.eval(`function(){return this.checkVisibility({opacityProperty: false, visibilityProperty: true})}`))
+	return optional[bool](e.eval(`function(){return this.checkVisibility({opacityProperty: false, visibilityProperty: true})}`))
 }
 
 func (e Node) Upload(files ...string) error {
 	return dom.SetFileInputFiles(e, dom.SetFileInputFilesArgs{
-		ObjectId: e.GetRemoteObjectID(),
+		ObjectId: e.object,
 		Files:    files,
 	})
 }
@@ -309,7 +337,7 @@ func (e Node) Down() (err error) {
 }
 
 func (e Node) GetClickablePoint() Optional[Point] {
-	return conv[Point](e.middle())
+	return optional[Point](e.middle())
 }
 
 func (e Node) middle() (middle Point, err error) {
@@ -318,7 +346,7 @@ func (e Node) middle() (middle Point, err error) {
 		return middle, err
 	}
 	if !value {
-		return middle, NodeInvisibleError(e.requestedSelector)
+		return middle, NodeNotVisibleError(e.requestedSelector)
 	}
 	var r0 Quad
 	r0, err = e.getContentQuad()
@@ -329,7 +357,7 @@ func (e Node) middle() (middle Point, err error) {
 }
 
 func (e Node) GetBoundingClientRect() Optional[Rectangle] {
-	return conv[Rectangle](e.getBoundingClientRect())
+	return optional[Rectangle](e.getBoundingClientRect())
 }
 
 func (e Node) getBoundingClientRect() (Rectangle, error) {
@@ -354,7 +382,7 @@ func (e Node) getBoundingClientRect() (Rectangle, error) {
 
 func (e Node) getContentQuad() (Quad, error) {
 	val, err := dom.GetContentQuads(e, dom.GetContentQuadsArgs{
-		ObjectId: e.GetRemoteObjectID(),
+		ObjectId: e.object,
 	})
 	if err != nil {
 		return nil, err
@@ -387,7 +415,7 @@ func (e Node) GetComputedStyle(style string, pseudo string) Optional[string] {
 	if pseudo != "" {
 		pseudoVar = pseudo
 	}
-	return conv[string](e.eval(`function(p,s){return getComputedStyle(this, p)[s]}`, pseudoVar, style))
+	return optional[string](e.eval(`function(p,s){return getComputedStyle(this, p)[s]}`, pseudoVar, style))
 }
 
 func (e Node) SetAttribute(attr, value string) error {
@@ -396,11 +424,11 @@ func (e Node) SetAttribute(attr, value string) error {
 }
 
 func (e Node) GetAttribute(attr string) Optional[string] {
-	return conv[string](e.eval(`function(a){return this.getAttribute(a)}`, attr))
+	return optional[string](e.eval(`function(a){return this.getAttribute(a)}`, attr))
 }
 
 func (e Node) GetRectangle() Optional[Rectangle] {
-	return conv[Rectangle](e.getViewportRectangle())
+	return optional[Rectangle](e.getViewportRectangle())
 }
 
 func (e Node) getViewportRectangle() (Rectangle, error) {
@@ -426,7 +454,7 @@ func (e Node) SelectByValues(values ...string) error {
 }
 
 func (e Node) GetSelected(textContent bool) Optional[[]string] {
-	return conv[[]string](e.getSelected(textContent))
+	return optional[[]string](e.getSelected(textContent))
 }
 
 func (e Node) getSelected(textContent bool) ([]string, error) {
@@ -450,5 +478,5 @@ func (e Node) SetCheckbox(check bool) error {
 }
 
 func (e Node) IsChecked() Optional[bool] {
-	return conv[bool](e.eval(`function(){return this.checked}`))
+	return optional[bool](e.eval(`function(){return this.checked}`))
 }

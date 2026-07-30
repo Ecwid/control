@@ -80,7 +80,7 @@ func (s *Session) GetNavigationEntry() Optional[page.NavigationEntry] {
 }
 
 func (s *Session) GetCurrentURL() Optional[string] {
-	return conv[string](s.getCurrentURL())
+	return optional[string](s.getCurrentURL())
 }
 
 func (s *Session) getCurrentURL() (string, error) {

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ecwid/control"
+	"github.com/ecwid/control/protocol/runtime"
 	"github.com/ecwid/control/retry"
 )
 
@@ -84,7 +85,7 @@ func main() {
 	b := session.Frame.Query(`.cover__title a span`).MustGetValue().CallFunctionOn(req).MustGetValue()
 	log.Println(b)
 
-	p := session.Frame.Evaluate(`new Promise((a,b) => a('ok'))`, false).MustGetValue().(control.ObjectHandle)
+	p := session.Frame.Evaluate(`new Promise((a,b) => a('ok'))`, false).MustGetValue().(runtime.RemoteObjectId)
 	a, b := session.Frame.AwaitPromise(p)
 	log.Println(a, b)
 }

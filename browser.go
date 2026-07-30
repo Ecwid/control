@@ -19,6 +19,10 @@ type Browser struct {
 	chrome chrome.Chrome
 }
 
+func (b Browser) Context() context.Context {
+	return b.caller.Context()
+}
+
 func (b Browser) Close() error {
 	browserErr := browser.Close(b.caller)
 	transportErr := b.caller.transport.Close()

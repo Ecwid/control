@@ -85,7 +85,7 @@ func (f Frame) Reload(ignoreCache bool, scriptToEvaluateOnLoad string) error {
 }
 
 func (f Frame) Evaluate(expression string, awaitPromise bool) Optional[any] {
-	return conv[any](f.evaluate(expression, awaitPromise))
+	return optional[any](f.evaluate(expression, awaitPromise))
 }
 
 func (f Frame) Document() Optional[*Node] {

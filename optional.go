@@ -42,7 +42,7 @@ func (op Optional[T]) IfPresent(f func(T)) {
 	}
 }
 
-func conv[T any](value any, err error) Optional[T] {
+func optional[T any](value any, err error) Optional[T] {
 	if err != nil {
 		return Optional[T]{err: err}
 	}
