@@ -56,7 +56,11 @@ func (h Handler) WithGroup(name string) slog.Handler {
 func main() {
 	sl := slog.New(Handler{h: slog.Default().Handler()})
 
-	browser, err := control.Launch(context.TODO(), sl, "--no-startup-window")
+	browser, err := control.Launch(context.TODO(), control.Options{
+		CdpTimeout: 10 * time.Second,
+		Logger:     sl,
+		ChromeArgs: []string{"--no-startup-window"},
+	})
 	if err != nil {
 		panic(err)
 	}

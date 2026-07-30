@@ -52,22 +52,31 @@ func (b Browser) attachToTarget(targetID target.TargetID) (target.SessionID, err
 	return val.SessionId, nil
 }
 
-func Launch(ctx context.Context, logger *slog.Logger, args ...string) (Browser, error) {
-	chromeBrowser, err := chrome.Launch(ctx, args...)
+type Options struct {
+	CdpTimeout time.Duration
+	Logger     *slog.Logger
+	ChromeArgs []string
+}
+
+func Launch(ctx context.Context, opts Options) (Browser, error) {
+	chromeBrowser, err := chrome.Launch(ctx, opts.ChromeArgs...)
 	if err != nil {
 		return Browser{}, errors.Join(err, errors.New("chrome launch failed"))
 	}
-	cdp, err := transport.DefaultDial(ctx, chromeBrowser.WebSocketUrl, logger)
+	cdp, err := transport.DefaultDial(ctx, chromeBrowser.WebSocketUrl, opts.Logger)
 	if err != nil {
 		_ = chromeBrowser.Close(true)
 		return Browser{}, errors.Join(err, errors.New("websocket connection failed"))
+	}
+	if opts.CdpTimeout <= 0 {
+		opts.CdpTimeout = defaultTimeout
 	}
 	browserCtx, browserCancel := context.WithCancelCause(cdp.Context())
 	caller := CdpCaller{
 		ctx:       browserCtx,
 		cancel:    browserCancel,
 		transport: cdp,
-		timeout:   defaultTimeout,
+		timeout:   opts.CdpTimeout,
 	}
 	return Browser{caller: caller, chrome: chromeBrowser}, nil
 }
