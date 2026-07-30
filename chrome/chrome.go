@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -105,6 +104,7 @@ func Launch(ctx context.Context, userFlags ...string) (value Chrome, err error) 
 	if len(userFlags) > 0 {
 		flags = append(flags, userFlags...)
 	}
+
 	if !hasUserDataDir(flags) {
 		value.userDataDir, err = os.MkdirTemp("", "chrome-control-*")
 		if err != nil {
@@ -118,17 +118,17 @@ func Launch(ctx context.Context, userFlags ...string) (value Chrome, err error) 
 			}
 		}()
 	}
-	var binary string
-	binary, err = bin()
+
+	binary, err := bin()
 	if err != nil {
 		return value, err
 	}
+
 	value.ctx = ctx
 	value.StartArgs = fmt.Sprintf("%s %s", binary, strings.Join(flags, " "))
 	value.cmd = exec.CommandContext(ctx, binary, flags...)
 
-	var stderr io.ReadCloser
-	stderr, err = value.cmd.StderrPipe()
+	stderr, err := value.cmd.StderrPipe()
 	if err != nil {
 		return value, err
 	}
@@ -136,16 +136,19 @@ func Launch(ctx context.Context, userFlags ...string) (value Chrome, err error) 
 	addr := make(chan string, 1)
 	readDone := make(chan error, 1)
 
-	var std []string
 	go func() {
 		const prefix = "DevTools listening on"
 		var scanner = bufio.NewScanner(stderr)
+		addrReported := false
 		for scanner.Scan() {
+			if addrReported {
+				continue
+			}
 			line := scanner.Text()
-			std = append(std, line)
 			if s, ok := strings.CutPrefix(line, prefix); ok {
 				select {
 				case addr <- strings.TrimSpace(s):
+					addrReported = true
 				default:
 				}
 			}
@@ -176,11 +179,8 @@ func Launch(ctx context.Context, userFlags ...string) (value Chrome, err error) 
 		if value.cmd.Process != nil {
 			_ = value.cmd.Process.Kill()
 		}
+		_ = stderr.Close()
 		_ = value.cmd.Wait()
-		stderrText := strings.Join(std, "\n")
-		if strings.TrimSpace(stderrText) == "" {
-			return value, fmt.Errorf("chrome launch timeout after %s: %w", startTimeout, context.Cause(launchCtx))
-		}
-		return value, fmt.Errorf("chrome launch timeout after %s: %w; stderr:\n%s", startTimeout, context.Cause(launchCtx), stderrText)
+		return value, fmt.Errorf("chrome launch timeout after %s: %w", startTimeout, context.Cause(launchCtx))
 	}
 }

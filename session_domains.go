@@ -1,13 +1,17 @@
 package control
 
 import (
+	"context"
+	"strings"
 	"time"
 
 	"github.com/ecwid/control/future"
 	"github.com/ecwid/control/protocol/browser"
+	"github.com/ecwid/control/protocol/network"
 	"github.com/ecwid/control/protocol/page"
 	"github.com/ecwid/control/protocol/runtime"
 	"github.com/ecwid/control/protocol/target"
+	"github.com/ecwid/control/transport"
 )
 
 func (s *Session) CaptureScreenshot(format string, quality int, clip *page.Viewport, fromSurface, captureBeyondViewport, optimizeForSpeed bool) ([]byte, error) {
@@ -125,4 +129,113 @@ func (s *Session) Swipe(from, to Point) error {
 
 func (s *Session) Hover(point Point) error {
 	return NewMouse(s).Move(MouseNone, point)
+}
+
+func (s *Session) NetworkIdle(timeout, threshold time.Duration, init func()) error {
+	channel, unsubscribe := s.Subscribe()
+	defer unsubscribe()
+
+	if init != nil {
+		init()
+	}
+
+	ctxTo, cancel := context.WithTimeout(s.Context(), timeout)
+	defer cancel()
+
+	start := time.Now()
+	totalRequests := 0
+	inflight := map[network.RequestId]network.RequestWillBeSent{}
+	idleTimer := time.NewTimer(threshold)
+	stopIdleTimer := func() {
+		if !idleTimer.Stop() {
+			select {
+			case <-idleTimer.C:
+			default:
+			}
+		}
+	}
+	resetIdleTimer := func() {
+		stopIdleTimer()
+		idleTimer.Reset(threshold)
+	}
+
+	defer func() {
+		stopIdleTimer()
+		s.Log("NetworkIdle", "requests", totalRequests, "inflight", inflight, "duration", time.Since(start).String())
+	}()
+
+	for {
+		select {
+
+		case <-ctxTo.Done():
+			return context.Cause(ctxTo)
+
+		case value, ok := <-channel:
+			if !ok {
+				if err := context.Cause(s.Context()); err != nil {
+					return err
+				}
+				return ErrSubscriptionClosed
+			}
+
+			switch value.Method {
+
+			case "Network.requestWillBeSent":
+				willBeSent, err := transport.Unmarshal[network.RequestWillBeSent](value)
+				if err != nil {
+					return err
+				}
+				switch willBeSent.Type {
+				case network.ResourceType("WebSocket"),
+					network.ResourceType("EventSource"):
+					continue
+				}
+				if willBeSent.Request != nil && strings.HasPrefix(willBeSent.Request.Url, "blob:") {
+					continue
+				}
+				if _, exists := inflight[willBeSent.RequestId]; !exists {
+					totalRequests++
+				}
+				inflight[willBeSent.RequestId] = willBeSent
+				resetIdleTimer()
+
+			case "Network.loadingFailed":
+				loadingFailed, err := transport.Unmarshal[network.LoadingFailed](value)
+				if err != nil {
+					return err
+				}
+				if _, exists := inflight[loadingFailed.RequestId]; exists {
+					delete(inflight, loadingFailed.RequestId)
+					resetIdleTimer()
+				}
+
+			case "Network.loadingFinished":
+				loadingFinished, err := transport.Unmarshal[network.LoadingFinished](value)
+				if err != nil {
+					return err
+				}
+				if _, exists := inflight[loadingFinished.RequestId]; exists {
+					delete(inflight, loadingFinished.RequestId)
+					resetIdleTimer()
+				}
+
+			case "Page.frameDetached":
+				frameDetached, err := transport.Unmarshal[page.FrameDetached](value)
+				if err != nil {
+					return err
+				}
+				for requestID, willBeSent := range inflight {
+					if willBeSent.FrameId == frameDetached.FrameId {
+						delete(inflight, requestID)
+					}
+				}
+			}
+
+		case <-idleTimer.C:
+			if len(inflight) == 0 {
+				return nil
+			}
+			resetIdleTimer()
+		}
+	}
 }
