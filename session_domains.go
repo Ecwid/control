@@ -2,6 +2,7 @@ package control
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -131,6 +132,105 @@ func (s *Session) Hover(point Point) error {
 	return NewMouse(s).Move(MouseNone, point)
 }
 
+func shouldTrackNetworkRequest(willBeSent network.RequestWillBeSent) bool {
+	switch willBeSent.Type {
+	case network.ResourceType("WebSocket"), network.ResourceType("EventSource"):
+		return false
+	}
+	if willBeSent.Request != nil && strings.HasPrefix(willBeSent.Request.Url, "blob:") {
+		return false
+	}
+	return true
+}
+
+func (s *Session) NetworkRequest(timeout time.Duration, matcher func(network.RequestWillBeSent) bool, init func()) (network.ResponseReceived, error) {
+	channel, unsubscribe := s.Subscribe()
+	defer unsubscribe()
+
+	if init != nil {
+		init()
+	}
+
+	ctxTo, cancel := context.WithTimeout(s.Context(), timeout)
+	defer cancel()
+
+	var requestId network.RequestId
+	var response *network.ResponseReceived
+	for {
+		select {
+
+		case <-ctxTo.Done():
+			return network.ResponseReceived{}, context.Cause(ctxTo)
+
+		case value, ok := <-channel:
+			if !ok {
+				if err := context.Cause(s.Context()); err != nil {
+					return network.ResponseReceived{}, err
+				}
+				return network.ResponseReceived{}, ErrSubscriptionClosed
+			}
+
+			switch value.Method {
+
+			case "Network.requestWillBeSent":
+				willBeSent, err := transport.Unmarshal[network.RequestWillBeSent](value)
+				if err != nil {
+					return network.ResponseReceived{}, err
+				}
+				if requestId != "" {
+					continue
+				}
+				if !shouldTrackNetworkRequest(willBeSent) {
+					continue
+				}
+				if matcher != nil && !matcher(willBeSent) {
+					continue
+				}
+				requestId = willBeSent.RequestId
+
+			case "Network.responseReceived":
+				if requestId == "" {
+					continue
+				}
+				responseReceived, err := transport.Unmarshal[network.ResponseReceived](value)
+				if err != nil {
+					return network.ResponseReceived{}, err
+				}
+				if responseReceived.RequestId == requestId {
+					response = &responseReceived
+				}
+
+			case "Network.loadingFailed":
+				if requestId == "" {
+					continue
+				}
+				loadingFailed, err := transport.Unmarshal[network.LoadingFailed](value)
+				if err != nil {
+					return network.ResponseReceived{}, err
+				}
+				if loadingFailed.RequestId == requestId {
+					return network.ResponseReceived{}, errors.New(loadingFailed.ErrorText)
+				}
+
+			case "Network.loadingFinished":
+				if requestId == "" {
+					continue
+				}
+				loadingFinished, err := transport.Unmarshal[network.LoadingFinished](value)
+				if err != nil {
+					return network.ResponseReceived{}, err
+				}
+				if loadingFinished.RequestId == requestId {
+					if response == nil {
+						return network.ResponseReceived{}, errors.New("network response missing")
+					}
+					return *response, nil
+				}
+			}
+		}
+	}
+}
+
 func (s *Session) NetworkIdle(timeout, threshold time.Duration, init func()) error {
 	channel, unsubscribe := s.Subscribe()
 	defer unsubscribe()
@@ -185,12 +285,7 @@ func (s *Session) NetworkIdle(timeout, threshold time.Duration, init func()) err
 				if err != nil {
 					return err
 				}
-				switch willBeSent.Type {
-				case network.ResourceType("WebSocket"),
-					network.ResourceType("EventSource"):
-					continue
-				}
-				if willBeSent.Request != nil && strings.HasPrefix(willBeSent.Request.Url, "blob:") {
+				if !shouldTrackNetworkRequest(willBeSent) {
 					continue
 				}
 				if _, exists := inflight[willBeSent.RequestId]; !exists {

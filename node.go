@@ -11,25 +11,6 @@ import (
 	"github.com/ecwid/control/protocol/runtime"
 )
 
-type clkAck struct {
-	ID    string `json:"id"`
-	Error string `json:"error,omitempty"`
-}
-
-func parseAck(payload string) (clkAck, error) {
-	var ack clkAck
-	if payload == "" {
-		return ack, errors.New("empty payload")
-	}
-	if err := json.Unmarshal([]byte(payload), &ack); err != nil {
-		return ack, err
-	}
-	if ack.ID == "" {
-		return ack, errors.New("missing id in payload")
-	}
-	return ack, nil
-}
-
 type (
 	NodeNotClickableError string
 	NodeNotFocusableError string
@@ -252,7 +233,34 @@ func (e Node) Upload(files ...string) error {
 	})
 }
 
-func (e Node) pointerAction(eventName string, preventDefault bool, dispatch func(Point) error) (err error) {
+func ackCallback(bindingName, ackId string) func(runtime.BindingCalled) (bool, error) {
+	type ack struct {
+		ID    string `json:"id"`
+		Error string `json:"error,omitempty"`
+	}
+	return func(value runtime.BindingCalled) (bool, error) {
+		if value.Name != bindingName {
+			return false, nil
+		}
+		if value.Payload == "" {
+			return false, errors.New("empty payload")
+		}
+		var ackValue ack
+		err := json.Unmarshal([]byte(value.Payload), &ackValue)
+		if err != nil {
+			return false, err
+		}
+		if ackValue.ID == ackId {
+			if ackValue.Error != "" {
+				return true, errors.New(ackValue.Error)
+			}
+			return true, nil
+		}
+		return false, err
+	}
+}
+
+func (e Node) pointerAction(eventName string, dispatch func(Point) error) (err error) {
 	if err = e.scrollIntoView(); err != nil {
 		return err
 	}
@@ -260,52 +268,45 @@ func (e Node) pointerAction(eventName string, preventDefault bool, dispatch func
 	if err != nil {
 		return err
 	}
-	actionID := fmt.Sprintf("%d", time.Now().UnixNano())
-
-	futureBindingCalled := subscribeToMethod(e.frame.session, "Runtime.bindingCalled", func(value runtime.BindingCalled) (bool, error) {
-		if value.Name == hitCheckFunc {
-			ack, err := parseAck(value.Payload)
-			return ack.ID == actionID, err
-		}
-		return false, nil
-	})
+	if eventName == "" {
+		return errors.New("pointerAction: eventName is empty")
+	}
+	ackId := fmt.Sprintf("%d", time.Now().UnixNano())
+	futureBindingCalled := subscribeToMethod(e.frame.session, "Runtime.bindingCalled", ackCallback(hitCheckFunc, ackId))
 	defer futureBindingCalled.Cancel()
 
-	/*
-		const dist = `function(func, actionId, eventName, preventDefault) {
-			const notify = window[func]
-			const notifyResult = (error) => {
-				notify(JSON.stringify({ id: actionId, error: error ?? null }))
-			}
+	const script = `function(func_name, ack_id, event_name) {
+		const resolve = (error) => {
+			window[func_name](JSON.stringify({ id: ack_id, error: error ?? null }))
+		}
+		const onBeforeUnload = () => resolve(null)
 
-			const isSelfOrDescendant = (target) => {
-				for (let node = target; node; node = node.parentNode) {
-					if (node === this) {
-						return true
-					}
+		const isSelfOrDescendant = (target) => {
+			for (let node = target; node; node = node.parentNode) {
+				if (node === this) {
+					return true
 				}
-				return false
 			}
+			return false
+		}
 
-			const onPointerEvent = (event) => {
-				if (event.isTrusted && isSelfOrDescendant(event.target)) {
-					notifyResult(null)
-					return
-				}
-				if (preventDefault) {
-					event.preventDefault()
-				}
-				event.stopImmediatePropagation()
-				notifyResult('target overlapped')
+		const listener = (e) => {
+			if (e.isTrusted && isSelfOrDescendant(e.target)) {
+				window.removeEventListener("beforeunload", onBeforeUnload)
+				resolve(null)
+				return
 			}
+			window.removeEventListener("beforeunload", onBeforeUnload)
+			e.preventDefault()
+			e.stopImmediatePropagation()
+			resolve("target overlapped")
+		}
 
-			this.ownerDocument.addEventListener(eventName, onPointerEvent, { capture: true, once: true })
-			window.addEventListener("beforeunload", () => notifyResult(null), { once: true })
-		}`
-	*/
+		this.ownerDocument.addEventListener(event_name, listener, { capture: true, once: true })
+		window.addEventListener("beforeunload", onBeforeUnload, { once: true })
+	}`
 
-	const minified = `function(e,t,n,r){const o=window[e],i=e=>{o(JSON.stringify({id:t,error:e??null}))},a=e=>{for(let t=e;t;t=t.parentNode)if(t===this)return!0;return!1};this.ownerDocument.addEventListener(n,e=>{e.isTrusted&&a(e.target)?i(null):(r&&e.preventDefault(),e.stopImmediatePropagation(),i("target overlapped"))},{capture:!0,once:!0}),window.addEventListener("beforeunload",()=>i(null),{once:!0})}`
-	_, err = e.eval(minified, hitCheckFunc, actionID, eventName, preventDefault)
+	_, err = e.eval(script, hitCheckFunc, ackId, eventName)
 	if err != nil {
 		return err
 	}
@@ -314,26 +315,16 @@ func (e Node) pointerAction(eventName string, preventDefault bool, dispatch func
 		return err
 	}
 
-	call, err := GetWithTimeout(e.frame.session, futureBindingCalled)
-	if err != nil {
-		return err
-	}
-	ack, err := parseAck(call.Payload)
-	if err != nil {
-		return err
-	}
-	if ack.Error != "" {
-		return errors.New(ack.Error)
-	}
-	return nil
+	_, err = GetWithTimeout(e.frame.session, futureBindingCalled)
+	return err
 }
 
 func (e Node) Click() (err error) {
-	return e.pointerAction("click", true, e.frame.session.Click)
+	return e.pointerAction("click", e.frame.session.Click)
 }
 
 func (e Node) Down() (err error) {
-	return e.pointerAction("mousedown", false, e.frame.session.MouseDown)
+	return e.pointerAction("mousedown", e.frame.session.MouseDown)
 }
 
 func (e Node) GetClickablePoint() Optional[Point] {
