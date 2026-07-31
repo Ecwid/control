@@ -52,10 +52,10 @@ func (s *Session) Activate() error {
 }
 
 func (s *Session) Close() error {
-	return s.CloseTarget(s.targetID)
+	return s.closeTarget(s.targetID)
 }
 
-func (s *Session) CloseTarget(id target.TargetID) (err error) {
+func (s *Session) closeTarget(id target.TargetID) (err error) {
 	err = target.CloseTarget(s, target.CloseTargetArgs{TargetId: id})
 	/* Target.detachedFromTarget event may come before the response of CloseTarget call */
 	if err == ErrTargetDetached {

@@ -20,7 +20,7 @@ var DefaultDialer = websocket.Dialer{
 	Proxy:            http.ProxyFromEnvironment,
 }
 
-var ErrClosed = errors.New("transport: closed")
+var ErrNormalClosure = errors.New("transport: closed")
 
 type Transport struct {
 	// Root lifecycle context for all transport goroutines and operations.
@@ -91,13 +91,8 @@ func (c *Transport) Context() context.Context {
 	return c.ctx
 }
 
-func (c *Transport) Close() error {
-	c.shutdown(ErrClosed)
-	cause := context.Cause(c.ctx)
-	if errors.Is(cause, ErrClosed) {
-		return nil
-	}
-	return cause
+func (c *Transport) Close() {
+	c.shutdown(ErrNormalClosure)
 }
 
 func (c *Transport) Do(ctx context.Context, req Request) (Response, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/ecwid/control/chrome"
@@ -17,17 +18,21 @@ const defaultTimeout = 10 * time.Second
 type Browser struct {
 	caller CdpCaller
 	chrome chrome.Chrome
+	closer sync.Once
 }
 
-func (b Browser) Context() context.Context {
+func (b *Browser) Context() context.Context {
 	return b.caller.Context()
 }
 
-func (b Browser) Close() error {
-	browserErr := browser.Close(b.caller)
-	transportErr := b.caller.transport.Close()
-	chromeErr := b.chrome.Close(browserErr != nil || transportErr != nil)
-	return errors.Join(browserErr, transportErr, chromeErr)
+func (b *Browser) Close() error {
+	var browserErr, chromeErr error
+	b.closer.Do(func() {
+		browserErr = browser.Close(b.caller)
+		b.caller.transport.Close()
+		chromeErr = b.chrome.Close(browserErr != nil)
+	})
+	return errors.Join(browserErr, chromeErr)
 }
 
 func (b *Browser) NewTab(url string) (*Session, error) {
@@ -41,7 +46,7 @@ func (b *Browser) NewTab(url string) (*Session, error) {
 	return b.NewSession(created.TargetId)
 }
 
-func (b Browser) attachToTarget(targetID target.TargetID) (target.SessionID, error) {
+func (b *Browser) attachToTarget(targetID target.TargetID) (target.SessionID, error) {
 	val, err := target.AttachToTarget(b.caller, target.AttachToTargetArgs{
 		TargetId: targetID,
 		Flatten:  true,
@@ -58,15 +63,15 @@ type Options struct {
 	ChromeArgs []string
 }
 
-func Launch(ctx context.Context, opts Options) (Browser, error) {
+func Launch(ctx context.Context, opts Options) (*Browser, error) {
 	chromeBrowser, err := chrome.Launch(ctx, opts.ChromeArgs...)
 	if err != nil {
-		return Browser{}, errors.Join(err, errors.New("chrome launch failed"))
+		return nil, errors.Join(err, errors.New("chrome launch failed"))
 	}
 	cdp, err := transport.DefaultDial(ctx, chromeBrowser.WebSocketUrl, opts.Logger)
 	if err != nil {
 		_ = chromeBrowser.Close(true)
-		return Browser{}, errors.Join(err, errors.New("websocket connection failed"))
+		return nil, errors.Join(err, errors.New("websocket connection failed"))
 	}
 	if opts.CdpTimeout <= 0 {
 		opts.CdpTimeout = defaultTimeout
@@ -78,5 +83,5 @@ func Launch(ctx context.Context, opts Options) (Browser, error) {
 		transport: cdp,
 		timeout:   opts.CdpTimeout,
 	}
-	return Browser{caller: caller, chrome: chromeBrowser}, nil
+	return &Browser{caller: caller, chrome: chromeBrowser}, nil
 }

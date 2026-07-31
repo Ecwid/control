@@ -33,10 +33,6 @@ type Target struct {
 	WebSocketDebuggerUrl string `json:"webSocketDebuggerUrl,omitempty"`
 }
 
-type shutdowner interface {
-	Shutdown(context.Context) error
-}
-
 func hasUserDataDir(args []string) bool {
 	for _, arg := range args {
 		arg = strings.TrimSpace(arg)
