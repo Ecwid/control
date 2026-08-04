@@ -235,6 +235,20 @@ func (s *Session) NetworkRequest(timeout time.Duration, matcher func(network.Req
 	}
 }
 
+type InflightDeadlineExceededError struct {
+	Inflight map[network.RequestId]network.RequestWillBeSent
+}
+
+func (e InflightDeadlineExceededError) Error() string {
+	var sb strings.Builder
+	sb.WriteString("network idle timeout, inflight requests:\n")
+	for _, req := range e.Inflight {
+		sb.WriteString(req.Request.Url)
+		sb.WriteByte('\n')
+	}
+	return sb.String()
+}
+
 func (s *Session) NetworkIdle(timeout, threshold time.Duration, init func()) error {
 	channel, unsubscribe := s.Subscribe()
 	defer unsubscribe()
@@ -272,7 +286,11 @@ func (s *Session) NetworkIdle(timeout, threshold time.Duration, init func()) err
 		select {
 
 		case <-ctxTo.Done():
-			return context.Cause(ctxTo)
+			ctxErr := context.Cause(ctxTo)
+			if ctxErr == context.DeadlineExceeded {
+				return InflightDeadlineExceededError{Inflight: inflight}
+			}
+			return ctxErr
 
 		case value, ok := <-channel:
 			if !ok {
