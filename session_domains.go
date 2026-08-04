@@ -3,6 +3,7 @@ package control
 import (
 	"context"
 	"errors"
+	"net/http"
 	"strings"
 	"time"
 
@@ -198,6 +199,9 @@ func (s *Session) NetworkRequest(timeout time.Duration, matcher func(network.Req
 				}
 				if responseReceived.RequestId == requestId {
 					response = &responseReceived
+					if responseReceived.Response != nil && responseReceived.Response.Status >= 400 {
+						return network.ResponseReceived{}, errors.New(http.StatusText(responseReceived.Response.Status))
+					}
 				}
 
 			case "Network.loadingFailed":

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ecwid/control/key"
 	"github.com/ecwid/control/protocol/dom"
+	"github.com/ecwid/control/protocol/domdebugger"
 	"github.com/ecwid/control/protocol/runtime"
 )
 
@@ -233,6 +234,23 @@ func (e Node) Upload(files ...string) error {
 	})
 }
 
+func (e Node) hasClickListener() (bool, error) {
+	val, err := domdebugger.GetEventListeners(e.frame.session, domdebugger.GetEventListenersArgs{ObjectId: e.object})
+	if err != nil {
+		return false, err
+	}
+	for _, listener := range val.Listeners {
+		if listener != nil && listener.Type == "click" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (e Node) HasClickListener() Optional[bool] {
+	return optional[bool](e.hasClickListener())
+}
+
 func ackCallback(bindingName, ackId string) func(runtime.BindingCalled) (bool, error) {
 	type ack struct {
 		ID    string `json:"id"`
@@ -260,17 +278,51 @@ func ackCallback(bindingName, ackId string) func(runtime.BindingCalled) (bool, e
 	}
 }
 
+func (e Node) isStableAfterAnimationFrame() (bool, error) {
+	value, err := e.eval(`function() {
+		if (!this.isConnected) {
+			return false
+		}
+		const {x, y, width, height} = this.getBoundingClientRect()
+		return new Promise(resolve => {
+			requestAnimationFrame(() => {
+				if (!this.isConnected) {
+					resolve(false)
+					return
+				}
+				const next = this.getBoundingClientRect()
+				resolve(next.x == x && next.y == y && next.width == width && next.height == height)
+			})
+		})
+	}`)
+	if err != nil {
+		return false, err
+	}
+	stable, ok := value.(bool)
+	if !ok {
+		return false, errors.New("requestAnimationFrame stability check result is not a bool")
+	}
+	return stable, nil
+}
+
 func (e Node) pointerAction(eventName string, dispatch func(Point) error) (err error) {
 	if err = e.scrollIntoView(); err != nil {
 		return err
 	}
+
 	point, err := e.middle()
 	if err != nil {
 		return err
 	}
-	if eventName == "" {
-		return errors.New("pointerAction: eventName is empty")
+
+	stable, err := e.isStableAfterAnimationFrame()
+	if err != nil {
+		return err
 	}
+	if !stable {
+		return errors.New("pointerAction: element changed after requestAnimationFrame")
+	}
+
 	ackId := fmt.Sprintf("%d", time.Now().UnixNano())
 	futureBindingCalled := subscribeToMethod(e.frame.session, "Runtime.bindingCalled", ackCallback(hitCheckFunc, ackId))
 	defer futureBindingCalled.Cancel()
@@ -353,9 +405,9 @@ func (e Node) GetBoundingClientRect() Optional[Rectangle] {
 
 func (e Node) getBoundingClientRect() (Rectangle, error) {
 	value, err := e.eval(`function() {
-		const e = this.getBoundingClientRect()
-		const t = this.ownerDocument.documentElement.getBoundingClientRect()
-		return [e.left - t.left, e.top - t.top, e.width, e.height]
+		const nr = this.getBoundingClientRect()
+		const dr = this.ownerDocument.documentElement.getBoundingClientRect()
+		return [nr.left - dr.left, nr.top - dr.top, nr.width, nr.height]
 	}`)
 	if err != nil {
 		return Rectangle{}, err
