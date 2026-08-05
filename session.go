@@ -24,7 +24,6 @@ var (
 )
 
 const Blank = "about:blank"
-const hitCheckFunc = `__control_clk_backend_hit`
 
 var (
 	ErrTargetDestroyed    error = errors.New("target destroyed")
@@ -182,9 +181,6 @@ func (s *Session) enableDefaults() error {
 		return err
 	}
 	if err := network.Enable(s, network.EnableArgs{MaxPostDataSize: MaxPostDataSize}); err != nil {
-		return err
-	}
-	if err := runtime.AddBinding(s, runtime.AddBindingArgs{Name: hitCheckFunc}); err != nil {
 		return err
 	}
 	return nil

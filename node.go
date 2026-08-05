@@ -1,7 +1,6 @@
 package control
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -251,47 +250,28 @@ func (e Node) HasClickListener() Optional[bool] {
 	return optional[bool](e.hasClickListener())
 }
 
-func ackCallback(bindingName, ackId string) func(runtime.BindingCalled) (bool, error) {
-	type ack struct {
-		ID    string `json:"id"`
-		Error string `json:"error,omitempty"`
-	}
-	return func(value runtime.BindingCalled) (bool, error) {
-		if value.Name != bindingName {
-			return false, nil
-		}
-		if value.Payload == "" {
-			return false, errors.New("empty payload")
-		}
-		var ackValue ack
-		err := json.Unmarshal([]byte(value.Payload), &ackValue)
-		if err != nil {
-			return false, err
-		}
-		if ackValue.ID == ackId {
-			if ackValue.Error != "" {
-				return true, errors.New(ackValue.Error)
-			}
-			return true, nil
-		}
-		return false, err
-	}
-}
-
 func (e Node) isStableAfterAnimationFrame() (bool, error) {
 	value, err := e.eval(`function() {
-		if (!this.isConnected) {
+		const isSame = (a, b) => a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height
+		const readRectIfConnected = () => this.isConnected ? this.getBoundingClientRect() : null
+
+		const initial = readRectIfConnected()
+		if (!initial) {
 			return false
 		}
-		const {x, y, width, height} = this.getBoundingClientRect()
+
 		return new Promise(resolve => {
 			requestAnimationFrame(() => {
-				if (!this.isConnected) {
+				const first = readRectIfConnected()
+				if (!first || !isSame(first, initial)) {
 					resolve(false)
 					return
 				}
-				const next = this.getBoundingClientRect()
-				resolve(next.x == x && next.y == y && next.width == width && next.height == height)
+
+				requestAnimationFrame(() => {
+					const second = readRectIfConnected()
+					resolve(!!second && isSame(second, first))
+				})
 			})
 		})
 	}`)
@@ -305,7 +285,98 @@ func (e Node) isStableAfterAnimationFrame() (bool, error) {
 	return stable, nil
 }
 
-func (e Node) pointerAction(eventName string, dispatch func(Point) error) (err error) {
+func (e Node) receivesEventsAt(point Point) (bool, error) {
+	value, err := e.eval(`function(x, y) {
+		const target = this.ownerDocument.elementFromPoint(x, y)
+		if (!target) {
+			return false
+		}
+		for (let node = target; node; node = node.parentNode) {
+			if (node === this) {
+				return true
+			}
+		}
+		return false
+	}`, point.X, point.Y)
+	if err != nil {
+		return false, err
+	}
+	receivesEvents, ok := value.(bool)
+	if !ok {
+		return false, errors.New("receive events check result is not a bool")
+	}
+	return receivesEvents, nil
+}
+
+func (e Node) setHitTargetInterceptor(eventName string) (runtime.RemoteObjectId, error) {
+	const script = `function(eventName) {
+		let resolved = false
+		let observer = null
+
+		return new Promise(done => {
+			const finish = (error) => {
+				if (resolved) {
+					return
+				}
+				resolved = true
+				if (observer) {
+					observer.disconnect()
+				}
+				window.removeEventListener("beforeunload", onBeforeUnload)
+				this.ownerDocument.removeEventListener(eventName, listener, true)
+				done(error ?? null)
+			}
+
+			const onBeforeUnload = () => finish(null)
+
+			const isSelfOrDescendant = (target) => {
+				for (let node = target; node; node = node.parentNode) {
+					if (node === this) {
+						return true
+					}
+				}
+				return false
+			}
+
+			const listener = (e) => {
+				if (resolved) {
+					return
+				}
+				if (e.isTrusted && isSelfOrDescendant(e.target)) {
+					finish(null)
+					return
+				}
+				e.preventDefault()
+				e.stopImmediatePropagation()
+				finish("target overlapped")
+			}
+
+			observer = new MutationObserver(() => {
+				if (!this.isConnected) {
+					finish("target disconnected")
+				}
+			})
+
+			observer.observe(this.ownerDocument, { childList: true, subtree: true })
+			window.addEventListener("beforeunload", onBeforeUnload, { once: true })
+			this.ownerDocument.addEventListener(eventName, listener, { capture: true, once: true })
+		})
+	}`
+
+	result, err := e.callFunctionOn(script, false, eventName)
+	if err != nil {
+		return "", err
+	}
+	if result == nil {
+		return "", errors.New("hit-target interceptor promise object is missing")
+	}
+	if objectId, ok := result.(runtime.RemoteObjectId); ok {
+		return objectId, nil
+	}
+	return "", errors.New("unexpected hit-target interceptor result type")
+}
+
+func (e Node) dispatchPointerEvent(event string, dispatchFunc func(Point) error) (err error) {
 	if err = e.scrollIntoView(); err != nil {
 		return err
 	}
@@ -320,63 +391,48 @@ func (e Node) pointerAction(eventName string, dispatch func(Point) error) (err e
 		return err
 	}
 	if !stable {
-		return errors.New("pointerAction: element changed after requestAnimationFrame")
+		return errors.New("element changed after requestAnimationFrame")
 	}
 
-	ackId := fmt.Sprintf("%d", time.Now().UnixNano())
-	futureBindingCalled := subscribeToMethod(e.frame.session, "Runtime.bindingCalled", ackCallback(hitCheckFunc, ackId))
-	defer futureBindingCalled.Cancel()
+	receivesEvents, err := e.receivesEventsAt(point)
+	if err != nil {
+		return err
+	}
+	if !receivesEvents {
+		return errors.New("element does not receive events at its center point")
+	}
 
-	const script = `function(func_name, ack_id, event_name) {
-		const resolve = (error) => {
-			window[func_name](JSON.stringify({ id: ack_id, error: error ?? null }))
-		}
-		const onBeforeUnload = () => resolve(null)
-
-		const isSelfOrDescendant = (target) => {
-			for (let node = target; node; node = node.parentNode) {
-				if (node === this) {
-					return true
-				}
-			}
-			return false
-		}
-
-		const listener = (e) => {
-			if (e.isTrusted && isSelfOrDescendant(e.target)) {
-				window.removeEventListener("beforeunload", onBeforeUnload)
-				resolve(null)
-				return
-			}
-			window.removeEventListener("beforeunload", onBeforeUnload)
-			e.preventDefault()
-			e.stopImmediatePropagation()
-			resolve("target overlapped")
-		}
-
-		this.ownerDocument.addEventListener(event_name, listener, { capture: true, once: true })
-		window.addEventListener("beforeunload", onBeforeUnload, { once: true })
-	}`
-
-	_, err = e.eval(script, hitCheckFunc, ackId, eventName)
+	promise, err := e.setHitTargetInterceptor(event)
 	if err != nil {
 		return err
 	}
 
-	if err = dispatch(point); err != nil {
+	if err = dispatchFunc(point); err != nil {
 		return err
 	}
 
-	_, err = GetWithTimeout(e.frame.session, futureBindingCalled)
-	return err
+	ackValue, err := e.frame.AwaitPromise(promise)
+	if err != nil {
+		return err
+	}
+	if ackValue == nil {
+		return nil
+	}
+	if ackError, ok := ackValue.(string); ok {
+		if ackError != "" {
+			return errors.New(ackError)
+		}
+		return nil
+	}
+	return errors.New("unexpected hit-target interceptor result type")
 }
 
 func (e Node) Click() (err error) {
-	return e.pointerAction("click", e.frame.session.Click)
+	return e.dispatchPointerEvent("click", e.frame.session.Click)
 }
 
 func (e Node) Down() (err error) {
-	return e.pointerAction("mousedown", e.frame.session.MouseDown)
+	return e.dispatchPointerEvent("mousedown", e.frame.session.MouseDown)
 }
 
 func (e Node) GetClickablePoint() Optional[Point] {
