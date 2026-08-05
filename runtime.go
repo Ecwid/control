@@ -14,7 +14,10 @@ import (
 	"github.com/ecwid/control/protocol/runtime"
 )
 
-var ErrExecutionContextDestroyed = errors.New("execution context destroyed")
+const (
+	errCannotFindContext = "Cannot find context with specified id"
+	errCannotFindObject  = "Cannot find object with given id"
+)
 
 type RuntimeExceptionError struct {
 	value *runtime.ExceptionDetails
@@ -311,7 +314,7 @@ func (f *Frame) requestNodeList(objectId runtime.RemoteObjectId) (NodeList, erro
 func (f Frame) evaluate(expression string, awaitPromise bool) (any, error) {
 	var uid = f.executionContextID()
 	if uid == "" {
-		return nil, ErrExecutionContextDestroyed
+		return nil, errors.New(errCannotFindContext)
 	}
 	value, err := runtime.Evaluate(f, runtime.EvaluateArgs{
 		Expression:            expression,

@@ -44,7 +44,7 @@ type Session struct {
 	unsubscribe func()
 	targetID    target.TargetID
 	framesMu    sync.RWMutex
-	frames      map[common.FrameId]string
+	frames      map[common.FrameId]*FrameContext
 	Frame       *Frame
 }
 
@@ -115,21 +115,31 @@ func (s *Session) fatal(err error) {
 }
 
 func (s *Session) setFrameExecutionContextID(id common.FrameId, executionContextID string) {
-	s.framesMu.Lock()
-	s.frames[id] = executionContextID
-	s.framesMu.Unlock()
-}
-
-func (s *Session) deleteFrameExecutionContextID(id common.FrameId) {
-	s.framesMu.Lock()
-	delete(s.frames, id)
-	s.framesMu.Unlock()
+	s.getOrCreateFrameContext(id).setExecutionContextID(executionContextID)
 }
 
 func (s *Session) getFrameExecutionContextID(id common.FrameId) string {
 	s.framesMu.RLock()
 	defer s.framesMu.RUnlock()
-	return s.frames[id]
+	if frameContext, ok := s.frames[id]; ok {
+		return frameContext.executionContextIDSnapshot()
+	}
+	return ""
+}
+
+func (s *Session) getOrCreateFrameContext(id common.FrameId) *FrameContext {
+	s.framesMu.Lock()
+	defer s.framesMu.Unlock()
+	frameContext, ok := s.frames[id]
+	if !ok {
+		frameContext = newFrameContext()
+		s.frames[id] = frameContext
+	}
+	return frameContext
+}
+
+func (s *Session) invalidateFrameExecutionContext(id common.FrameId) {
+	s.getOrCreateFrameContext(id).invalidateExecutionContext()
 }
 
 func (b *Browser) NewSession(targetID target.TargetID) (*Session, error) {
@@ -151,10 +161,15 @@ func (b *Browser) NewSession(targetID target.TargetID) (*Session, error) {
 		browser:  b,
 		caller:   cdpCaller,
 		targetID: targetID,
-		frames:   make(map[common.FrameId]string),
+		frames:   make(map[common.FrameId]*FrameContext),
 	}
 
-	session.Frame = &Frame{session: session, id: common.FrameId(session.targetID)}
+	session.Frame = &Frame{
+		parent:  nil,
+		session: session,
+		id:      common.FrameId(session.targetID),
+		context: session.getOrCreateFrameContext(common.FrameId(session.targetID)),
+	}
 	session.startHandleLoop()
 	if err = session.enableDefaults(); err != nil {
 		// non necessary to detach from target, because session will be closed on error
@@ -228,7 +243,19 @@ func (s *Session) handleFrameDetached(message transport.Message) error {
 	if err != nil {
 		return err
 	}
-	s.deleteFrameExecutionContextID(frameDetached.FrameId)
+	s.invalidateFrameExecutionContext(frameDetached.FrameId)
+	return nil
+}
+
+func (s *Session) handleFrameNavigated(message transport.Message) error {
+	frameNavigated, err := transport.Unmarshal[page.FrameNavigated](message)
+	if err != nil {
+		return err
+	}
+	if frameNavigated.Frame == nil {
+		return errors.New("page.frameNavigated: frame is missing")
+	}
+	s.invalidateFrameExecutionContext(frameNavigated.Frame.Id)
 	return nil
 }
 
@@ -274,6 +301,10 @@ func (s *Session) handle(channel <-chan transport.Message) error {
 			}
 		case "Page.frameDetached":
 			if err := s.handleFrameDetached(message); err != nil {
+				return err
+			}
+		case "Page.frameNavigated":
+			if err := s.handleFrameNavigated(message); err != nil {
 				return err
 			}
 		case "Target.detachedFromTarget":

@@ -2,6 +2,7 @@ package control
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/ecwid/control/protocol/common"
 	"github.com/ecwid/control/protocol/page"
@@ -29,6 +30,46 @@ type Frame struct {
 	session *Session
 	id      common.FrameId
 	parent  *Frame
+	context *FrameContext
+}
+
+type FrameContext struct {
+	mu                 sync.RWMutex
+	revision           uint64
+	executionContextID string
+}
+
+func newFrameContext() *FrameContext {
+	return &FrameContext{}
+}
+
+func (c *FrameContext) revisionSnapshot() uint64 {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.revision
+}
+
+func (c *FrameContext) changedSince(revision uint64) bool {
+	return c.revisionSnapshot() != revision
+}
+
+func (c *FrameContext) setExecutionContextID(id string) {
+	c.mu.Lock()
+	c.executionContextID = id
+	c.mu.Unlock()
+}
+
+func (c *FrameContext) invalidateExecutionContext() {
+	c.mu.Lock()
+	c.executionContextID = ""
+	c.revision++
+	c.mu.Unlock()
+}
+
+func (c *FrameContext) executionContextIDSnapshot() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.executionContextID
 }
 
 func (f Frame) GetSession() *Session {
@@ -41,6 +82,20 @@ func (f Frame) GetID() common.FrameId {
 
 func (f Frame) executionContextID() string {
 	return f.session.getFrameExecutionContextID(f.id)
+}
+
+func (f Frame) contextRevision() uint64 {
+	if f.context == nil {
+		return 0
+	}
+	return f.context.revisionSnapshot()
+}
+
+func (f Frame) contextChangedSince(revision uint64) bool {
+	if f.context == nil {
+		return false
+	}
+	return f.context.changedSince(revision)
 }
 
 func (f Frame) Call(method string, send, recv any) error {

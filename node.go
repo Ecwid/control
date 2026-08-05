@@ -3,6 +3,7 @@ package control
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ecwid/control/key"
@@ -163,6 +164,7 @@ func (e Node) ContentFrame() Optional[*Frame] {
 		session: e.frame.session,
 		parent:  e.frame,
 		node:    &e,
+		context: e.frame.session.getOrCreateFrameContext(value.FrameId),
 	}}
 }
 
@@ -308,6 +310,49 @@ func (e Node) receivesEventsAt(point Point) (bool, error) {
 	return receivesEvents, nil
 }
 
+func (e Node) contentOffsetInParentViewport() (Point, error) {
+	/*
+		function() {
+			const rect = this.getBoundingClientRect()
+			const style = this.ownerDocument.defaultView.getComputedStyle(this)
+			const left = rect.left + parseFloat(style.borderLeftWidth || "0") + parseFloat(style.paddingLeft || "0")
+			const top = rect.top + parseFloat(style.borderTopWidth || "0") + parseFloat(style.paddingTop || "0")
+			return [left, top]
+		}
+	*/
+	const script = `function(){const t=this.getBoundingClientRect(),e=this.ownerDocument.defaultView.getComputedStyle(this);return[t.left+parseFloat(e.borderLeftWidth||"0")+parseFloat(e.paddingLeft||"0"),t.top+parseFloat(e.borderTopWidth||"0")+parseFloat(e.paddingTop||"0")]}`
+	value, err := e.eval(script)
+	if err != nil {
+		return Point{}, err
+	}
+	arr, ok := value.([]any)
+	if !ok || len(arr) < 2 {
+		return Point{}, errors.New("frame content offset result is not a 2-element array")
+	}
+	left, okX := arr[0].(float64)
+	top, okY := arr[1].(float64)
+	if !okX || !okY {
+		return Point{}, errors.New("frame content offset values are not numbers")
+	}
+	return Point{X: left, Y: top}, nil
+}
+
+func (e Node) toOwnerDocumentPoint(pagePoint Point) (Point, error) {
+	localPoint := pagePoint
+	for frame := e.frame; frame != nil && frame.parent != nil; frame = frame.parent {
+		if frame.node == nil {
+			return Point{}, errors.New("frame parent chain is broken: missing owner iframe node")
+		}
+		offset, err := frame.node.contentOffsetInParentViewport()
+		if err != nil {
+			return Point{}, err
+		}
+		localPoint.X -= offset.X
+		localPoint.Y -= offset.Y
+	}
+	return localPoint, nil
+}
+
 func (e Node) setHitTargetInterceptor(eventName string) (runtime.RemoteObjectId, error) {
 	const script = `function(eventName) {
 		let resolved = false
@@ -376,6 +421,10 @@ func (e Node) setHitTargetInterceptor(eventName string) (runtime.RemoteObjectId,
 	return "", errors.New("unexpected hit-target interceptor result type")
 }
 
+func isFrameContextGone(err error) bool {
+	return err != nil && slices.Contains([]string{errCannotFindContext, errCannotFindObject}, err.Error())
+}
+
 func (e Node) dispatchPointerEvent(event string, dispatchFunc func(Point) error) (err error) {
 	if err = e.scrollIntoView(); err != nil {
 		return err
@@ -394,7 +443,12 @@ func (e Node) dispatchPointerEvent(event string, dispatchFunc func(Point) error)
 		return errors.New("element changed after requestAnimationFrame")
 	}
 
-	receivesEvents, err := e.receivesEventsAt(point)
+	pointInOwnerDocument, err := e.toOwnerDocumentPoint(point)
+	if err != nil {
+		return err
+	}
+
+	receivesEvents, err := e.receivesEventsAt(pointInOwnerDocument)
 	if err != nil {
 		return err
 	}
@@ -406,6 +460,7 @@ func (e Node) dispatchPointerEvent(event string, dispatchFunc func(Point) error)
 	if err != nil {
 		return err
 	}
+	contextRevisionBeforeDispatch := e.frame.contextRevision()
 
 	if err = dispatchFunc(point); err != nil {
 		return err
@@ -413,6 +468,9 @@ func (e Node) dispatchPointerEvent(event string, dispatchFunc func(Point) error)
 
 	ackValue, err := e.frame.AwaitPromise(promise)
 	if err != nil {
+		if isFrameContextGone(err) && e.frame.contextChangedSince(contextRevisionBeforeDispatch) {
+			return nil
+		}
 		return err
 	}
 	if ackValue == nil {
