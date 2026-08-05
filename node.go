@@ -356,23 +356,17 @@ func (e Node) toOwnerDocumentPoint(pagePoint Point) (Point, error) {
 func (e Node) setHitTargetInterceptor(eventName string) (runtime.RemoteObjectId, error) {
 	const script = `function(eventName) {
 		let resolved = false
-		let observer = null
 
 		return new Promise(done => {
+		
 			const finish = (error) => {
 				if (resolved) {
 					return
 				}
 				resolved = true
-				if (observer) {
-					observer.disconnect()
-				}
-				window.removeEventListener("beforeunload", onBeforeUnload)
 				this.ownerDocument.removeEventListener(eventName, listener, true)
 				done(error ?? null)
 			}
-
-			const onBeforeUnload = () => finish(null)
 
 			const isSelfOrDescendant = (target) => {
 				for (let node = target; node; node = node.parentNode) {
@@ -396,14 +390,6 @@ func (e Node) setHitTargetInterceptor(eventName string) (runtime.RemoteObjectId,
 				finish("target overlapped")
 			}
 
-			observer = new MutationObserver(() => {
-				if (!this.isConnected) {
-					finish("target disconnected")
-				}
-			})
-
-			observer.observe(this.ownerDocument, { childList: true, subtree: true })
-			window.addEventListener("beforeunload", onBeforeUnload, { once: true })
 			this.ownerDocument.addEventListener(eventName, listener, { capture: true, once: true })
 		})
 	}`
