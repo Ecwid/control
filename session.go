@@ -198,11 +198,6 @@ func (s *Session) enableDefaults() error {
 	if err := network.Enable(s, network.EnableArgs{MaxPostDataSize: MaxPostDataSize}); err != nil {
 		return err
 	}
-	if _, err := page.AddScriptToEvaluateOnNewDocument(s, page.AddScriptToEvaluateOnNewDocumentArgs{
-		Source: `window.__nativePromise__ = Promise;`,
-	}); err != nil {
-		return err
-	}
 	return nil
 }
 

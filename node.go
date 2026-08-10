@@ -262,7 +262,7 @@ func (e Node) isStableAfterAnimationFrame() (bool, error) {
 			return false
 		}
 
-		return new __nativePromise__(resolve => {
+		return new Promise(resolve => {
 			requestAnimationFrame(() => {
 				const first = readRectIfConnected()
 				if (!first || !isSame(first, initial)) {
@@ -357,7 +357,7 @@ func (e Node) setHitTargetInterceptor(eventName string) (runtime.RemoteObjectId,
 	const script = `function(eventName) {
 		let resolved = false
 
-		return new __nativePromise__(done => {
+		return new Promise(done => {
 
 			const finish = (error) => {
 				if (resolved) {
