@@ -13,23 +13,15 @@ import (
 )
 
 type (
-	NodeNotClickableError string
-	NodeNotFocusableError string
-	NodeNotVisibleError   string
-	NoSuchSelectorError   string
+	NoSuchSelectorError string
 )
 
-func (n NodeNotClickableError) Error() string {
-	return fmt.Sprintf("selector %s is not clickable", string(n))
-}
-
-func (n NodeNotVisibleError) Error() string {
-	return fmt.Sprintf("selector %s is not visible", string(n))
-}
-
-func (n NodeNotFocusableError) Error() string {
-	return fmt.Sprintf("selector %s is not focusable", string(n))
-}
+var (
+	ErrElementIsNotFocusable = errors.New("element is not focusable")
+	ErrElementIsNotVisible   = errors.New("element is not visible")
+	ErrElementIsNotStable    = errors.New("element is not stable across animation frames")
+	ErrElementIsNotHitTarget = errors.New("element is not the hit target at its center point")
+)
 
 func (s NoSuchSelectorError) Error() string {
 	return fmt.Sprintf("no such selector: %s", string(s))
@@ -183,7 +175,7 @@ func (e Node) GetText() Optional[string] {
 func (e Node) Focus() error {
 	err := dom.Focus(e, dom.FocusArgs{ObjectId: e.object})
 	if err != nil && err.Error() == `Element is not focusable` {
-		return NodeNotFocusableError(e.requestedSelector)
+		return ErrElementIsNotFocusable
 	}
 	return err
 }
@@ -225,7 +217,26 @@ func (e Node) setText(value string, clearBefore bool) (err error) {
 }
 
 func (e Node) CheckVisibility() Optional[bool] {
-	return optional[bool](e.eval(`function(){return this.checkVisibility({opacityProperty: false, visibilityProperty: true})}`))
+	return optional[bool](e.isVisible())
+}
+
+func (e Node) CheckClickability() error {
+	middle, err := e.getMiddle()
+	if err != nil {
+		return err
+	}
+	return e.validateClickableAt(middle)
+}
+
+func (e Node) isVisible() (bool, error) {
+	value, err := e.eval(`function(){return this.checkVisibility({opacityProperty: false, visibilityProperty: true})}`)
+	if err != nil {
+		return false, err
+	}
+	if result, ok := value.(bool); ok {
+		return result, nil
+	}
+	return false, errors.New("isVisible result is not a bool")
 }
 
 func (e Node) Upload(files ...string) error {
@@ -282,12 +293,12 @@ func (e Node) isStableAfterAnimationFrame() (bool, error) {
 	}
 	stable, ok := value.(bool)
 	if !ok {
-		return false, errors.New("requestAnimationFrame stability check result is not a bool")
+		return false, errors.New("stability check result is not a bool")
 	}
 	return stable, nil
 }
 
-func (e Node) receivesEventsAt(point Point) (bool, error) {
+func (e Node) isHitTargetAt(point Point) (bool, error) {
 	value, err := e.eval(`function(x, y) {
 		const target = this.ownerDocument.elementFromPoint(x, y)
 		if (!target) {
@@ -305,12 +316,12 @@ func (e Node) receivesEventsAt(point Point) (bool, error) {
 	}
 	receivesEvents, ok := value.(bool)
 	if !ok {
-		return false, errors.New("receive events check result is not a bool")
+		return false, errors.New("hit target check result is not a bool")
 	}
 	return receivesEvents, nil
 }
 
-func (e Node) contentOffsetInParentViewport() (Point, error) {
+func (e Node) contentOffsetInParentViewport() (x float64, y float64, err error) {
 	/*
 		function() {
 			const rect = this.getBoundingClientRect()
@@ -323,18 +334,18 @@ func (e Node) contentOffsetInParentViewport() (Point, error) {
 	const script = `function(){const t=this.getBoundingClientRect(),e=this.ownerDocument.defaultView.getComputedStyle(this);return[t.left+parseFloat(e.borderLeftWidth||"0")+parseFloat(e.paddingLeft||"0"),t.top+parseFloat(e.borderTopWidth||"0")+parseFloat(e.paddingTop||"0")]}`
 	value, err := e.eval(script)
 	if err != nil {
-		return Point{}, err
+		return 0, 0, err
 	}
 	arr, ok := value.([]any)
 	if !ok || len(arr) < 2 {
-		return Point{}, errors.New("frame content offset result is not a 2-element array")
+		return 0, 0, errors.New("frame content offset result is not a 2-element array")
 	}
 	left, okX := arr[0].(float64)
 	top, okY := arr[1].(float64)
 	if !okX || !okY {
-		return Point{}, errors.New("frame content offset values are not numbers")
+		return 0, 0, errors.New("frame content offset values are not numbers")
 	}
-	return Point{X: left, Y: top}, nil
+	return left, top, nil
 }
 
 func (e Node) toOwnerDocumentPoint(pagePoint Point) (Point, error) {
@@ -343,12 +354,12 @@ func (e Node) toOwnerDocumentPoint(pagePoint Point) (Point, error) {
 		if frame.node == nil {
 			return Point{}, errors.New("frame parent chain is broken: missing owner iframe node")
 		}
-		offset, err := frame.node.contentOffsetInParentViewport()
+		offsetX, offsetY, err := frame.node.contentOffsetInParentViewport()
 		if err != nil {
 			return Point{}, err
 		}
-		localPoint.X -= offset.X
-		localPoint.Y -= offset.Y
+		localPoint.X -= offsetX
+		localPoint.Y -= offsetY
 	}
 	return localPoint, nil
 }
@@ -407,26 +418,17 @@ func (e Node) setHitTargetInterceptor(eventName string) (runtime.RemoteObjectId,
 	return "", errors.New("unexpected hit-target interceptor result type")
 }
 
-func isFrameContextGone(err error) bool {
+func isFrameContextOutdated(err error) bool {
 	return err != nil && slices.Contains([]string{errCannotFindContext, errCannotFindObject}, err.Error())
 }
 
-func (e Node) dispatchPointerEvent(event string, dispatchFunc func(Point) error) (err error) {
-	if err = e.scrollIntoView(); err != nil {
-		return err
-	}
-
-	point, err := e.middle()
-	if err != nil {
-		return err
-	}
-
+func (e Node) validateClickableAt(point Point) error {
 	stable, err := e.isStableAfterAnimationFrame()
 	if err != nil {
 		return err
 	}
 	if !stable {
-		return errors.New("element changed after requestAnimationFrame")
+		return ErrElementIsNotStable
 	}
 
 	pointInOwnerDocument, err := e.toOwnerDocumentPoint(point)
@@ -434,27 +436,40 @@ func (e Node) dispatchPointerEvent(event string, dispatchFunc func(Point) error)
 		return err
 	}
 
-	receivesEvents, err := e.receivesEventsAt(pointInOwnerDocument)
+	isHit, err := e.isHitTargetAt(pointInOwnerDocument)
 	if err != nil {
 		return err
 	}
-	if !receivesEvents {
-		return errors.New("element does not receive events at its center point")
+	if !isHit {
+		return ErrElementIsNotHitTarget
+	}
+	return nil
+}
+
+func (e Node) dispatchPointerEvent(event string, dispatchFunc func(Point) error) (err error) {
+	point, err := e.getMiddle()
+	if err != nil {
+		return err
 	}
 
-	promise, err := e.setHitTargetInterceptor(event)
+	if err = e.validateClickableAt(point); err != nil {
+		return err
+	}
+
+	interceptor, err := e.setHitTargetInterceptor(event)
 	if err != nil {
 		return err
 	}
-	contextRevisionBeforeDispatch := e.frame.contextRevision()
+
+	contextBeforeDispatch := e.frame.contextRevision()
 
 	if err = dispatchFunc(point); err != nil {
 		return err
 	}
 
-	ackValue, err := e.frame.AwaitPromise(promise)
+	ackValue, err := e.frame.AwaitPromise(interceptor)
 	if err != nil {
-		if isFrameContextGone(err) && e.frame.contextChangedSince(contextRevisionBeforeDispatch) {
+		if isFrameContextOutdated(err) && e.frame.contextChangedSince(contextBeforeDispatch) {
 			return nil
 		}
 		return err
@@ -468,6 +483,7 @@ func (e Node) dispatchPointerEvent(event string, dispatchFunc func(Point) error)
 		}
 		return nil
 	}
+
 	return errors.New("unexpected hit-target interceptor result type")
 }
 
@@ -480,16 +496,19 @@ func (e Node) Down() (err error) {
 }
 
 func (e Node) GetClickablePoint() Optional[Point] {
-	return optional[Point](e.middle())
+	return optional[Point](e.getMiddle())
 }
 
-func (e Node) middle() (middle Point, err error) {
-	value, err := e.CheckVisibility().Unwrap()
+func (e Node) getMiddle() (middle Point, err error) {
+	if err = e.scrollIntoView(); err != nil {
+		return middle, err
+	}
+	value, err := e.isVisible()
 	if err != nil {
 		return middle, err
 	}
 	if !value {
-		return middle, NodeNotVisibleError(e.requestedSelector)
+		return middle, ErrElementIsNotVisible
 	}
 	var r0 Quad
 	r0, err = e.getContentQuad()
@@ -543,10 +562,7 @@ func (e Node) getContentQuad() (Quad, error) {
 }
 
 func (e Node) Hover() error {
-	if err := e.scrollIntoView(); err != nil {
-		return err
-	}
-	p, err := e.middle()
+	p, err := e.getMiddle()
 	if err != nil {
 		return err
 	}
