@@ -288,15 +288,6 @@ func (e Node) isHitTargetAt(point Point) (bool, error) {
 }
 
 func (e Node) contentOffsetInParentViewport() (x float64, y float64, err error) {
-	/*
-		function() {
-			const rect = this.getBoundingClientRect()
-			const style = this.ownerDocument.defaultView.getComputedStyle(this)
-			const left = rect.left + parseFloat(style.borderLeftWidth || "0") + parseFloat(style.paddingLeft || "0")
-			const top = rect.top + parseFloat(style.borderTopWidth || "0") + parseFloat(style.paddingTop || "0")
-			return [left, top]
-		}
-	*/
 	const script = `function(){const t=this.getBoundingClientRect(),e=this.ownerDocument.defaultView.getComputedStyle(this);return[t.left+parseFloat(e.borderLeftWidth||"0")+parseFloat(e.paddingLeft||"0"),t.top+parseFloat(e.borderTopWidth||"0")+parseFloat(e.paddingTop||"0")]}`
 	value, err := e.eval(script)
 	if err != nil {
@@ -448,11 +439,7 @@ func (e Node) GetBoundingClientRect() Optional[Rectangle] {
 }
 
 func (e Node) getBoundingClientRect() (Rectangle, error) {
-	value, err := e.eval(`function() {
-		const nr = this.getBoundingClientRect()
-		const dr = this.ownerDocument.documentElement.getBoundingClientRect()
-		return [nr.left - dr.left, nr.top - dr.top, nr.width, nr.height]
-	}`)
+	value, err := e.eval(`function(){const t=this.getBoundingClientRect(),e=this.ownerDocument.documentElement.getBoundingClientRect();return[t.left-e.left,t.top-e.top,t.width,t.height]}`)
 	if err != nil {
 		return Rectangle{}, err
 	}
