@@ -3,7 +3,6 @@ package control
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/ecwid/control/key"
@@ -17,10 +16,11 @@ type (
 )
 
 var (
-	ErrElementIsNotFocusable = errors.New("element is not focusable")
-	ErrElementIsNotVisible   = errors.New("element is not visible")
-	ErrElementIsNotStable    = errors.New("element is not stable across animation frames")
-	ErrElementIsNotHitTarget = errors.New("element is not the hit target at its center point")
+	ErrElementIsNotFocusable   = errors.New("element is not focusable")
+	ErrElementIsNotVisible     = errors.New("element is not visible")
+	ErrElementIsNotStable      = errors.New("element is not stable across animation frames")
+	ErrElementIsNotHitTarget   = errors.New("element is not the hit target at its center point")
+	ErrElementTargetOverlapped = errors.New("element is overlapped by another element at its center point")
 )
 
 func (s NoSuchSelectorError) Error() string {
@@ -264,30 +264,7 @@ func (e Node) HasClickListener() Optional[bool] {
 }
 
 func (e Node) isStableAfterAnimationFrame() (bool, error) {
-	value, err := e.eval(`function() {
-		const isSame = (a, b) => a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height
-		const readRectIfConnected = () => this.isConnected ? this.getBoundingClientRect() : null
-
-		const initial = readRectIfConnected()
-		if (!initial) {
-			return false
-		}
-
-		return new Promise(resolve => {
-			requestAnimationFrame(() => {
-				const first = readRectIfConnected()
-				if (!first || !isSame(first, initial)) {
-					resolve(false)
-					return
-				}
-
-				requestAnimationFrame(() => {
-					const second = readRectIfConnected()
-					resolve(!!second && isSame(second, first))
-				})
-			})
-		})
-	}`)
+	value, err := e.eval(`function(){const t=(t,n)=>t.x===n.x&&t.y===n.y&&t.width===n.width&&t.height===n.height,n=()=>this.isConnected?this.getBoundingClientRect():null,e=n();return!!e&&new Promise(i=>{requestAnimationFrame(()=>{const o=n();o&&t(o,e)?requestAnimationFrame(()=>{const e=n();i(!!e&&t(e,o))}):i(!1)})})}`)
 	if err != nil {
 		return false, err
 	}
@@ -299,18 +276,7 @@ func (e Node) isStableAfterAnimationFrame() (bool, error) {
 }
 
 func (e Node) isHitTargetAt(point Point) (bool, error) {
-	value, err := e.eval(`function(x, y) {
-		const target = this.ownerDocument.elementFromPoint(x, y)
-		if (!target) {
-			return false
-		}
-		for (let node = target; node; node = node.parentNode) {
-			if (node === this) {
-				return true
-			}
-		}
-		return false
-	}`, point.X, point.Y)
+	value, err := e.eval(`function(t,e){const n=this.ownerDocument.elementFromPoint(t,e);if(!n)return!1;for(let t=n;t;t=t.parentNode)if(t===this)return!0;return!1}`, point.X, point.Y)
 	if err != nil {
 		return false, err
 	}
@@ -365,46 +331,7 @@ func (e Node) toOwnerDocumentPoint(pagePoint Point) (Point, error) {
 }
 
 func (e Node) setHitTargetInterceptor(eventName string) (runtime.RemoteObjectId, error) {
-	const script = `function(eventName) {
-		let resolved = false
-
-		return new Promise(done => {
-
-			const finish = (error) => {
-				if (resolved) {
-					return
-				}
-				resolved = true
-				this.ownerDocument.removeEventListener(eventName, listener, true)
-				done(error ?? null)
-			}
-
-			const isSelfOrDescendant = (target) => {
-				for (let node = target; node; node = node.parentNode) {
-					if (node === this) {
-						return true
-					}
-				}
-				return false
-			}
-
-			const listener = (e) => {
-				if (resolved) {
-					return
-				}
-				if (e.isTrusted && isSelfOrDescendant(e.target)) {
-					finish(null)
-					return
-				}
-				e.preventDefault()
-				e.stopImmediatePropagation()
-				finish("target overlapped")
-			}
-
-			this.ownerDocument.addEventListener(eventName, listener, { capture: true, once: true })
-		})
-	}`
-
+	const script = `function(e){return new Promise(t=>{const n=n=>{this.ownerDocument.removeEventListener(e,o,!0),t(n)},r=e=>{for(let t=e;t;t=t.parentNode)if(t===this)return!0;return!1},o=e=>{e.isTrusted&&r(e.target)?n(!0):(e.preventDefault(),e.stopImmediatePropagation(),n(!1))};this.ownerDocument.addEventListener(e,o,{capture:!0,once:!0})})}`
 	result, err := e.callFunctionOn(script, false, eventName)
 	if err != nil {
 		return "", err
@@ -418,8 +345,8 @@ func (e Node) setHitTargetInterceptor(eventName string) (runtime.RemoteObjectId,
 	return "", errors.New("unexpected hit-target interceptor result type")
 }
 
-func isFrameContextOutdated(err error) bool {
-	return err != nil && slices.Contains([]string{errCannotFindContext, errCannotFindObject}, err.Error())
+func isFrameContextLost(err error) bool {
+	return err != nil && (err.Error() == errCannotFindContext || err.Error() == errCannotFindObject)
 }
 
 func (e Node) validateClickableAt(point Point) error {
@@ -467,21 +394,19 @@ func (e Node) dispatchPointerEvent(event string, dispatchFunc func(Point) error)
 		return err
 	}
 
-	ackValue, err := e.frame.AwaitPromise(interceptor)
+	ack, err := e.frame.AwaitPromise(interceptor)
 	if err != nil {
-		if isFrameContextOutdated(err) && e.frame.contextChangedSince(contextBeforeDispatch) {
+		if isFrameContextLost(err) && e.frame.contextChangedSince(contextBeforeDispatch) {
 			return nil
 		}
 		return err
 	}
-	if ackValue == nil {
-		return nil
-	}
-	if ackError, ok := ackValue.(string); ok {
-		if ackError != "" {
-			return errors.New(ackError)
+
+	if isHit, ok := ack.(bool); ok {
+		if isHit {
+			return nil
 		}
-		return nil
+		return ErrElementTargetOverlapped
 	}
 
 	return errors.New("unexpected hit-target interceptor result type")

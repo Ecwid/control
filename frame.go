@@ -49,10 +49,6 @@ func (c *FrameContext) revisionSnapshot() uint64 {
 	return c.revision
 }
 
-func (c *FrameContext) changedSince(revision uint64) bool {
-	return c.revisionSnapshot() != revision
-}
-
 func (c *FrameContext) setExecutionContextID(id string) {
 	c.mu.Lock()
 	c.executionContextID = id
@@ -95,7 +91,7 @@ func (f Frame) contextChangedSince(revision uint64) bool {
 	if f.context == nil {
 		return false
 	}
-	return f.context.changedSince(revision)
+	return f.context.revisionSnapshot() != revision
 }
 
 func (f Frame) Call(method string, send, recv any) error {
