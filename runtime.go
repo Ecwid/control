@@ -321,6 +321,7 @@ func (f Frame) evaluate(expression string, awaitPromise bool) (any, error) {
 		IncludeCommandLineAPI: true,
 		UniqueContextId:       uid,
 		AwaitPromise:          awaitPromise,
+		Timeout:               runtime.TimeDelta(f.session.GetCaller().timeout.Milliseconds()),
 		SerializationOptions: &runtime.SerializationOptions{
 			Serialization: "deep",
 		},

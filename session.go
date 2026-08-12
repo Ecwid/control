@@ -61,7 +61,7 @@ func (s *Session) GetCaller() CdpCaller {
 }
 
 func (s *Session) Call(method string, send, recv any) error {
-	return s.caller.Call(method, send, recv)
+	return s.GetCaller().Call(method, send, recv)
 }
 
 func (s *Session) Context() context.Context {
@@ -264,7 +264,7 @@ func (s *Session) handleDetachedFromTarget(message transport.Message) error {
 	if err != nil {
 		return err
 	}
-	if s.caller.sessionID == string(detachedFromTarget.SessionId) {
+	if s.GetCaller().sessionID == string(detachedFromTarget.SessionId) {
 		return ErrTargetDetached
 	}
 	return nil

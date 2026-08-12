@@ -35,15 +35,6 @@ type Node struct {
 
 type NodeList []*Node
 
-func (nl NodeList) Foreach(predicate func(*Node) error) error {
-	for _, node := range nl {
-		if err := predicate(node); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (e Node) OwnerFrame() *Frame {
 	return e.frame
 }
