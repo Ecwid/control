@@ -77,12 +77,14 @@ func main() {
 
 	frame := lazy.New(session.Frame)
 
-	session.NetworkIdle(time.Second*30, time.Millisecond*250, func() {
-		err = frame.Navigate("https://mdemo.company.site/").Call(r)
-		if err != nil {
-			panic(err)
-		}
+	err = session.NetworkIdle(time.Second*30, time.Millisecond*250, func() error {
+		return frame.Navigate("https://mdemo.company.site/").Call(r)
 	})
+
+	if err != nil {
+		log.Println("NetworkIdle error:", err)
+		panic(err)
+	}
 
 	text := frame.Query(`.cover__title a span`).InnerText().MustCall(r)
 	log.Println(text, err)

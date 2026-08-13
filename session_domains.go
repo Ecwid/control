@@ -3,6 +3,7 @@ package control
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -249,12 +250,25 @@ func (e InflightDeadlineExceededError) Error() string {
 	return sb.String()
 }
 
-func (s *Session) NetworkIdle(timeout, threshold time.Duration, init func()) error {
+func safeCall(fn func() error) (err error) {
+	if fn != nil {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("panic: %v", r)
+			}
+		}()
+		err = fn()
+	}
+	return
+}
+
+func (s *Session) NetworkIdle(timeout, threshold time.Duration, init func() error) error {
 	channel, unsubscribe := s.Subscribe()
 	defer unsubscribe()
 
-	if init != nil {
-		init()
+	err := safeCall(init)
+	if err != nil {
+		return err
 	}
 
 	ctxTo, cancel := context.WithTimeout(s.Context(), timeout)

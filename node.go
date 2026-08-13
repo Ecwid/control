@@ -312,9 +312,9 @@ func (e Node) toOwnerDocumentPoint(pagePoint Point) (Point, error) {
 	return localPoint, nil
 }
 
-func (e Node) setHitTargetInterceptor(eventName string) (runtime.RemoteObjectId, error) {
-	const script = `function(e){return new Promise(t=>{const n=n=>{this.ownerDocument.removeEventListener(e,o,!0),t(n)},r=e=>{for(let t=e;t;t=t.parentNode)if(t===this)return!0;return!1},o=e=>{e.isTrusted&&r(e.target)?n(!0):(e.preventDefault(),e.stopImmediatePropagation(),n(!1))};this.ownerDocument.addEventListener(e,o,{capture:!0,once:!0})})}`
-	result, err := e.callFunctionOn(script, false, eventName)
+func (e Node) setHitTargetInterceptor(eventName string, timeout time.Duration) (runtime.RemoteObjectId, error) {
+	const script = `function(e,t){return new Promise(n=>{let r=null;const o=t=>{null!==r&&clearTimeout(r),this.ownerDocument.removeEventListener(e,u,!0),n(t)},i=e=>{for(let t=e;t;t=t.parentNode)if(t===this)return!0;return!1},u=e=>{e.isTrusted&&i(e.target)?o(!0):(e.preventDefault(),e.stopImmediatePropagation(),o(!1))};this.ownerDocument.addEventListener(e,u,{capture:!0,once:!0}),t>0&&(r=setTimeout(()=>o(!1),t))})}`
+	result, err := e.callFunctionOn(script, false, eventName, timeout.Milliseconds())
 	if err != nil {
 		return "", err
 	}
@@ -365,7 +365,7 @@ func (e Node) dispatchPointerEvent(event string, dispatchFunc func(Point) error)
 		return err
 	}
 
-	interceptor, err := e.setHitTargetInterceptor(event)
+	interceptor, err := e.setHitTargetInterceptor(event, max(e.frame.session.Timeout()/4, time.Millisecond*3000))
 	if err != nil {
 		return err
 	}
