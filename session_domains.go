@@ -360,6 +360,22 @@ func (s *Session) NetworkIdle(timeout, threshold time.Duration, init func() erro
 						delete(inflight, requestID)
 					}
 				}
+
+			case "Page.frameNavigated":
+				frameNavigated, err := transport.Unmarshal[page.FrameNavigated](value)
+				if err != nil {
+					return err
+				}
+				// Clear inflight requests when frame navigates (navigation started by init())
+				// Keep only requests from the current frame after navigation
+				if frameNavigated.Frame != nil {
+					for requestID, willBeSent := range inflight {
+						if willBeSent.FrameId == frameNavigated.Frame.Id {
+							delete(inflight, requestID)
+						}
+					}
+					resetIdleTimer()
+				}
 			}
 
 		case <-idleTimer.C:
